@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap } from 'lucide-react';
+import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
+import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
 
 const CATEGORY_TABS = [
@@ -125,10 +126,27 @@ export default function MenuPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [serviceHubOpen, setServiceHubOpen] = useState(false);
   const heroRef = useRef(null);
   const { scrollY } = useScroll({ container: heroRef });
   const heroParallax = useTransform(scrollY, [0, 300], [0, 80]);
   const heroOpacity  = useTransform(scrollY, [0, 250], [1, 0.5]);
+
+  const requestService = async (type) => {
+    setServiceHubOpen(false);
+    if (!supabase) return;
+    try {
+      await supabase.channel('service-requests').send({
+        type: 'broadcast',
+        event: 'waiter_call',
+        payload: { tableNumber: restaurant?.tableNumber || '12', type, time: new Date().toISOString() }
+      });
+      // Also show a local success notification (assuming showNotification is in context)
+      // We will assume showNotification is available or we can just let it silently succeed since the vendor gets it.
+    } catch (e) {
+      console.error('Failed to request service:', e);
+    }
+  };
 
   useEffect(() => {
     if (!activeRestId) navigate('/scanner', { replace: true });
@@ -346,6 +364,43 @@ export default function MenuPage() {
             </div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* ── SERVICE HUB FAB ── */}
+      <div className="fixed bottom-24 right-5 z-50 flex flex-col items-end">
+        <AnimatePresence>
+          {serviceHubOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              className="flex flex-col gap-3 mb-4 items-end"
+            >
+              <button onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-[#1a1a1f]/90 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl text-white shadow-xl hover:bg-white/10">
+                <span className="text-sm font-bold">Water</span>
+                <Droplets size={16} className="text-blue-400" />
+              </button>
+              <button onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-[#1a1a1f]/90 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl text-white shadow-xl hover:bg-white/10">
+                <span className="text-sm font-bold">Bill</span>
+                <Receipt size={16} className="text-emerald-400" />
+              </button>
+              <button onClick={() => requestService('Waiter')} className="flex items-center gap-3 bg-[#D4AF37]/90 backdrop-blur-xl border border-[#D4AF37]/50 px-4 py-2.5 rounded-2xl text-black shadow-xl hover:bg-[#D4AF37]">
+                <span className="text-sm font-bold">Call Waiter</span>
+                <BellRing size={16} className="text-black" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <button
+          onClick={() => setServiceHubOpen(!serviceHubOpen)}
+          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border ${
+            serviceHubOpen 
+              ? 'bg-[#1a1a1f] border-white/10 text-white' 
+              : 'bg-gradient-to-tr from-[#D4AF37] to-amber-300 border-amber-300/50 text-black'
+          }`}
+        >
+          {serviceHubOpen ? <X size={24} /> : <BellRing size={24} />}
+        </button>
       </div>
 
       <BottomNav />

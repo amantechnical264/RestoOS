@@ -31,6 +31,7 @@ export default function CartPage() {
     catch { return { type: 'dine_in', time: '19:30', method: 'Card' }; }
   });
   const [contactDetails, setContactDetails] = useState({ name: '', phone: '' });
+  const [specialInstructions, setSpecialInstructions] = useState('');
   const [tipPct, setTipPct] = useState(0.15);
   const [isProcessing, setIsProcessing] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -95,7 +96,8 @@ export default function CartPage() {
       tipAmount: total * tipPct,
       verificationCode: orderConf.type === 'dine_in' ? code : null,
       contactName: contactDetails.name,
-      contactPhone: contactDetails.phone
+      contactPhone: contactDetails.phone,
+      specialInstructions: specialInstructions
     });
     
     setIsProcessing(false);
@@ -222,28 +224,14 @@ export default function CartPage() {
 
               <p className="text-center text-xs text-neutral-500 py-2">Swipe items left to remove</p>
 
-              {/* Upsell Mock */}
-              <div className="mt-8 mb-6 pt-6 border-t border-white/5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap size={16} className="text-accent-emerald" />
-                  <h3 className="font-display font-bold text-white text-sm">Perfect Pairings</h3>
-                </div>
-                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="shrink-0 w-40 p-2.5 rounded-[1.5rem] bg-white/5 border border-white/5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-midnight-900 border border-white/5 overflow-hidden">
-                        <img src={`https://source.unsplash.com/100x100/?dessert&sig=${i}`} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[11px] font-bold text-white leading-tight">Truffle Bites</p>
-                        <p className="text-[10px] text-accent-blue font-black mt-0.5">+$6.00</p>
-                      </div>
-                      <button className="w-6 h-6 shrink-0 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent-blue transition-colors text-white">
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-6 mb-6 pt-6 border-t border-white/5">
+                <h3 className="font-display font-bold text-white text-sm mb-3">Special Instructions</h3>
+                <textarea
+                  value={specialInstructions}
+                  onChange={(e) => setSpecialInstructions(e.target.value)}
+                  placeholder="e.g. No onions, allergy to peanuts..."
+                  className="w-full bg-[#1a1a1f] border border-white/10 rounded-2xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all min-h-[100px] resize-none"
+                />
               </div>
               
               {/* Receipt Summary */}

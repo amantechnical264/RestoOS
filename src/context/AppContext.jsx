@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import i18n from '../locales/i18n';
-import { supabase, INITIAL_DISHES, INITIAL_RESTAURANTS } from '../services/supabase';
+import { supabase } from '../services/supabase';
 
 const AppContext = createContext();
 
@@ -59,11 +59,12 @@ export const AppProvider = ({ children }) => {
     }
   }, [user]);
   
-  // Data State — start empty when Supabase is connected (real data loaded via fetch)
-  const [restaurants, setRestaurants] = useState(supabase ? [] : INITIAL_RESTAURANTS);
+  // Data State
+  const [restaurants, setRestaurants] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]); 
-  const [dishes, setDishes] = useState(supabase ? [] : INITIAL_DISHES); 
+  const [dishes, setDishes] = useState([]); 
+  const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
   const [vendorTab, setVendorTab] = useState('orders');
   const [favorites, setFavorites] = useState(() => {
@@ -139,6 +140,11 @@ export const AppProvider = ({ children }) => {
     }
   }, [userPreferences.language]);
 
+  const showNotification = React.useCallback((msg) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 3500);
+  }, []);
+
   // 2. Real-time Sync
   useEffect(() => {
     if (!supabase) return;
@@ -189,12 +195,25 @@ export const AppProvider = ({ children }) => {
     const restSub = supabase.channel('custom-restaurants')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, fetchRestaurants).subscribe();
     
+    // Broadcast channel for real-time service requests (Customer -> Vendor)
+    const serviceChannel = supabase.channel('service-requests')
+      .on('broadcast', { event: 'waiter_call' }, (payload) => {
+        // payload.payload will contain { tableNumber, type, time }
+        if (payload.payload) {
+          setServiceAlerts(prev => [payload.payload, ...prev]);
+          if (user?.role === 'vendor') {
+            showNotification(`Table ${payload.payload.tableNumber} requested: ${payload.payload.type}`);
+          }
+        }
+      }).subscribe();
+
     return () => { 
       supabase.removeChannel(ordersSub);
       supabase.removeChannel(dishesSub);
       supabase.removeChannel(restSub);
+      supabase.removeChannel(serviceChannel);
     };
-  }, [supabaseUser]);
+  }, [supabaseUser, user?.role]);
 
   // Auto-set activeRestId for logged-in vendor on mount or when restaurants list updates
   useEffect(() => {
@@ -215,11 +234,6 @@ export const AppProvider = ({ children }) => {
     }
     setPrevOrdersCount(orders.length);
   }, [orders.length, user, prevOrdersCount]);
-
-  const showNotification = (msg) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3500);
-  };
 
   const addToCart = (dish) => {
     setCart([...cart, { ...dish, cartId: Date.now() }]);
@@ -274,6 +288,7 @@ export const AppProvider = ({ children }) => {
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
       status: 'Pending',
       timestamp: new Date().toISOString(),
+      metadata: { specialInstructions: orderData?.specialInstructions || '' }
     };
 
     try {
@@ -432,6 +447,7 @@ export const AppProvider = ({ children }) => {
     dishes, setDishes, addDish, updateDish,
     notification, showNotification,
     vendorTab, setVendorTab,
+    serviceAlerts, setServiceAlerts,
     addToCart,
     placeOrder,
     updateOrderStatus,

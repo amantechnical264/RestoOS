@@ -24,6 +24,24 @@
     font-family: 'Outfit', sans-serif;
     letter-spacing: -0.02em;
   }
+  
+  /* Global Premium Form Styles */
+  input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="time"], input[type="password"], textarea {
+    @apply transition-all duration-300;
+  }
+  
+  .dark input, .dark textarea {
+    background-color: rgba(26, 26, 31, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+  }
+  
+  .dark input:focus, .dark textarea:focus {
+    background-color: rgba(26, 26, 31, 0.9) !important;
+    border-color: rgba(212, 175, 55, 0.4) !important; /* Gold accent */
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.15) !important;
+    outline: none !important;
+  }
 }
 /* Custom scrollbar for horizontal scrolling in vendor dashboard */
 .no-scrollbar::-webkit-scrollbar {

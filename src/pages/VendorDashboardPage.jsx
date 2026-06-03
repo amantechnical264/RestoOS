@@ -113,7 +113,7 @@ export default function VendorDashboardPage() {
     orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus,
     dishes, restaurants, addDish, updateDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
-    theme, toggleTheme, showNotification
+    theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts
   } = useAppContext();
 
   // ── Guards ────────────────────────────────────────────────────────
@@ -223,24 +223,33 @@ export default function VendorDashboardPage() {
     .slice(0, 8);
   const totalOrderedItems = dishRanking.reduce((s, d) => s + d.count, 0);
 
-  // 7-day revenue mock (uses real data for today, mocks the rest)
-  const weekLabels = ['M','T','W','T','F','S','S'];
-  const weekData = weekLabels.map((label, i) => ({
-    label,
-    value: i === 6 ? todayRevenue : Math.random() * 800 + 200
-  }));
+  // 7-day revenue (real data)
+  const weekData = [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dayStr = d.toISOString().split('T')[0];
+    const dayRev = completed.filter(o => o.timestamp?.startsWith(dayStr)).reduce((s, o) => s + (o.total || 0), 0);
+    return { label: d.toLocaleDateString('en-US', { weekday: 'short' })[0], value: dayRev };
+  });
 
-  // Peak hours (mock heatmap data)
+  // Peak hours (real heatmap data)
   const HOURS = ['10','11','12','13','14','15','16','17','18','19','20','21'];
   const peakData = HOURS.map(h => ({
     hour: h,
-    value: restOrders.filter(o => o.timestamp?.includes(`T${h}`)).length || Math.floor(Math.random() * 8)
+    value: restOrders.filter(o => o.timestamp && new Date(o.timestamp).getHours() === parseInt(h)).length
   }));
   const peakMax = Math.max(...peakData.map(d => d.value), 1);
 
-  // Unique customers (by contact name/phone)
-  const uniqueCustomers = new Set(restOrders.filter(o => o.contactName).map(o => o.contactPhone || o.contactName)).size;
-  const repeatCustomers = Math.floor(uniqueCustomers * 0.35); // mock
+  // Unique customers
+  const customerOrderCounts = {};
+  restOrders.forEach(o => {
+    const id = o.contactPhone || o.contactName || o.user_id;
+    if (id && id !== 'anonymous') {
+      customerOrderCounts[id] = (customerOrderCounts[id] || 0) + 1;
+    }
+  });
+  const uniqueCustomers = Object.keys(customerOrderCounts).length;
+  const repeatCustomers = Object.values(customerOrderCounts).filter(c => c > 1).length;
 
   const vendDishes = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
 
@@ -255,7 +264,28 @@ export default function VendorDashboardPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-[#0d0d10] text-neutral-900 dark:text-white">
+    <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-[#0d0d10] text-neutral-900 dark:text-white relative">
+      
+      {/* ── SERVICE ALERTS ── */}
+      <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-3">
+        <AnimatePresence>
+          {serviceAlerts.slice(0, 5).map((alert, idx) => (
+            <motion.div key={idx} initial={{ opacity: 0, x: 50, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 50, scale: 0.9 }}
+              className="bg-amber-900/90 backdrop-blur-xl border border-amber-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[280px]">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Bell size={20} className="text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-0.5">Table {alert.tableNumber}</p>
+                <p className="text-sm font-black text-white">{alert.type}</p>
+              </div>
+              <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all">
+                <CheckCircle size={16} />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* ── HEADER ── */}
       <div className="px-5 py-3 flex justify-between items-center z-10 shrink-0 bg-white/95 dark:bg-[#12141D]/98 backdrop-blur-xl border-b border-neutral-200 dark:border-white/6 shadow-sm">
@@ -371,6 +401,12 @@ export default function VendorDashboardPage() {
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
                             {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}
                           </ul>
+                          {o.metadata?.specialInstructions && (
+                            <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Special Instructions</p>
+                              <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{o.metadata.specialInstructions}</p>
+                            </div>
+                          )}
                           <div className="flex justify-between items-center mb-3">
                             <span className="text-xs font-black text-emerald-600">${(o.total || 0).toFixed(2)}</span>
                             {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}

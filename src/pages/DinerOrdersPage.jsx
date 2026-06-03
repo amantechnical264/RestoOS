@@ -147,7 +147,27 @@ export default function DinerOrdersPage() {
               
               {/* Call Waiter Button for Dine-In */}
               {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
-                <button onClick={() => alert('Waiter has been notified and will be at your table shortly!')} className="w-full mb-4 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm">
+                <button onClick={async () => {
+                  try {
+                    await import('../services/supabase').then(({ supabase }) => {
+                      if (supabase) {
+                        supabase.channel('service-requests').send({
+                          type: 'broadcast',
+                          event: 'waiter_call',
+                          payload: { tableNumber: restaurants.find(r => r.id === (order.restId || order.rest_id))?.tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
+                        });
+                      }
+                    });
+                    // Show small notification or feedback locally
+                    const btn = document.getElementById(`call-waiter-${order.id}`);
+                    if (btn) {
+                      const original = btn.innerHTML;
+                      btn.innerHTML = '✔ Waiter Notified!';
+                      btn.classList.replace('text-neutral-300', 'text-emerald-400');
+                      setTimeout(() => { btn.innerHTML = original; btn.classList.replace('text-emerald-400', 'text-neutral-300'); }, 3000);
+                    }
+                  } catch(e) { console.error(e); }
+                }} id={`call-waiter-${order.id}`} className="w-full mb-4 bg-[#1a1a1f] hover:bg-[#D4AF37]/10 text-neutral-300 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 border border-white/10 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
                   <Bell size={16} /> Call Waiter
                 </button>
               )}
