@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&family=Inter:wght@300..900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,11 +6,23 @@
 
 @layer base {
   body {
-    @apply bg-neutral-50 text-neutral-900 dark:bg-obsidian-900 dark:text-pearl font-sans antialiased selection:bg-champagne-500/30 transition-colors duration-300;
+    background-color: #F9FAFB;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s, color 0.3s;
   }
-  
+  .dark body {
+    background-color: #090A0F;
+    color: #F8FAFC;
+  }
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.3);
+  }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 /* Custom scrollbar for horizontal scrolling in vendor dashboard */

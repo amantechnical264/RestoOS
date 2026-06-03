@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import { useAppContext } from '../context/AppContext';
-import { QrCode, Zap, Sparkles, ChevronRight, Star } from 'lucide-react';
+import { QrCode, Zap, Sparkles, ChevronRight, CheckCircle2, ScanLine } from 'lucide-react';
 
 export default function ScannerPage() {
   const navigate = useNavigate();
@@ -22,10 +22,11 @@ export default function ScannerPage() {
     const restId = searchParams.get('restId');
     if (restId) {
       setActiveRestId(restId);
-      showNotification('Table Verified! Loading Menu...');
-      navigate('/menu', { replace: true });
+      const rest = restaurants.find(r => r.id === restId);
+      if (rest) setScannedRest(rest);
+      setScanned(true);
     }
-  }, [searchParams, setActiveRestId, navigate, showNotification]);
+  }, [searchParams, setActiveRestId, restaurants]);
 
   React.useEffect(() => {
     if (scanned) return;
@@ -40,20 +41,20 @@ export default function ScannerPage() {
               const restId = url.searchParams.get('restId');
               if (restId) {
                 if (controlsRef.current) controlsRef.current.stop();
-                setScanned(true);
                 setActiveRestId(restId);
-                showNotification('Table Verified! Loading Menu...');
-                navigate('/menu', { replace: true });
+                const rest = restaurants.find(r => r.id === restId);
+                if (rest) setScannedRest(rest);
+                setScanned(true);
               } else {
                 showNotification('Invalid Table QR Code');
               }
             } catch (e) {
               if (text.startsWith('rest-')) {
                 if (controlsRef.current) controlsRef.current.stop();
-                setScanned(true);
                 setActiveRestId(text);
-                showNotification('Table Verified! Loading Menu...');
-                navigate('/menu', { replace: true });
+                const rest = restaurants.find(r => r.id === text);
+                if (rest) setScannedRest(rest);
+                setScanned(true);
               }
             }
           }
@@ -66,48 +67,43 @@ export default function ScannerPage() {
     };
     startScan();
     return () => { if (controlsRef.current) controlsRef.current.stop(); };
-  }, [scanned, navigate, setActiveRestId, showNotification]);
+  }, [scanned, setActiveRestId, showNotification, restaurants]);
 
   const handleEnterMenu = () => {
-    if (scannedRest) {
-      setActiveRestId(scannedRest.id);
-      navigate('/menu', { replace: true });
-    }
+    navigate('/menu', { replace: true });
   };
 
   const simulateScan = () => {
     const rest = restaurants[0];
     if (rest) {
       if (controlsRef.current) controlsRef.current.stop();
-      setScanned(true);
       setActiveRestId(rest.id);
-      showNotification('Table Verified! Loading Menu...');
-      navigate('/menu', { replace: true });
+      setScannedRest(rest);
+      setScanned(true);
     }
   };
 
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen relative overflow-hidden"
-      style={{ background: 'radial-gradient(ellipse at top, #1a1408 0%, #0B0C10 60%, #050508 100%)' }}
+      className="flex flex-col h-screen relative overflow-hidden bg-midnight-900"
     >
-      {/* Ambient gold orbs */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-10 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
-      <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-5 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)' }} />
+      {/* SaaS Tech Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full opacity-20 pointer-events-none blur-[100px]"
+        style={{ background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)' }} />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full opacity-10 pointer-events-none blur-[120px]"
+        style={{ background: 'radial-gradient(circle, #8B5CF6 0%, transparent 70%)' }} />
 
-      {/* Fine grain texture overlay */}
+      {/* Grid Pattern overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundSize: '200px' }} />
+        style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
       {/* Top bar */}
       {isRescan && (
         <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           className="relative z-20 p-6 pt-14 flex items-center">
           <button onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-champagne-400 text-sm font-sans font-medium hover:text-champagne-300 transition-colors">
+            className="flex items-center gap-2 text-neutral-400 text-sm font-sans font-medium hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
             <ChevronRight size={16} className="rotate-180" />
             Back to Menu
           </button>
@@ -117,140 +113,104 @@ export default function ScannerPage() {
       {/* Brand header */}
       <motion.div
         initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
-        className="relative z-10 text-center pt-16 pb-4 px-6">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <div className="w-px h-6 bg-gradient-to-b from-transparent via-champagne-500 to-transparent" />
-          <span className="text-champagne-500 text-xs font-sans font-semibold tracking-[0.35em] uppercase">Exclusive Dining</span>
-          <div className="w-px h-6 bg-gradient-to-b from-transparent via-champagne-500 to-transparent" />
+        className={`relative z-10 text-center ${isRescan ? 'pt-4' : 'pt-20'} pb-4 px-6`}>
+        <div className="inline-flex items-center justify-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-accent-blue/10 border border-accent-blue/20">
+          <Sparkles size={14} className="text-accent-blue" />
+          <span className="text-accent-blue text-xs font-sans font-bold tracking-widest uppercase">Smart Dining</span>
         </div>
-        <h1 className="text-4xl font-serif font-bold text-pearl mb-2">3Dish</h1>
-        <p className="text-neutral-500 text-sm font-sans">Scan your table to begin the experience</p>
+        <h1 className="text-5xl font-display font-black text-pearl tracking-tight mb-3">3Dish</h1>
+        <p className="text-neutral-400 text-sm font-sans max-w-[250px] mx-auto leading-relaxed">
+          Align your camera with the table code to launch the augmented reality menu.
+        </p>
       </motion.div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 pb-8">
+      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 pb-8 w-full">
         <AnimatePresence mode="wait">
           {!scanned ? (
             <motion.div key="scanning"
-              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -40, filter: 'blur(10px)' }}
+              transition={{ duration: 0.4 }}
               className="flex flex-col items-center w-full">
 
-              {/* QR Viewfinder */}
-              <motion.div
-                initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', bounce: 0.4, delay: 0.15 }}
-                className="relative mb-8">
-
-                {/* Outer glow ring */}
-                <div className="absolute inset-0 rounded-[2.5rem] opacity-30 blur-xl"
-                  style={{ background: 'radial-gradient(circle, #D4AF37, transparent)' }} />
+              {/* Glowing SaaS Reticle */}
+              <div className="relative mb-10 mt-4">
+                {/* Spinning outer dash ring */}
+                <div className="absolute -inset-8 border-[2px] border-dashed border-accent-blue/30 rounded-full animate-[reticleSpin_12s_linear_infinite]" />
+                <div className="absolute -inset-4 border-[1px] border-dashed border-accent-purple/20 rounded-full animate-[reticleSpin_8s_linear_infinite_reverse]" />
 
                 {/* Main viewfinder */}
-                <div className="w-72 h-72 rounded-[2.5rem] relative overflow-hidden border border-champagne-500/20"
-                  style={{ background: 'rgba(11, 12, 16, 0.8)', backdropFilter: 'blur(24px)' }}>
-
-                  {/* Animated scan line */}
+                <div className="w-72 h-72 rounded-[2rem] relative overflow-hidden bg-midnight-800/80 backdrop-blur-xl border border-white/10 shadow-[0_0_50px_rgba(59,130,246,0.15)]">
+                  
+                  {/* Scanner Beam */}
                   <motion.div
-                    animate={{ top: ['5%', '95%', '5%'] }}
-                    transition={{ repeat: Infinity, duration: 2.8, ease: 'linear' }}
-                    className="absolute w-full h-[1px] z-20"
-                    style={{ background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)', boxShadow: '0 0 20px 4px rgba(212,175,55,0.6)' }}
+                    animate={{ top: ['0%', '100%', '0%'] }}
+                    transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                    className="absolute w-full h-32 z-20 pointer-events-none"
+                    style={{ background: 'linear-gradient(to bottom, transparent, rgba(59,130,246,0.2), rgba(59,130,246,0.6))', borderBottom: '2px solid #3B82F6', boxShadow: '0 10px 20px rgba(59,130,246,0.4)' }}
                   />
 
-                  <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover z-10 opacity-80" playsInline muted />
+                  <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover z-10 opacity-90 mix-blend-screen" playsInline muted />
 
-                  {/* Corner brackets - champagne gold */}
-                  {[
-                    'top-4 left-4 border-t-2 border-l-2 rounded-tl-xl',
-                    'top-4 right-4 border-t-2 border-r-2 rounded-tr-xl',
-                    'bottom-4 left-4 border-b-2 border-l-2 rounded-bl-xl',
-                    'bottom-4 right-4 border-b-2 border-r-2 rounded-br-xl',
-                  ].map((cls, i) => (
-                    <div key={i} className={`absolute w-8 h-8 border-champagne-500 z-30 pointer-events-none ${cls}`} />
-                  ))}
+                  {/* Corner reticles */}
+                  <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-accent-blue rounded-tl-[2rem] z-30 m-[-2px]" />
+                  <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-accent-blue rounded-tr-[2rem] z-30 m-[-2px]" />
+                  <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-accent-blue rounded-bl-[2rem] z-30 m-[-2px]" />
+                  <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-accent-blue rounded-br-[2rem] z-30 m-[-2px]" />
 
                   {/* Center QR icon placeholder */}
-                  <div className="absolute inset-0 flex items-center justify-center z-5 opacity-20">
-                    <QrCode size={80} className="text-champagne-400" />
+                  <div className="absolute inset-0 flex items-center justify-center z-5 opacity-10">
+                    <ScanLine size={100} className="text-accent-blue" />
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {!hasCamera && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="mb-4 border rounded-2xl p-4 text-center text-sm max-w-xs"
-                  style={{ background: 'rgba(180, 50, 50, 0.1)', borderColor: 'rgba(180,50,50,0.3)', color: '#f87171' }}>
+                  className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-4 text-center text-sm max-w-xs backdrop-blur-md">
                   Camera unavailable. Please use the demo button below.
                 </motion.div>
               )}
 
               {/* Demo/Simulate button */}
               <motion.button onClick={simulateScan}
-                whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2.5 font-sans font-semibold text-sm px-8 py-4 rounded-2xl transition-all border"
-                style={{
-                  background: 'rgba(212, 175, 55, 0.08)',
-                  borderColor: 'rgba(212, 175, 55, 0.3)',
-                  color: '#D4AF37',
-                  boxShadow: '0 0 30px rgba(212,175,55,0.1)'
-                }}>
-                <Zap size={16} />
-                {t('scanner.simulate', 'Demo Table Scan')}
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-3 font-sans font-bold text-sm px-8 py-4 rounded-full transition-all border bg-white/5 border-white/10 text-pearl hover:bg-white/10 backdrop-blur-md">
+                <Zap size={16} className="text-accent-blue" />
+                {t('scanner.simulate', 'Simulate QR Scan')}
               </motion.button>
             </motion.div>
 
           ) : (
-            // ── Success state ──────────────────────────────────
+            // ── Success state (Glassmorphic Bottom Sheet simulation) ──────────────────────────────────
             <motion.div key="success"
-              initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', bounce: 0.35 }}
-              className="flex flex-col items-center text-center px-4">
+              initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute bottom-0 left-0 right-0 w-full pt-8 pb-10 px-6 rounded-t-[3rem] border-t border-white/10"
+              style={{ background: 'rgba(18, 20, 29, 0.85)', backdropFilter: 'blur(40px)', boxShadow: '0 -20px 60px rgba(0,0,0,0.5)' }}>
+              
+              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8" />
 
-              {/* Gold success ring */}
-              <div className="relative mb-8">
-                <motion.div
-                  initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}
-                  className="w-32 h-32 rounded-full flex items-center justify-center"
-                  style={{
-                    border: '2px solid rgba(212,175,55,0.6)',
-                    background: 'radial-gradient(circle, rgba(212,175,55,0.15), rgba(11,12,16,0.8))',
-                    boxShadow: '0 0 60px rgba(212,175,55,0.3), inset 0 0 30px rgba(212,175,55,0.05)'
-                  }}>
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 }}>
-                    <Sparkles size={48} className="text-champagne-500" />
-                  </motion.div>
+              <div className="flex flex-col items-center text-center">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }}
+                  className="w-20 h-20 rounded-full bg-accent-emerald/20 border border-accent-emerald/30 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+                  <CheckCircle2 size={40} className="text-accent-emerald" />
                 </motion.div>
-                <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
-                  transition={{ repeat: Infinity, duration: 2.5 }}
-                  className="absolute inset-0 rounded-full border border-champagne-500/20" />
-                <motion.div animate={{ scale: [1, 1.8, 1], opacity: [0.2, 0, 0.2] }}
-                  transition={{ repeat: Infinity, duration: 2.5, delay: 0.5 }}
-                  className="absolute inset-0 rounded-full border border-champagne-500/10" />
+
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
+                  <p className="text-accent-emerald font-sans font-bold text-sm tracking-widest uppercase mb-2">Connected</p>
+                  <h2 className="text-4xl font-display font-black text-pearl mb-3">{scannedRest?.name || 'Restaurant'}</h2>
+                  <p className="text-neutral-400 text-sm font-sans mb-8 max-w-[280px] mx-auto leading-relaxed">
+                    Table synchronized. Ready to explore the interactive 3D menu.
+                  </p>
+                </motion.div>
+
+                <motion.button onClick={handleEnterMenu}
+                  initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  className="w-full font-sans font-black py-5 rounded-2xl flex items-center justify-center gap-3 text-lg bg-accent-blue text-white shadow-[0_10px_30px_rgba(59,130,246,0.4)]">
+                  Launch Experience <ChevronRight size={22} />
+                </motion.button>
               </div>
-
-              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Star size={12} className="text-champagne-500 fill-champagne-500" />
-                  <p className="text-champagne-500 font-sans font-semibold text-xs tracking-[0.3em] uppercase">Table Verified</p>
-                  <Star size={12} className="text-champagne-500 fill-champagne-500" />
-                </div>
-                <h2 className="text-4xl font-serif font-bold text-pearl mb-3">{scannedRest?.name}</h2>
-                <p className="text-neutral-500 text-sm font-sans mb-10 max-w-xs">
-                  Your interactive 3D menu is ready. Explore dishes in stunning augmented reality.
-                </p>
-              </motion.div>
-
-              <motion.button onClick={handleEnterMenu}
-                initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}
-                whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                className="w-full max-w-xs font-sans font-bold py-5 rounded-2xl flex items-center justify-center gap-3 text-base"
-                style={{
-                  background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)',
-                  color: '#0B0C10',
-                  boxShadow: '0 8px 40px rgba(212,175,55,0.4)'
-                }}>
-                Explore Menu <ChevronRight size={20} />
-              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -259,11 +219,10 @@ export default function ScannerPage() {
       {/* Vendor link */}
       {!scanned && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-          className="absolute bottom-8 left-0 right-0 z-30 flex justify-center">
+          className="absolute bottom-10 left-0 right-0 z-30 flex justify-center">
           <button onClick={() => navigate('/vendor-auth')}
-            className="font-sans text-xs font-medium px-6 py-3 rounded-full transition-all border border-white/5 text-neutral-500 hover:text-champagne-400 hover:border-champagne-500/20"
-            style={{ background: 'rgba(11,12,16,0.7)', backdropFilter: 'blur(16px)' }}>
-            Restaurant Partner? <span className="text-champagne-500">Sign in →</span>
+            className="font-sans text-xs font-semibold px-6 py-3 rounded-full transition-all border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 bg-midnight-900/50 backdrop-blur-md">
+            Restaurant Partner? <span className="text-accent-blue ml-1">Sign in</span>
           </button>
         </motion.div>
       )}
