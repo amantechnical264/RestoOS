@@ -255,6 +255,7 @@ export default function VendorDashboardPage() {
 
   const TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
+    { key: 'floor',     icon: Bell,         label: 'Floor',    badge: serviceAlerts.length },
     { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
     { key: 'menu',      icon: Utensils,     label: 'Menu' },
     { key: 'growth',    icon: Zap,          label: 'Growth' },
@@ -435,6 +436,52 @@ export default function VendorDashboardPage() {
                       <span className="font-bold">${(o.total||0).toFixed(2)}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ════════════════════ FLOOR & SERVICE HUB ════════════════════ */}
+          {vendorTab === 'floor' && (
+            <motion.div key="floor" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 overflow-y-auto p-6">
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div>
+                  <h2 className="font-display font-black text-2xl">Floor & Service Hub</h2>
+                  <p className="text-sm text-neutral-500 mt-0.5">Manage customer requests and active tables</p>
+                </div>
+                
+                <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm min-h-[50vh]">
+                  {serviceAlerts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full py-20 text-neutral-400 opacity-60">
+                      <CheckCircle size={48} className="mb-4 text-emerald-500" />
+                      <p className="font-display font-black text-lg text-neutral-900 dark:text-white">All Clear on the Floor</p>
+                      <p className="text-sm">No active service requests right now.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <AnimatePresence>
+                        {serviceAlerts.map((alert, idx) => (
+                          <motion.div key={idx} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                            className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/40 p-5 rounded-2xl flex flex-col justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                                <Bell size={24} className="text-amber-500" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Table {alert.tableNumber}</p>
+                                <p className="font-display font-black text-lg text-neutral-900 dark:text-white">{alert.type}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))}
+                              className="w-full py-3 rounded-xl bg-amber-500 text-white font-black text-sm hover:bg-amber-600 transition-colors shadow-sm">
+                              Mark as Resolved
+                            </button>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -732,9 +779,51 @@ export default function VendorDashboardPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Cover Image URL</label>
-                      <input type="url" value={editingDish.cover || ''} onChange={e => setEditingDish({...editingDish, cover: e.target.value})}
-                        placeholder="https://..."
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                      <div className="relative flex items-center">
+                        <input type="url" value={editingDish.cover || ''} onChange={e => setEditingDish({...editingDish, cover: e.target.value})}
+                          placeholder="https://..."
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 pr-12 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                        <input type="file" accept="image/*" className="hidden" id="cover-upload" onChange={async e => {
+                          const file = e.target.files[0];
+                          if(file) {
+                            showNotification('Uploading image...');
+                            const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
+                            const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
+                            if (!error) {
+                              const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
+                              setEditingDish(prev => ({...prev, cover: pub.publicUrl}));
+                              showNotification('Image uploaded!');
+                            } else showNotification('Upload failed');
+                          }
+                        }} />
+                        <label htmlFor="cover-upload" className="absolute right-3 cursor-pointer text-neutral-400 hover:text-blue-500 transition-colors p-1 bg-white dark:bg-[#1a1a1f] rounded-md shadow-sm border border-neutral-200 dark:border-white/10">
+                          <Upload size={14} />
+                        </label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Spice Level</label>
+                        <select value={editingDish.spiceLevel || ''} onChange={e => setEditingDish({...editingDish, spiceLevel: e.target.value})}
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 dark:text-white transition-all cursor-pointer">
+                          <option value="">None</option>
+                          <option value="Mild">Mild</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Hot">Hot</option>
+                          <option value="Extra Hot">Extra Hot</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dietary Preference</label>
+                        <select value={editingDish.dietaryPreference || ''} onChange={e => setEditingDish({...editingDish, dietaryPreference: e.target.value})}
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 dark:text-white transition-all cursor-pointer">
+                          <option value="">None</option>
+                          <option value="Vegetarian">Vegetarian</option>
+                          <option value="Vegan">Vegan</option>
+                          <option value="Gluten-Free">Gluten-Free</option>
+                          <option value="Halal">Halal</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
@@ -752,15 +841,37 @@ export default function VendorDashboardPage() {
                         <p className="text-xs text-neutral-400 mt-1">Enables AR view for customers</p>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <div className="flex-1 py-3 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/30 flex items-center gap-2">
-                          <CheckCircle size={16} className="text-emerald-500 shrink-0" />
-                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate">3D Model Attached</span>
+                      <div className="space-y-4">
+                        <div className="flex gap-2">
+                          <div className="flex-1 py-3 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/30 flex items-center gap-2">
+                            <CheckCircle size={16} className="text-emerald-500 shrink-0" />
+                            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate">3D Model Attached</span>
+                          </div>
+                          <button type="button" onClick={() => window.open(editingDish.modelUrl, '_blank')}
+                            className="px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors font-bold text-xs flex items-center gap-2">
+                            <Eye size={15} /> Preview
+                          </button>
+                          <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: ''})}
+                            className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-500 hover:bg-red-100 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
                         </div>
-                        <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: ''})}
-                          className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-500 hover:bg-red-100 transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                        
+                        {/* Live Model Preview */}
+                        <div className="w-full h-64 bg-neutral-100 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden relative">
+                          <div dangerouslySetInnerHTML={{__html: `
+                            <model-viewer
+                              src="${editingDish.modelUrl}"
+                              auto-rotate rotation-per-second="10deg"
+                              camera-controls touch-action="pan-y"
+                              shadow-intensity="1.5" environment-image="neutral" exposure="1.2"
+                              style="width:100%;height:100%;--poster-color:transparent;"
+                            ></model-viewer>
+                          `}} />
+                          <div className="absolute top-3 left-3 px-2 py-1 bg-black/50 backdrop-blur-md rounded-md text-[9px] font-black text-white tracking-widest uppercase border border-white/10">
+                            Live Preview
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -37,25 +37,27 @@ export default function Dish3DPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-[100dvh] relative overflow-hidden bg-[#0d0d10]">
+      className="flex flex-col h-[100dvh] relative overflow-hidden bg-white dark:bg-[#0d0d10] transition-colors">
 
       {/* ══════════════════════════════════════════════════════ */}
       {/* HERO — Full-bleed food photo                          */}
       {/* ══════════════════════════════════════════════════════ */}
-      <div className="relative flex-shrink-0 h-[42vh] overflow-hidden bg-[#111115]">
+      <div className="relative flex-shrink-0 h-[42vh] overflow-hidden bg-neutral-100 dark:bg-[#111115]">
         {dish.cover ? (
           <img src={dish.cover} alt={dish.name}
             className="w-full h-full object-cover" />
         ) : modelUrl ? (
           <div className="w-full h-full" dangerouslySetInnerHTML={{__html: `
             <model-viewer
-              src="${modelUrl}"
-              auto-rotate auto-rotate-delay="0" rotation-per-second="12deg"
-              camera-controls camera-orbit="0deg 75deg 110%"
-              shadow-intensity="1.5" environment-image="neutral" exposure="1.2"
-              interaction-prompt="none"
-              style="width:100%;height:100%;--poster-color:transparent;"
-            ></model-viewer>
+                src="${modelUrl}"
+                auto-rotate auto-rotate-delay="0" rotation-per-second="10deg"
+                camera-controls touch-action="pan-y"
+                camera-orbit="0deg 75deg 100%" min-camera-orbit="auto auto 5%" max-camera-orbit="auto auto 200%"
+                shadow-intensity="1.5" environment-image="neutral" exposure="1.2"
+                interaction-prompt="auto"
+                ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor"
+                style="width:100%;height:100%;--poster-color:transparent;"
+              ></model-viewer>
           `}} />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -64,7 +66,7 @@ export default function Dish3DPage() {
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0d0d10]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white dark:to-[#0d0d10] transition-colors" />
 
         {/* Top controls */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-12 z-20">
@@ -94,27 +96,24 @@ export default function Dish3DPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* DETAILS SHEET — slides up from bottom                 */}
+      {/* DETAILS SHEET — scrollable container                  */}
       {/* ══════════════════════════════════════════════════════ */}
       <motion.div
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 60 }}
-        dragElastic={0.15}
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-        className="flex-1 overflow-y-auto no-scrollbar rounded-t-[2rem] bg-[#0d0d10] border-t border-white/8 z-30"
-        style={{ boxShadow: '0 -20px 60px rgba(0,0,0,0.6)' }}
+        className="flex-1 overflow-y-auto no-scrollbar rounded-t-[2rem] bg-white dark:bg-[#0d0d10] border-t border-neutral-200 dark:border-white/8 z-30 transition-colors"
+        style={{ boxShadow: '0 -20px 60px rgba(0,0,0,0.1)' }}
       >
         {/* Drag handle */}
-        <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mt-3 mb-5 cursor-grab active:cursor-grabbing" />
+        <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/15 mx-auto mt-3 mb-5 cursor-grab active:cursor-grabbing" />
 
         <div className="px-5 pb-40">
 
           {/* ── Name + Price ── */}
           <div className="flex justify-between items-start mb-3">
             <div className="flex-1 pr-4">
-              <h1 className="font-display font-black text-[28px] text-white leading-tight tracking-tight">{dish.name}</h1>
+              <h1 className="font-display font-black text-[28px] text-neutral-900 dark:text-white leading-tight tracking-tight">{dish.name}</h1>
             </div>
             <div className="shrink-0 mt-1">
               <span className="inline-block px-4 py-2 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 font-display font-black text-xl text-[#D4AF37]">
@@ -130,46 +129,62 @@ export default function Dish3DPage() {
           </div>
 
           {/* ── Description ── */}
-          <p className="text-sm text-neutral-300 leading-relaxed mb-5">{dish.description || 'A carefully crafted dish made with the finest seasonal ingredients.'}</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300 leading-relaxed mb-5">{dish.description || 'A carefully crafted dish made with the finest seasonal ingredients.'}</p>
 
           {/* ── Stats Row: Calories + Prep Time ── */}
           <div className="grid grid-cols-2 gap-3 mb-5">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#1a1a1f] border border-white/6">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
               <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
                 <Flame size={18} className="text-orange-500" />
               </div>
               <div>
-                <p className="font-display font-black text-2xl text-white leading-none">{dish.macros?.calories || '—'}</p>
+                <p className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-none">{dish.macros?.calories || '—'}</p>
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Calories</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#1a1a1f] border border-white/6">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
               <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center">
-                <Clock size={18} className="text-blue-400" />
+                <Clock size={18} className="text-blue-500 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-display font-black text-2xl text-white leading-none">{dish.prepTime || '18'} <span className="text-base font-semibold text-neutral-400">min</span></p>
+                <p className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-none">{dish.prepTime || '18'} <span className="text-base font-semibold text-neutral-400">min</span></p>
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Prep Time</p>
               </div>
             </div>
           </div>
 
+          {/* ── Dietary & Spice Info ── */}
+          {(dish.spiceLevel || dish.dietaryPreference) && (
+            <div className="flex gap-2 mb-5">
+              {dish.spiceLevel && (
+                <div className={`px-3 py-1.5 rounded-full border text-[11px] font-bold flex items-center gap-1.5 ${dish.spiceLevel === 'Hot' || dish.spiceLevel === 'Extra Hot' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30' : dish.spiceLevel === 'Medium' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-900/30' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30'}`}>
+                  <Flame size={12} /> {dish.spiceLevel}
+                </div>
+              )}
+              {dish.dietaryPreference && (
+                <div className="px-3 py-1.5 rounded-full border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 text-[11px] font-bold flex items-center gap-1.5">
+                  <Leaf size={12} /> {dish.dietaryPreference}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Provenance / Origin Story ── */}
           {(dish.origin || dish.provenance) && (
-            <div className="mb-5 p-4 rounded-2xl bg-[#1a1a1f] border border-white/6">
+            <div className="mb-5 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
               <div className="flex items-center gap-2 mb-2">
                 <MapPin size={13} className="text-[#D4AF37]" />
                 <span className="text-[11px] font-black text-[#D4AF37] uppercase tracking-[0.2em]">
                   {dish.origin || 'Sourced Fresh Daily'}
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 leading-relaxed">{dish.provenance}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{dish.provenance}</p>
             </div>
           )}
 
           {/* ── Macro Bars ── */}
           {(dish.macros?.protein || dish.macros?.carbs || dish.macros?.fat) && (
-            <div className="mb-5 p-4 rounded-2xl bg-[#1a1a1f] border border-white/6">
+            <div className="mb-5 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
               <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-4">Nutrition</p>
               <div className="space-y-3.5">
                 {[
@@ -180,7 +195,7 @@ export default function Dish3DPage() {
                   <div key={m.label} className="flex items-center gap-3">
                     <div className="w-5 flex justify-center shrink-0">{m.icon}</div>
                     <span className="text-[11px] font-bold text-neutral-500 w-12 shrink-0">{m.label}</span>
-                    <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div className="flex-1 h-1.5 rounded-full bg-neutral-200 dark:bg-white/5 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }} animate={{ width: `${macroPercent(m.value, m.max)}%` }}
                         transition={{ delay: 0.4, duration: 0.9, ease: 'easeOut' }}
@@ -201,7 +216,7 @@ export default function Dish3DPage() {
               <div className="flex flex-wrap gap-2">
                 {dish.ingredients.map(ing => (
                   <span key={ing}
-                    className="px-3 py-1.5 rounded-full bg-[#1a1a1f] border border-white/8 text-[12px] font-medium text-neutral-300">
+                    className="px-3 py-1.5 rounded-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/8 text-[12px] font-medium text-neutral-600 dark:text-neutral-300">
                     {ing}
                   </span>
                 ))}
@@ -230,7 +245,7 @@ export default function Dish3DPage() {
           {dish.tags?.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-5">
               {dish.tags.map(tag => (
-                <span key={tag} className="px-3 py-1 rounded-full bg-white/5 border border-white/8 text-[11px] font-bold text-neutral-400">
+                <span key={tag} className="px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/8 text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
                   {tag}
                 </span>
               ))}
@@ -242,19 +257,19 @@ export default function Dish3DPage() {
       {/* ══════════════════════════════════════════════════════ */}
       {/* STICKY BOTTOM ACTIONS                                  */}
       {/* ══════════════════════════════════════════════════════ */}
-      <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12"
-        style={{ background: 'linear-gradient(to top, #0d0d10 50%, transparent)' }}>
+      <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12 dark:bg-transparent bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#0d0d10] dark:via-[#0d0d10]/80 transition-colors">
 
         {/* AR Button */}
         {modelUrl && (
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            className="mb-3 w-full py-4 rounded-2xl flex items-center justify-center gap-3 cursor-pointer border border-white/10 bg-white/5 backdrop-blur-md"
+            className="mb-3 w-full py-4 rounded-2xl flex items-center justify-center gap-3 cursor-pointer border border-neutral-200 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-md shadow-sm"
             dangerouslySetInnerHTML={{__html: `
-              <model-viewer src="${modelUrl}" ar ar-modes="webxr scene-viewer quick-look" style="display:none;"></model-viewer>
+              <model-viewer src="${modelUrl}" ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor" style="display:none;"></model-viewer>
               <button onclick="document.querySelectorAll('model-viewer').forEach(mv=>mv.activateAR())"
                 style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
-                       background:transparent;border:none;color:white;font-family:Outfit,sans-serif;
-                       font-size:15px;font-weight:900;letter-spacing:0.05em;cursor:pointer;">
+                       background:transparent;border:none;color:inherit;font-family:Outfit,sans-serif;
+                       font-size:15px;font-weight:900;letter-spacing:0.05em;cursor:pointer;"
+                class="text-neutral-900 dark:text-white">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                   <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
