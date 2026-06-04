@@ -38,13 +38,8 @@ function OrderTimeline({ currentStatus }) {
             <motion.div
               initial={false}
               animate={{ scale: isActive ? 1.25 : 1 }}
-              className="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500"
-              style={{
-                background: isCompleted ? goldGradient : '#111',
-                borderColor: isCompleted ? GOLD : 'rgba(255,255,255,0.1)',
-                boxShadow: isActive ? `0 0 16px rgba(212,175,55,0.6)` : 'none',
-                color: isCompleted ? '#000' : 'rgba(255,255,255,0.3)',
-              }}
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 z-10 transition-colors bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10"
+              style={isCompleted ? { background: goldGradient, border: 'none', boxShadow: '0 4px 15px rgba(212,175,55,0.3)', color: '#000' } : { color: 'rgba(255,255,255,0.3)' }}
             >
               <step.icon size={14} />
             </motion.div>
@@ -68,7 +63,7 @@ export default function DinerOrdersPage() {
       .filter(o => o.restId === (order.restId || order.rest_id) || o.rest_id === (order.restId || order.rest_id))
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const index = vendorOrders.findIndex(o => o.id === order.id);
-    return index !== -1 ? `Order #${String(index + 1).padStart(3, '0')}` : `#${order.id.slice(-3)}`;
+    return index !== -1 ? `${String(index + 1).padStart(3, '0')}` : `${order.id.slice(-3)}`;
   };
 
   const myOrders = orders.filter(o => {
@@ -76,11 +71,7 @@ export default function DinerOrdersPage() {
     return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous';
   });
 
-  const cardStyle = {
-    background: 'linear-gradient(145deg, #111111 0%, #080808 100%)',
-    border: '1px solid rgba(212,175,55,0.15)',
-    boxShadow: '0 4px 30px rgba(0,0,0,0.8)',
-  };
+  const cardStyleClass = "bg-white dark:bg-gradient-to-br dark:from-[#111111] dark:to-[#080808] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)] shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.8)]";
 
   return (
     <motion.div
@@ -89,16 +80,15 @@ export default function DinerOrdersPage() {
     >
       {/* Header */}
       <div
-        className="px-6 py-5 sticky top-0 z-10"
-        style={{ background: 'rgba(0,0,0,0.95)', borderBottom: '1px solid rgba(212,175,55,0.15)', backdropFilter: 'blur(20px)' }}
+        className="px-6 py-5 sticky top-0 z-10 bg-white/95 dark:bg-black/95 border-b border-neutral-200 dark:border-[rgba(212,175,55,0.15)] backdrop-blur-xl"
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)' }}>
             <Crown size={16} style={{ color: GOLD }} />
           </div>
           <div>
-            <h1 className="text-xl font-display font-black text-white">{t('orders.liveTracking', 'Live Order Tracking')}</h1>
-            <p className="text-xs text-neutral-500">{myOrders.length} order{myOrders.length !== 1 ? 's' : ''} active</p>
+            <h1 className="text-xl font-display font-black text-neutral-900 dark:text-white">{t('orders.liveTracking', 'Live Order Tracking')}</h1>
+            <p className="text-xs text-neutral-500">{myOrders.length} {t('orders.activeOrders', 'Active Orders')}</p>
           </div>
         </div>
       </div>
@@ -120,35 +110,26 @@ export default function DinerOrdersPage() {
             <motion.div
               key={order.id}
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
-              className="rounded-3xl p-6 shadow-lg dark:shadow-none bg-white dark:bg-transparent"
-              style={document.documentElement.classList.contains('dark') ? cardStyle : { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '1.5rem' }}
+              className={`rounded-3xl p-6 shadow-lg ${cardStyleClass}`}
             >
-              {/* Order header */}
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="font-black text-lg text-neutral-900 dark:text-white">
-                    {restaurants.find(r => r.id === (order.restId || order.rest_id))?.name || 'Restaurant'}
-                  </span>
-                  <span className="block text-xs font-bold mt-0.5 uppercase tracking-wider">
-                    <span style={{ color: GOLD }}>{getOrderNumber(order)}</span>
-                    <span className="text-neutral-500"> • {order.orderType === 'prepaid' ? `Pre-Order @ ${order.scheduledTime}` : 'Dine-In'}</span>
-                  </span>
-                </div>
+              <div className="flex justify-between items-center pb-3 mb-3 border-b border-neutral-100 dark:border-white/5">
+                <span className="font-display font-black text-lg text-neutral-900 dark:text-white">
+                  {t('orders.orderNo', 'Order')} #{getOrderNumber(order)}
+                </span>
+                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}</span>
               </div>
 
               {/* Pending Verification */}
               {order.status === 'Pending Verification' && (
-                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-6 mt-4">
-                  <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className={`mt-4 rounded-3xl p-5 ${cardStyleClass}`}>
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(212,175,55,0.1)' }}>
                       <ShieldCheck size={24} style={{ color: GOLD }} />
                     </div>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Verification Code</p>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
                     {order.verificationCode && (
-                      <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2" style={{ color: GOLD }}>{order.verificationCode}</p>
+                      <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
                     )}
-                    <p className="text-sm text-neutral-500">Show this code to the waiter to confirm your table.</p>
-                  </div>
+                    <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
                 </motion.div>
               )}
 
@@ -174,7 +155,7 @@ export default function DinerOrdersPage() {
                 <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
                   {order.items.map((item, i) => (
                     <li key={i} className="flex justify-between">
-                      <span>1× {item.name}</span>
+                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{item.quantity}x {item.name}</span>
                       <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
                     </li>
                   ))}

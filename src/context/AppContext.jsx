@@ -99,7 +99,11 @@ export const AppProvider = ({ children }) => {
       return; 
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error('Session error:', error);
+      }
+      const session = data?.session;
       const u = session?.user || null;
       setSupabaseUser(u);
       if (u) {
@@ -107,9 +111,9 @@ export const AppProvider = ({ children }) => {
         setUser(prev => {
           if (prev?.role === 'diner') {
             // Diner signed in via Google for pre-order — keep diner role, just enrich
-            return { ...prev, email: u.email, uid: u.id };
+            return { ...prev, email: u?.email, uid: u?.id };
           }
-          return { ...prev, email: u.email, uid: u.id, role: 'vendor' };
+          return { ...prev, email: u?.email, uid: u?.id, role: 'vendor' };
         });
       }
       setIsInitializing(false);

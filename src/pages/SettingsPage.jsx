@@ -13,10 +13,10 @@ const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 1
 function Section({ title, icon: Icon, children }) {
   return (
     <div>
-      <h2 className="font-display font-black text-base mb-3 flex items-center gap-2 text-white">
+      <h2 className="font-display font-black text-base mb-3 flex items-center gap-2 text-neutral-900 dark:text-white">
         <Icon size={16} style={{ color: GOLD }} /> {title}
       </h2>
-      <div className="rounded-3xl p-5 space-y-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+      <div className="rounded-3xl p-5 space-y-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[#D4AF37]/15 shadow-sm dark:shadow-none">
         {children}
       </div>
     </div>
@@ -48,8 +48,8 @@ export default function SettingsPage() {
     navigate('/scanner', { replace: true });
   };
 
-  const inputClass = "w-full rounded-xl p-3 text-sm bg-black border text-white focus:outline-none focus:ring-0";
-  const inputStyle = { borderColor: 'rgba(212,175,55,0.2)' };
+  const inputClass = "w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-[#D4AF37]/20 text-neutral-900 dark:text-white focus:outline-none focus:ring-0";
+  const inputStyle = {};
 
   return (
     <motion.div
@@ -58,26 +58,23 @@ export default function SettingsPage() {
     >
       {/* Header */}
       <div
-        className="px-5 py-4 sticky top-0 z-10 flex items-center gap-4"
-        style={{ background: 'rgba(0,0,0,0.95)', borderBottom: '1px solid rgba(212,175,55,0.15)', backdropFilter: 'blur(20px)' }}
+        className="px-5 py-4 sticky top-0 z-10 flex items-center gap-4 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-b border-neutral-200 dark:border-[#D4AF37]/15"
       >
         <button
           onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all"
-          style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all bg-neutral-100 dark:bg-[#D4AF37]/10 border border-neutral-200 dark:border-[#D4AF37]/20"
         >
           <ChevronLeft size={20} style={{ color: GOLD }} />
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-display font-black text-white flex items-center gap-2">
+          <h1 className="text-xl font-display font-black text-neutral-900 dark:text-white flex items-center gap-2">
             <SettingsIcon size={18} style={{ color: GOLD }} /> Settings
           </h1>
           <p className="text-xs text-neutral-500">Preferences & account</p>
         </div>
         <button
           onClick={toggleTheme}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all"
-          style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all bg-neutral-100 dark:bg-[#D4AF37]/10 border border-neutral-200 dark:border-[#D4AF37]/20"
         >
           {theme === 'dark'
             ? <Sun size={18} style={{ color: GOLD }} />
@@ -99,7 +96,7 @@ export default function SettingsPage() {
                 {(user.email || user.phone || 'A')[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm truncate text-white">{user.email || user.phone || 'Anonymous Diner'}</p>
+                <p className="font-bold text-sm truncate text-neutral-900 dark:text-white">{user.email || user.phone || 'Anonymous Diner'}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Crown size={10} style={{ color: GOLD }} />
                   <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: GOLD }}>
@@ -129,11 +126,12 @@ export default function SettingsPage() {
               <button
                 key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
-                className="py-3 rounded-2xl font-bold transition-all text-sm"
-                style={userPreferences.language === lang.code
-                  ? { background: goldGradient, color: '#000', boxShadow: '0 4px 15px rgba(212,175,55,0.3)' }
-                  : { background: '#111', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }
-                }
+                className={`py-3 rounded-2xl font-bold transition-all text-sm border ${
+                  userPreferences.language === lang.code
+                    ? 'text-black shadow-[0_4px_15px_rgba(212,175,55,0.3)] border-transparent'
+                    : 'bg-neutral-50 dark:bg-[#111] border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-white/40'
+                }`}
+                style={userPreferences.language === lang.code ? { background: goldGradient } : {}}
               >
                 <div className="text-xl mb-1">{lang.flag}</div>
                 <div className="text-xs">{lang.label}</div>
@@ -198,7 +196,7 @@ export default function SettingsPage() {
         <Section title="Appearance" icon={Sun}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-bold text-white">Dark Mode</p>
+              <p className="text-sm font-bold text-neutral-900 dark:text-white">Dark Mode</p>
               <p className="text-xs text-neutral-500 mt-0.5">Premium black & gold theme</p>
             </div>
             <button
