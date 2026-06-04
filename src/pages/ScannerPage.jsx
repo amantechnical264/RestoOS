@@ -86,7 +86,7 @@ export default function ScannerPage() {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen relative overflow-hidden bg-neutral-50 dark:bg-white dark:bg-midnight-900 transition-colors"
+      className="flex flex-col h-screen relative overflow-hidden bg-neutral-50 dark:bg-black transition-colors"
     >
       {/* SaaS Tech Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full opacity-20 dark:opacity-10 pointer-events-none blur-[100px]"
@@ -141,7 +141,7 @@ export default function ScannerPage() {
                 <div className="absolute -inset-4 border-[1px] border-dashed border-[#AA8C2C]/20 rounded-full animate-[reticleSpin_8s_linear_infinite_reverse]" />
 
                 {/* Main viewfinder */}
-                <div className="w-72 h-72 rounded-[2rem] relative overflow-hidden bg-white/80 dark:bg-neutral-50 dark:bg-midnight-800/80 backdrop-blur-xl border border-neutral-200 dark:border-white/10 shadow-[0_0_50px_rgba(212,175,55,0.15)] transition-colors">
+                <div className="w-72 h-72 rounded-[2rem] relative overflow-hidden bg-white/90 dark:bg-black backdrop-blur-xl transition-colors" style={{ border: '1px solid rgba(212,175,55,0.2)', boxShadow: '0 0 50px rgba(212,175,55,0.15)' }}>
                   
                   {/* Scanner Beam */}
                   <motion.div
@@ -176,8 +176,9 @@ export default function ScannerPage() {
               {/* Demo/Simulate button */}
               <motion.button onClick={simulateScan}
                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-3 font-sans font-bold text-sm px-8 py-4 rounded-full transition-all border bg-white dark:bg-white/5 border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-white/10 backdrop-blur-md shadow-sm">
-                <Zap size={16} className="text-[#D4AF37]" />
+                className="flex items-center gap-3 font-sans font-bold text-sm px-8 py-4 rounded-full transition-all backdrop-blur-md"
+                style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37' }}>
+                <Zap size={16} />
                 {t('scanner.simulate', 'Simulate QR Scan')}
               </motion.button>
             </motion.div>
@@ -187,8 +188,8 @@ export default function ScannerPage() {
             <motion.div key="success"
               initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 left-0 right-0 w-full pt-8 pb-10 px-6 rounded-t-[3rem] border-t border-neutral-200 dark:border-white/10"
-              style={{ background: 'rgba(18, 20, 29, 0.85)', backdropFilter: 'blur(40px)', boxShadow: '0 -20px 60px rgba(0,0,0,0.5)' }}>
+              className="absolute bottom-0 left-0 right-0 w-full pt-8 pb-10 px-6 rounded-t-[3rem]"
+              style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(40px)', borderTop: '1px solid rgba(212,175,55,0.25)', boxShadow: '0 -20px 60px rgba(0,0,0,0.8)' }}>
               
               <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8" />
 
@@ -224,8 +225,9 @@ export default function ScannerPage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
           className="absolute bottom-10 left-0 right-0 z-30 flex justify-center">
           <button onClick={() => navigate('/vendor-auth')}
-            className="font-sans text-xs font-bold px-8 py-4 rounded-full transition-all border border-neutral-200 dark:border-white/20 text-neutral-900 dark:text-white bg-neutral-50 dark:bg-neutral-900 dark:text-black dark:bg-white hover:scale-105 shadow-xl flex items-center gap-2">
-            Restaurant Partner? <span className="text-[#D4AF37] dark:text-[#AA8C2C]">Sign In</span>
+            className="font-sans text-xs font-bold px-8 py-4 rounded-full transition-all hover:scale-105 flex items-center gap-2"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(212,175,55,0.25)', color: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)' }}>
+            Restaurant Partner? <span style={{ color: '#D4AF37' }}>Sign In →</span>
           </button>
         </motion.div>
       )}

@@ -31,7 +31,7 @@ const BADGE_STYLES = {
   'Trending':     { bg: 'bg-orange-900/80',   text: 'text-orange-300',  border: 'border-orange-700/50' },
   'Vegan':        { bg: 'bg-emerald-900/80',  text: 'text-emerald-300', border: 'border-emerald-700/50' },
   'Seasonal':     { bg: 'bg-sky-900/80',      text: 'text-sky-300',     border: 'border-sky-700/50' },
-  'New':          { bg: 'bg-blue-900/80',     text: 'text-blue-300',    border: 'border-blue-700/50' },
+  'New':          { bg: 'bg-blue-900/80',     text: 'text-amber-300',    border: 'border-blue-700/50' },
 };
 
 const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, onARClick }) => {
@@ -46,7 +46,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className="relative flex flex-col rounded-[1.75rem] overflow-hidden bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/5 shadow-xl group cursor-pointer"
+      className="relative flex flex-col rounded-[1.75rem] overflow-hidden bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5 shadow-xl group cursor-pointer"
       onClick={() => onDishClick(dish.id)}
     >
       {/* Food Photo */}
@@ -291,7 +291,7 @@ export default function MenuPage() {
                   autoFocus
                   value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search dishes, ingredients..."
-                  className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/8 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all"
+                  className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/8 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all"
                 />
                 <button onClick={() => { setSearch(''); setSearchOpen(false); }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:text-white text-xs px-2">✕</button>
@@ -300,7 +300,7 @@ export default function MenuPage() {
           ) : (
             <motion.button key="search-closed" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/5 text-neutral-500 text-sm mb-3 hover:border-neutral-200 dark:border-white/10 transition-all">
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5 text-neutral-500 text-sm mb-3 hover:border-neutral-200 dark:border-white/10 transition-all">
               <Search size={15} />
               <span>Search dishes, ingredients...</span>
             </motion.button>
@@ -314,7 +314,7 @@ export default function MenuPage() {
               className={`snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl border font-bold text-sm transition-all ${
                 activeCategory === cat.key 
                   ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-transparent shadow-lg shadow-black/10 dark:shadow-white/10' 
-                  : 'bg-white dark:bg-[#1a1a1f] text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-[#222228]'
+                  : 'bg-white dark:bg-[#0a0a0a] text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-[#222228]'
               }`}>
               <span>{cat.emoji}</span> {cat.label}
             </button>
@@ -368,7 +368,7 @@ export default function MenuPage() {
             <button className="text-xs font-bold text-indigo-500">View All</button>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x pb-4">
-            <div className="shrink-0 w-[280px] snap-start bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
+            <div className="shrink-0 w-[280px] snap-start bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
               <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex flex-col items-center justify-center mb-4 border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
                  <span className="text-[10px] font-black uppercase tracking-widest">Oct</span>
                  <span className="text-xl font-black">28</span>
@@ -393,11 +393,11 @@ export default function MenuPage() {
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
               className="flex flex-col gap-3 mb-4 items-end"
             >
-              <button onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#1a1a1f]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
+              <button onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
                 <span className="text-sm font-bold">Water</span>
                 <Droplets size={16} className="text-blue-400" />
               </button>
-              <button onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#1a1a1f]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
+              <button onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
                 <span className="text-sm font-bold">Bill</span>
                 <Receipt size={16} className="text-emerald-400" />
               </button>
@@ -412,7 +412,7 @@ export default function MenuPage() {
           onClick={() => setServiceHubOpen(!serviceHubOpen)}
           className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border ${
             serviceHubOpen 
-              ? 'bg-neutral-50 dark:bg-[#1a1a1f] border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white' 
+              ? 'bg-neutral-50 dark:bg-[#0a0a0a] border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white' 
               : 'bg-gradient-to-tr from-[#D4AF37] to-amber-300 border-amber-300/50 text-black'
           }`}
         >
@@ -442,12 +442,12 @@ export default function MenuPage() {
                 <div>
                   <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Your Name</label>
                   <input required type="text" value={dinerName} onChange={e => setDinerName(e.target.value)} placeholder="e.g. John Doe"
-                    className="w-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                    className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
                   <input required type="tel" value={dinerPhone} onChange={e => setDinerPhone(e.target.value)} placeholder="e.g. 9876543210"
-                    className="w-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                    className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                 </div>
                 <button type="submit" className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
                   View Menu

@@ -65,7 +65,7 @@ export default function CartPage() {
 
   if (cart.length === 0 && step !== 'success') {
     return (
-      <div className="flex flex-col h-[100dvh] items-center justify-center pb-20 bg-white dark:bg-midnight-900 text-neutral-900 dark:text-pearl font-sans">
+      <div className="flex flex-col h-[100dvh] items-center justify-center pb-20 bg-white dark:bg-black text-neutral-900 dark:text-pearl font-sans">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 bg-white/5 border border-neutral-200 dark:border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.05)]">
             <ShoppingCart size={36} className="text-neutral-500" />
@@ -73,7 +73,7 @@ export default function CartPage() {
           <p className="font-display font-black text-2xl text-neutral-900 dark:text-white mb-2">Cart is empty</p>
           <p className="text-neutral-500 text-sm mb-8">Ready to explore the interactive menu?</p>
           <button onClick={() => navigate('/menu')}
-            className="font-sans font-bold px-8 py-4 rounded-2xl transition-all bg-accent-blue text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(59,130,246,0.3)] hover:bg-blue-600">
+            className="font-sans font-bold px-8 py-4 rounded-2xl transition-all bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)] ">
             Browse Menu
           </button>
         </motion.div>
@@ -148,14 +148,14 @@ export default function CartPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-[100dvh] bg-white dark:bg-midnight-900 text-neutral-900 dark:text-pearl font-sans relative">
+      className="flex flex-col h-[100dvh] bg-white dark:bg-black text-neutral-900 dark:text-pearl font-sans relative">
       
       {/* SaaS Grid Background */}
       <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
       {/* Header */}
-      <div className="p-6 pt-14 sticky top-0 z-20 bg-white dark:bg-midnight-900/80 backdrop-blur-xl border-b border-neutral-200 dark:border-white/5">
+      <div className="p-6 pt-14 sticky top-0 z-20 bg-white dark:bg-black/80 backdrop-blur-xl border-b border-neutral-200 dark:border-white/5">
         <div className="flex items-center gap-4 mb-6">
           <button onClick={handleBack}
             className="w-10 h-10 rounded-full flex items-center justify-center transition-all bg-white/5 border border-neutral-200 dark:border-white/10 hover:bg-white/10">
@@ -171,13 +171,13 @@ export default function CartPage() {
               <React.Fragment key={label}>
                 <div className="flex flex-col items-center gap-1.5 z-10">
                   <div className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                    currentStepIdx >= idx ? 'bg-accent-blue shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-white/10 border border-neutral-200 dark:border-white/20'
+                    currentStepIdx >= idx ? 'bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] shadow-[0_0_15px_rgba(212,175,55,0.5)]' : 'bg-white/10 border border-neutral-200 dark:border-white/20'
                   }`} />
                   <span className={`text-[9px] font-bold uppercase tracking-widest ${currentStepIdx >= idx ? 'text-neutral-900 dark:text-white' : 'text-neutral-600'}`}>{label}</span>
                 </div>
                 {idx < STEP_LABELS.length - 1 && (
                   <div className="flex-1 h-px bg-white/5 mx-2 relative overflow-hidden">
-                    <motion.div className="absolute top-0 left-0 h-full bg-accent-blue"
+                    <motion.div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C]"
                       initial={{ width: 0 }}
                       animate={{ width: currentStepIdx > idx ? '100%' : '0%' }}
                       transition={{ duration: 0.5 }}
@@ -215,14 +215,14 @@ export default function CartPage() {
                 <motion.div layout key={item.cartId}
                   drag="x" dragConstraints={{ left: -80, right: 0 }}
                   onDragEnd={(e, info) => { if (info.offset.x < -50) setCart(cart.filter(c => c.cartId !== item.cartId)); }}
-                  className="relative flex items-center bg-neutral-50 dark:bg-midnight-800 border border-neutral-200 dark:border-white/5 rounded-3xl p-4 shadow-md cursor-grab active:cursor-grabbing group">
+                  className="relative flex items-center bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/5 rounded-3xl p-4 shadow-md cursor-grab active:cursor-grabbing group">
                   
                   {/* Swipe to delete background indicator */}
                   <div className="absolute inset-y-0 right-0 w-20 flex items-center justify-center bg-red-500/20 text-red-500 rounded-r-3xl border border-red-500/20 opacity-0 group-active:opacity-100 transition-opacity pointer-events-none">
                     <Trash2 size={20} />
                   </div>
 
-                  <div className="relative z-10 flex-1 flex flex-col bg-neutral-50 dark:bg-midnight-800 w-full rounded-3xl gap-3">
+                  <div className="relative z-10 flex-1 flex flex-col bg-neutral-50 dark:bg-[#111] w-full rounded-3xl gap-3">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-4">
                         {item.cover ? (
@@ -236,7 +236,7 @@ export default function CartPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="font-black text-lg text-accent-blue">${Number(item.price).toFixed(2)}</span>
+                        <span className="font-black text-lg text-[#D4AF37]">${Number(item.price).toFixed(2)}</span>
                       </div>
                     </div>
                     
@@ -248,7 +248,7 @@ export default function CartPage() {
                         const newCart = cart.map(c => c.cartId === item.cartId ? {...c, specialInstructions: e.target.value} : c);
                         setCart(newCart);
                       }}
-                      className="w-full text-xs bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 focus:outline-none focus:border-accent-blue transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                      className="w-full text-xs bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 focus:outline-none focus:border-[#D4AF37] transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-500"
                     />
                   </div>
                 </motion.div>
@@ -262,7 +262,7 @@ export default function CartPage() {
                   value={specialInstructions}
                   onChange={(e) => setSpecialInstructions(e.target.value)}
                   placeholder="e.g. No onions, allergy to peanuts..."
-                  className="w-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-2xl p-4 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all min-h-[100px] resize-none"
+                  className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-2xl p-4 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all min-h-[100px] resize-none"
                 />
               </div>
               
@@ -282,7 +282,7 @@ export default function CartPage() {
                 <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-5 border-b border-neutral-200 dark:border-white/10 pb-5"><span>Tax (8%)</span><span>${(total - (total / 1.08)).toFixed(2)}</span></div>
                 <div className="text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
                   <span>Total</span>
-                  <span className="text-accent-blue text-3xl">${total.toFixed(2)}</span>
+                  <span className="text-[#D4AF37] text-3xl">${total.toFixed(2)}</span>
                 </div>
               </div>
             </motion.div>
@@ -294,9 +294,9 @@ export default function CartPage() {
               <h2 className="text-xl font-display font-bold mb-6">Dining Method</h2>
               
               <div onClick={() => setOrderConf({...orderConf, type: 'dine_in'})} 
-                className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all ${orderConf.type === 'dine_in' ? 'border-accent-blue bg-accent-blue/10 shadow-[0_0_30px_rgba(59,130,246,0.15)]' : 'border-neutral-200 dark:border-white/5 bg-neutral-50 dark:bg-midnight-800 hover:border-neutral-200 dark:border-white/10'}`}>
+                className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all ${orderConf.type === 'dine_in' ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_0_30px_rgba(212,175,55,0.15)]' : 'border-neutral-200 dark:border-white/5 bg-neutral-50 dark:bg-[#111] hover:border-neutral-200 dark:border-white/10'}`}>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className={`p-4 rounded-2xl ${orderConf.type === 'dine_in' ? 'bg-accent-blue text-neutral-900 dark:text-white shadow-lg' : 'bg-white/5 text-neutral-500'}`}><MapPin size={24} /></div>
+                  <div className={`p-4 rounded-2xl ${orderConf.type === 'dine_in' ? 'bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-lg' : 'bg-white/5 text-neutral-500'}`}><MapPin size={24} /></div>
                   <div>
                     <h3 className="font-display font-bold text-lg text-neutral-900 dark:text-white">Dine-In Now</h3>
                     <p className="text-[10px] text-accent-emerald font-black uppercase tracking-wider mt-1 bg-accent-emerald/10 inline-block px-2 py-0.5 rounded-md border border-accent-emerald/20">Direct to Kitchen</p>
@@ -306,9 +306,9 @@ export default function CartPage() {
               </div>
 
               <div onClick={() => setOrderConf({...orderConf, type: 'prepaid'})} 
-                className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all ${orderConf.type === 'prepaid' ? 'border-accent-blue bg-accent-blue/10 shadow-[0_0_30px_rgba(59,130,246,0.15)]' : 'border-neutral-200 dark:border-white/5 bg-neutral-50 dark:bg-midnight-800 hover:border-neutral-200 dark:border-white/10'}`}>
+                className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all ${orderConf.type === 'prepaid' ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_0_30px_rgba(212,175,55,0.15)]' : 'border-neutral-200 dark:border-white/5 bg-neutral-50 dark:bg-[#111] hover:border-neutral-200 dark:border-white/10'}`}>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className={`p-4 rounded-2xl ${orderConf.type === 'prepaid' ? 'bg-accent-blue text-neutral-900 dark:text-white shadow-lg' : 'bg-white/5 text-neutral-500'}`}><Clock size={24} /></div>
+                  <div className={`p-4 rounded-2xl ${orderConf.type === 'prepaid' ? 'bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-lg' : 'bg-white/5 text-neutral-500'}`}><Clock size={24} /></div>
                   <div>
                     <h3 className="font-display font-bold text-lg text-neutral-900 dark:text-white">Schedule Pre-Order</h3>
                     <p className="text-[10px] text-orange-400 font-black uppercase tracking-wider mt-1 bg-orange-400/10 inline-block px-2 py-0.5 rounded-md border border-orange-400/20">Sign-in Required</p>
@@ -321,7 +321,7 @@ export default function CartPage() {
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                       <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 ml-1">Pickup Time</label>
                       <input type="time" value={orderConf.time} onChange={e => setOrderConf({...orderConf, time: e.target.value})} 
-                        className="w-full bg-white dark:bg-midnight-900 border border-neutral-200 dark:border-white/20 rounded-2xl p-4 text-neutral-900 dark:text-white font-bold text-lg focus:outline-none focus:border-accent-blue shadow-inner" />
+                        className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/20 rounded-2xl p-4 text-neutral-900 dark:text-white font-bold text-lg focus:outline-none focus:border-[#D4AF37] shadow-inner" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -380,7 +380,7 @@ export default function CartPage() {
                   <div className="relative">
                     <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
                     <input type="text" value={contactDetails.name} onChange={e => setContactDetails({...contactDetails, name: e.target.value})} placeholder="John Doe" 
-                      className="w-full bg-neutral-50 dark:bg-midnight-800 border border-neutral-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-accent-blue focus:bg-neutral-50 dark:bg-midnight-800/50 transition-colors text-neutral-900 dark:text-white font-medium" />
+                      className="w-full bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-[#D4AF37] focus:bg-neutral-50 dark:bg-[#111]/50 transition-colors text-neutral-900 dark:text-white font-medium" />
                   </div>
                 </div>
                 <div>
@@ -388,7 +388,7 @@ export default function CartPage() {
                   <div className="relative">
                     <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
                     <input type="tel" value={contactDetails.phone} onChange={e => setContactDetails({...contactDetails, phone: e.target.value})} placeholder="+1 (555) 000-0000" 
-                      className="w-full bg-neutral-50 dark:bg-midnight-800 border border-neutral-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-accent-blue focus:bg-neutral-50 dark:bg-midnight-800/50 transition-colors text-neutral-900 dark:text-white font-medium" />
+                      className="w-full bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-[#D4AF37] focus:bg-neutral-50 dark:bg-[#111]/50 transition-colors text-neutral-900 dark:text-white font-medium" />
                   </div>
                 </div>
               </div>
@@ -405,13 +405,13 @@ export default function CartPage() {
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {/* Modern Apple/Google Pay style buttons */}
                 <button onClick={() => setOrderConf({...orderConf, method: 'Digital'})}
-                  className={`py-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${orderConf.method === 'Digital' ? 'border-accent-blue bg-accent-blue/10' : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-midnight-800'}`}>
-                  <Smartphone size={24} className={orderConf.method === 'Digital' ? 'text-accent-blue' : 'text-neutral-500 dark:text-neutral-400'} />
+                  className={`py-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${orderConf.method === 'Digital' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#111]'}`}>
+                  <Smartphone size={24} className={orderConf.method === 'Digital' ? 'text-[#D4AF37]' : 'text-neutral-500 dark:text-neutral-400'} />
                   <span className={`text-xs font-bold ${orderConf.method === 'Digital' ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400'}`}>Digital Wallet</span>
                 </button>
                 <button onClick={() => setOrderConf({...orderConf, method: 'Card'})}
-                  className={`py-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${orderConf.method === 'Card' ? 'border-accent-blue bg-accent-blue/10' : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-midnight-800'}`}>
-                  <CreditCard size={24} className={orderConf.method === 'Card' ? 'text-accent-blue' : 'text-neutral-500 dark:text-neutral-400'} />
+                  className={`py-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${orderConf.method === 'Card' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#111]'}`}>
+                  <CreditCard size={24} className={orderConf.method === 'Card' ? 'text-[#D4AF37]' : 'text-neutral-500 dark:text-neutral-400'} />
                   <span className={`text-xs font-bold ${orderConf.method === 'Card' ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400'}`}>Credit Card</span>
                 </button>
               </div>
@@ -419,11 +419,11 @@ export default function CartPage() {
               <AnimatePresence>
                 {orderConf.method === 'Card' && (
                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} 
-                      className="p-5 bg-neutral-50 dark:bg-midnight-800 border border-neutral-200 dark:border-white/10 rounded-[2rem] space-y-4 mb-6">
-                      <input type="text" placeholder="Card Number" className="w-full bg-white dark:bg-midnight-900 border border-neutral-200 dark:border-white/10 rounded-xl p-4 text-sm focus:border-accent-blue focus:outline-none transition-colors text-neutral-900 dark:text-white" />
+                      className="p-5 bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/10 rounded-[2rem] space-y-4 mb-6">
+                      <input type="text" placeholder="Card Number" className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-4 text-sm focus:border-[#D4AF37] focus:outline-none transition-colors text-neutral-900 dark:text-white" />
                       <div className="flex gap-4">
-                        <input type="text" placeholder="MM/YY" className="w-1/2 bg-white dark:bg-midnight-900 border border-neutral-200 dark:border-white/10 rounded-xl p-4 text-sm focus:border-accent-blue focus:outline-none transition-colors text-neutral-900 dark:text-white" />
-                        <input type="text" placeholder="CVV" className="w-1/2 bg-white dark:bg-midnight-900 border border-neutral-200 dark:border-white/10 rounded-xl p-4 text-sm focus:border-accent-blue focus:outline-none transition-colors text-neutral-900 dark:text-white" />
+                        <input type="text" placeholder="MM/YY" className="w-1/2 bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-4 text-sm focus:border-[#D4AF37] focus:outline-none transition-colors text-neutral-900 dark:text-white" />
+                        <input type="text" placeholder="CVV" className="w-1/2 bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-4 text-sm focus:border-[#D4AF37] focus:outline-none transition-colors text-neutral-900 dark:text-white" />
                       </div>
                    </motion.div>
                 )}
@@ -435,7 +435,7 @@ export default function CartPage() {
                 <div className="grid grid-cols-4 gap-2">
                   {[0, 0.15, 0.20, 0.25].map(pct => (
                     <button key={pct} onClick={() => setTipPct(pct)}
-                      className={`py-3 rounded-xl font-black text-sm border-2 transition-all ${tipPct === pct ? 'bg-accent-blue border-accent-blue text-neutral-900 dark:text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-neutral-50 dark:bg-midnight-800 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-white/5 hover:border-neutral-200 dark:border-white/10'}`}>
+                      className={`py-3 rounded-xl font-black text-sm border-2 transition-all ${tipPct === pct ? 'bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] border-[#D4AF37] text-neutral-900 dark:text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-neutral-50 dark:bg-[#111] text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-white/5 hover:border-neutral-200 dark:border-white/10'}`}>
                       {pct === 0 ? 'No Tip' : `${pct * 100}%`}
                     </button>
                   ))}
@@ -446,7 +446,7 @@ export default function CartPage() {
               <div className="pt-6 border-t border-neutral-200 dark:border-white/5">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2"><SplitSquareHorizontal size={16}/> Split the Bill?</h3>
-                  <div className="flex items-center gap-3 bg-neutral-100 dark:bg-[#1a1a1f] rounded-full px-3 py-1 border border-neutral-200 dark:border-white/10">
+                  <div className="flex items-center gap-3 bg-neutral-100 dark:bg-[#0a0a0a] rounded-full px-3 py-1 border border-neutral-200 dark:border-white/10">
                     <button onClick={() => setSplitWays(Math.max(1, splitWays - 1))} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-black text-lg">-</button>
                     <span className="font-bold text-sm w-4 text-center">{splitWays}</span>
                     <button onClick={() => setSplitWays(splitWays + 1)} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-black text-lg">+</button>
@@ -473,9 +473,9 @@ export default function CartPage() {
                <h2 className="text-3xl font-display font-black text-neutral-900 dark:text-white mb-2">Order Confirmed!</h2>
                <p className="text-neutral-500 dark:text-neutral-400 font-sans text-sm mb-10">Your pre-order has been securely transmitted to the kitchen.</p>
                
-               <div className="rounded-[2rem] p-6 w-full max-w-sm text-left bg-neutral-50 dark:bg-midnight-800 border border-neutral-200 dark:border-white/10">
+               <div className="rounded-[2rem] p-6 w-full max-w-sm text-left bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/10">
                  <h3 className="font-sans font-bold text-sm mb-5 flex items-center gap-2 text-neutral-900 dark:text-white">
-                   <Store size={16} className="text-accent-blue" /> Vendor Contact
+                   <Store size={16} className="text-[#D4AF37]" /> Vendor Contact
                  </h3>
                  <div className="space-y-4">
                    <p className="text-sm font-sans flex items-center gap-3 text-neutral-600 dark:text-neutral-300"><MapPin size={16} className="text-neutral-500" />{currentRestaurant?.name}</p>
@@ -534,25 +534,25 @@ export default function CartPage() {
           <div className="pointer-events-auto flex flex-col gap-3">
             {step === 'cart' && (
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
-                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-accent-blue text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(59,130,246,0.3)] hover:bg-blue-600">
+                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)] ">
                 Proceed to Checkout
               </motion.button>
             )}
             {step === 'type' && (
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
-                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-accent-blue text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(59,130,246,0.3)]">
+                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)]">
                 {orderConf.type === 'dine_in' ? 'Continue to Payment' : 'Verify & Continue'}
               </motion.button>
             )}
             {step === 'details' && (
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
-                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-accent-blue text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(59,130,246,0.3)]">
+                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)]">
                 Continue to Payment
               </motion.button>
             )}
             {step === 'pay' && (
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext}
-                className="w-full font-sans font-black py-5 rounded-2xl flex justify-center items-center gap-3 transition-all bg-accent-blue text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(59,130,246,0.3)] disabled:opacity-70">
+                className="w-full font-sans font-black py-5 rounded-2xl flex justify-center items-center gap-3 transition-all bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)] disabled:opacity-70">
                 {isProcessing ? (
                   <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }} className="w-5 h-5 border-2 rounded-full border-white/30 border-t-white" /> Processing...</>
                 ) : (

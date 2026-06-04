@@ -49,7 +49,7 @@ export default function Dish3DPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-[100dvh] relative overflow-hidden bg-white dark:bg-[#0d0d10] transition-colors">
+      className="flex flex-col h-[100dvh] relative overflow-hidden bg-white dark:bg-black transition-colors">
 
       {/* ══════════════════════════════════════════════════════ */}
       {/* HERO — Full-bleed food photo / 3D model               */}
@@ -89,7 +89,7 @@ export default function Dish3DPage() {
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white dark:to-[#0d0d10] pointer-events-none transition-colors" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white dark:to-black pointer-events-none transition-colors" />
 
         {/* Top controls */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-12 z-20">
@@ -122,8 +122,8 @@ export default function Dish3DPage() {
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-        className="flex-1 overflow-y-auto no-scrollbar rounded-t-[2rem] bg-white dark:bg-[#0d0d10] border-t border-neutral-200 dark:border-[#D4AF37]/15 z-30 transition-colors"
-        style={{ boxShadow: '0 -20px 60px rgba(0,0,0,0.08)' }}
+        className="flex-1 overflow-y-auto no-scrollbar rounded-t-[2rem] bg-white dark:bg-black border-t border-neutral-200 dark:border-[#D4AF37]/15 z-30 transition-colors"
+        style={{ boxShadow: '0 -20px 60px rgba(0,0,0,0.8)' }}
       >
         <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/15 mx-auto mt-3 mb-5" />
 
@@ -161,12 +161,12 @@ export default function Dish3DPage() {
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Calories</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center">
-                <Clock size={18} className="text-blue-500 dark:text-blue-400" />
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-100 dark:border-[#D4AF37]/15">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                <Clock size={18} style={{ color: '#D4AF37' }} />
               </div>
               <div>
-                <p className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-none">{dish.prepTime || '18'} <span className="text-base font-semibold text-neutral-400">min</span></p>
+                <p className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-none">{dish.prepTime || '18'} <span className="text-base font-semibold text-neutral-500">min</span></p>
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Prep Time</p>
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function Dish3DPage() {
       {/* ══════════════════════════════════════════════════════ */}
       {/* STICKY BOTTOM ACTIONS                                  */}
       {/* ══════════════════════════════════════════════════════ */}
-      <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#0d0d10] dark:via-[#0d0d10]/80 transition-colors">
+      <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-black dark:via-black/80 transition-colors">
 
         {/* AR Button — uses hidden model-viewer activated imperatively */}
         {modelUrl && (

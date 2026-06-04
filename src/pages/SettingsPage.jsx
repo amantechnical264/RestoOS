@@ -1,11 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Globe, Target, Flame, Droplets, Leaf, Settings as SettingsIcon, LogOut, User, ShieldCheck, ChefHat, Sun, Moon } from 'lucide-react';
+import { ChevronLeft, Globe, Target, Flame, Droplets, Leaf, Settings as SettingsIcon, LogOut, User, ShieldCheck, ChefHat, Sun, Moon, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../services/supabase';
+
+const GOLD = '#D4AF37';
+const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
+
+function Section({ title, icon: Icon, children }) {
+  return (
+    <div>
+      <h2 className="font-display font-black text-base mb-3 flex items-center gap-2 text-white">
+        <Icon size={16} style={{ color: GOLD }} /> {title}
+      </h2>
+      <div className="rounded-3xl p-5 space-y-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -27,154 +43,184 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
-    if (supabase && supabaseUser) {
-      await supabase.auth.signOut();
-    }
+    if (supabase && supabaseUser) await supabase.auth.signOut();
     setUser(null);
     navigate('/scanner', { replace: true });
   };
 
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen bg-neutral-950 text-white overflow-hidden">
+  const inputClass = "w-full rounded-xl p-3 text-sm bg-black border text-white focus:outline-none focus:ring-0";
+  const inputStyle = { borderColor: 'rgba(212,175,55,0.2)' };
 
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="flex flex-col min-h-screen bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white overflow-hidden"
+    >
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 pt-14 pb-5 border-b border-neutral-900">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors">
-          <ChevronLeft size={20} />
+      <div
+        className="px-5 py-4 sticky top-0 z-10 flex items-center gap-4"
+        style={{ background: 'rgba(0,0,0,0.95)', borderBottom: '1px solid rgba(212,175,55,0.15)', backdropFilter: 'blur(20px)' }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all"
+          style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}
+        >
+          <ChevronLeft size={20} style={{ color: GOLD }} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-black flex items-center gap-2"><SettingsIcon size={22}/> Settings</h1>
+          <h1 className="text-xl font-display font-black text-white flex items-center gap-2">
+            <SettingsIcon size={18} style={{ color: GOLD }} /> Settings
+          </h1>
           <p className="text-xs text-neutral-500">Preferences & account</p>
         </div>
-        <button onClick={toggleTheme} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors">
-          {theme === 'dark' ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} className="text-blue-400" />}
+        <button
+          onClick={toggleTheme}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all"
+          style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}
+        >
+          {theme === 'dark'
+            ? <Sun size={18} style={{ color: GOLD }} />
+            : <Moon size={18} style={{ color: GOLD }} />
+          }
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-28 space-y-8 pt-6">
+      <div className="flex-1 overflow-y-auto px-5 pb-28 space-y-6 pt-6 bg-neutral-50 dark:bg-black no-scrollbar">
 
-        {/* Account Section */}
+        {/* Account */}
         {user && (
-          <div>
-            <h2 className="font-black text-lg mb-4 flex items-center gap-2">
-              {user.role === 'vendor' ? <ChefHat size={20} className="text-emerald-400" /> : <User size={20} className="text-blue-400" />}
-              Account
-            </h2>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg ${user.role === 'vendor' ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30' : 'bg-blue-600/20 text-blue-400 border border-blue-600/30'}`}>
-                  {(user.email || user.phone || 'A')[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate">{user.email || user.phone || 'Anonymous Diner'}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <ShieldCheck size={11} className={user.role === 'vendor' ? 'text-emerald-400' : 'text-blue-400'} />
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${user.role === 'vendor' ? 'text-emerald-400' : 'text-blue-400'}`}>
-                      {user.role === 'vendor' ? 'Restaurant Partner' : 'Diner'}
-                    </span>
-                  </div>
+          <Section title="Account" icon={user.role === 'vendor' ? ChefHat : User}>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg text-black"
+                style={{ background: goldGradient }}
+              >
+                {(user.email || user.phone || 'A')[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm truncate text-white">{user.email || user.phone || 'Anonymous Diner'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Crown size={10} style={{ color: GOLD }} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: GOLD }}>
+                    {user.role === 'vendor' ? 'Restaurant Partner' : 'Gold Member'}
+                  </span>
                 </div>
               </div>
-              <button onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/40 font-bold py-3 rounded-2xl transition-colors text-sm">
-                <LogOut size={16} /> Sign Out
-              </button>
             </div>
-          </div>
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center justify-center gap-2 font-bold py-3 rounded-2xl transition-all text-sm"
+              style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', color: '#F87171' }}
+            >
+              <LogOut size={15} /> Sign Out
+            </button>
+          </Section>
         )}
 
-        {/* Language Section */}
-        <div>
-          <h2 className="font-black text-lg mb-4 flex items-center gap-2">
-            <Globe size={20} className="text-blue-400" /> {t('settings.language', 'Language')}
-          </h2>
+        {/* Language */}
+        <Section title={t('settings.language', 'Language')} icon={Globe}>
           <div className="grid grid-cols-3 gap-3">
             {[
               { code: 'en', label: 'English', flag: '🇬🇧' },
               { code: 'es', label: 'Español', flag: '🇪🇸' },
-              { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' }
+              { code: 'hi', label: 'हिन्दी',  flag: '🇮🇳' },
             ].map(lang => (
-              <button key={lang.code}
+              <button
+                key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
-                className={`py-3 rounded-2xl font-bold border transition-all text-sm ${
-                  userPreferences.language === lang.code 
-                    ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/30' 
-                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700'
-                }`}>
-                <div>{lang.flag}</div>
-                <div className="text-xs mt-1">{lang.label}</div>
+                className="py-3 rounded-2xl font-bold transition-all text-sm"
+                style={userPreferences.language === lang.code
+                  ? { background: goldGradient, color: '#000', boxShadow: '0 4px 15px rgba(212,175,55,0.3)' }
+                  : { background: '#111', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }
+                }
+              >
+                <div className="text-xl mb-1">{lang.flag}</div>
+                <div className="text-xs">{lang.label}</div>
               </button>
             ))}
           </div>
-        </div>
+        </Section>
 
-        {/* Dietary Goals Section */}
-        <div>
-          <h2 className="font-black text-lg mb-4 flex items-center gap-2">
-            <Target size={20} className="text-emerald-400" /> {t('settings.goals', 'Daily Dietary Goals')}
-          </h2>
-          <form onSubmit={saveGoals} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 space-y-4">
-            
+        {/* Dietary Goals */}
+        <Section title={t('settings.goals', 'Daily Dietary Goals')} icon={Target}>
+          <form onSubmit={saveGoals} className="space-y-4">
             <div>
-              <label className="flex items-center gap-2 text-xs font-bold text-neutral-400 mb-2">
-                <Flame size={14} className="text-orange-500" /> Calories (kcal)
+              <label className="flex items-center gap-2 text-xs font-bold text-neutral-400 mb-2 uppercase tracking-widest">
+                <Flame size={13} className="text-orange-400" /> Calories (kcal)
               </label>
-              <input type="number" required value={localGoals.calories}
+              <input
+                type="number" required value={localGoals.calories}
                 onChange={e => setLocalGoals({...localGoals, calories: Number(e.target.value)})}
-                className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white" />
+                className={inputClass} style={inputStyle}
+              />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 mb-2 uppercase">
-                  <Droplets size={12} className="text-blue-400" /> Protein (g)
-                </label>
-                <input type="number" required value={localGoals.protein}
-                  onChange={e => setLocalGoals({...localGoals, protein: Number(e.target.value)})}
-                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white text-center" />
-              </div>
-              <div>
-                <label className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 mb-2 uppercase">
-                  <Leaf size={12} className="text-emerald-500" /> Carbs (g)
-                </label>
-                <input type="number" required value={localGoals.carbs}
-                  onChange={e => setLocalGoals({...localGoals, carbs: Number(e.target.value)})}
-                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white text-center" />
-              </div>
-              <div>
-                <label className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 mb-2 uppercase">
-                  <span className="text-amber-400 font-black">F</span> Fat (g)
-                </label>
-                <input type="number" required value={localGoals.fat}
-                  onChange={e => setLocalGoals({...localGoals, fat: Number(e.target.value)})}
-                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white text-center" />
-              </div>
+              {[
+                { key: 'protein', label: 'Protein (g)', icon: <Droplets size={11} className="text-blue-400" /> },
+                { key: 'carbs',   label: 'Carbs (g)',   icon: <Leaf size={11} className="text-emerald-400" /> },
+                { key: 'fat',     label: 'Fat (g)',      icon: <span className="text-[10px] font-black" style={{ color: GOLD }}>F</span> },
+              ].map(({ key, label, icon }) => (
+                <div key={key}>
+                  <label className="flex items-center gap-1 text-[10px] font-bold text-neutral-500 mb-2 uppercase tracking-wider">
+                    {icon} {label}
+                  </label>
+                  <input
+                    type="number" required value={localGoals[key]}
+                    onChange={e => setLocalGoals({...localGoals, [key]: Number(e.target.value)})}
+                    className={`${inputClass} text-center`} style={inputStyle}
+                  />
+                </div>
+              ))}
             </div>
 
             <AnimatePresence>
               {saved && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="text-center text-emerald-400 text-sm font-bold py-2">
+                  className="text-center text-sm font-bold py-2" style={{ color: '#34D399' }}>
                   ✓ Goals saved!
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <button type="submit"
-              className="w-full mt-2 bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 font-black py-3 rounded-xl hover:bg-emerald-600 hover:text-white transition-all">
+            <button
+              type="submit"
+              className="w-full py-3 rounded-2xl font-black text-sm text-black transition-all"
+              style={{ background: goldGradient, boxShadow: '0 4px 15px rgba(212,175,55,0.25)' }}
+            >
               {t('settings.saveGoals', 'Save Goals')}
             </button>
           </form>
-        </div>
+        </Section>
+
+        {/* Appearance */}
+        <Section title="Appearance" icon={Sun}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-white">Dark Mode</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Premium black & gold theme</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="w-14 h-7 rounded-full relative transition-all"
+              style={{
+                background: theme === 'dark' ? goldGradient : '#333',
+                boxShadow: theme === 'dark' ? '0 2px 10px rgba(212,175,55,0.3)' : 'none',
+              }}
+            >
+              <span className={`absolute top-1 w-5 h-5 bg-black rounded-full transition-all duration-300 ${theme === 'dark' ? 'right-1' : 'left-1'}`} />
+            </button>
+          </div>
+        </Section>
 
         {/* App Info */}
-        <div className="text-center text-xs text-neutral-700 pb-4 space-y-1">
-          <p className="font-bold">3Dish · Next-Gen AR Dining</p>
-          <p>Powered by Supabase & Hugging Face TripoSR</p>
+        <div className="text-center text-xs space-y-1 pb-4">
+          <p className="font-bold" style={{ color: GOLD }}>TableAI · Next-Gen AR Dining</p>
+          <p className="text-neutral-600">Powered by Supabase · Built with ❤</p>
         </div>
-
       </div>
+
       <BottomNav />
     </motion.div>
   );
