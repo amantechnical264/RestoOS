@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ListOrdered, TrendingUp, Utensils, QrCode as QrIcon,
   Box, Edit2, Plus, X, Upload, AlertTriangle, LogOut, Store, Settings,
-  Users, Save, Trash2, RefreshCw, Printer, ChefHat,
-  Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity,
-  Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight,
-  ArrowDownRight, Package, MessageSquare, Percent, Gift, Target,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle
+  Users, Save, Trash2, RefreshCw, Printer, ChefHat, Sparkles, Crown,
+  Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
+  Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
+  ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, Toggle, ToggleRight,
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -15,8 +15,23 @@ import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import ModelViewer from '../components/ModelViewer';
 
+// ── Design Tokens ─────────────────────────────────────────────────────
+const GOLD = '#D4AF37';
+const GOLD_DIM = '#AA8C2C';
+const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
+const cardStyle = {
+  background: 'linear-gradient(145deg, #111111 0%, #080808 100%)',
+  border: '1px solid rgba(212,175,55,0.18)',
+  boxShadow: '0 4px 30px rgba(0,0,0,0.8)',
+};
+const cardStyleLight = {
+  background: '#ffffff',
+  border: '1px solid rgba(0,0,0,0.08)',
+  boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+};
+
 // ─── Mini Bar Chart (pure SVG, no library) ────────────────────────────
-const MiniBarChart = ({ data, color = '#3B82F6', height = 80 }) => {
+const MiniBarChart = ({ data, color = '#D4AF37', height = 80 }) => {
   const max = Math.max(...data.map(d => d.value), 1);
   const barW = 100 / (data.length * 2 - 1);
   return (
@@ -39,13 +54,23 @@ const MiniBarChart = ({ data, color = '#3B82F6', height = 80 }) => {
 
 // ─── KPI Card ─────────────────────────────────────────────────────────
 const KpiCard = ({ icon: Icon, label, value, sub, color, trend }) => (
-  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
+  <div
+    className="rounded-3xl p-5 flex flex-col gap-3 hover:scale-[1.02] transition-transform cursor-default bg-white dark:bg-transparent"
+    style={{ ...( document.documentElement.classList.contains('dark') ? cardStyle : cardStyleLight ) }}
+  >
     <div className="flex justify-between items-start">
-      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${color}`}>
-        <Icon size={20} className="text-white" />
+      <div
+        className="w-10 h-10 rounded-2xl flex items-center justify-center"
+        style={{ background: `${GOLD}22`, border: `1px solid ${GOLD}44` }}
+      >
+        <Icon size={18} style={{ color: GOLD }} />
       </div>
       {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${trend >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
+        <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${
+          trend >= 0
+            ? 'text-emerald-400'
+            : 'text-red-400'
+        }`} style={{ background: trend >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }}>
           {trend >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
           {Math.abs(trend)}%
         </div>
@@ -54,7 +79,7 @@ const KpiCard = ({ icon: Icon, label, value, sub, color, trend }) => (
     <div>
       <p className="text-2xl font-display font-black text-neutral-900 dark:text-white">{value}</p>
       <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-0.5">{label}</p>
-      {sub && <p className="text-[11px] text-neutral-400 dark:text-neutral-600 mt-1">{sub}</p>}
+      {sub && <p className="text-[11px] text-neutral-400 mt-1">{sub}</p>}
     </div>
   </div>
 );
@@ -62,49 +87,57 @@ const KpiCard = ({ icon: Icon, label, value, sub, color, trend }) => (
 // ─── Dish Popularity Row ───────────────────────────────────────────────
 const PopularityRow = ({ rank, name, count, revenue, total, badge }) => {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-  const RANK_COLORS = ['text-amber-400', 'text-neutral-400', 'text-amber-600'];
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-neutral-50 dark:border-white/4 last:border-0">
-      <span className={`font-display font-black text-lg w-5 text-center ${RANK_COLORS[rank - 1] || 'text-neutral-500'}`}>
-        {rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank}
+    <div className="flex items-center gap-4 py-3 border-b border-neutral-100 dark:border-white/5 last:border-0">
+      <span className="font-display font-black text-lg w-5 text-center">
+        {rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : <span className="text-neutral-500 text-sm">{rank}</span>}
       </span>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-1.5">
           <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{name}</p>
-          {badge && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase tracking-wider">{badge}</span>}
+          {badge && <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider" style={{ background: 'rgba(212,175,55,0.15)', color: GOLD }}>{badge}</span>}
         </div>
-        <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-white/5 overflow-hidden">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(212,175,55,0.08)' }}>
           <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-            transition={{ delay: 0.3 + rank * 0.08, duration: 0.8, ease: 'easeOut' }}
-            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
+            transition={{ delay: 0.3 + rank * 0.08, duration: 0.9, ease: 'easeOut' }}
+            className="h-full rounded-full"
+            style={{ background: goldGradient }} />
         </div>
       </div>
       <div className="text-right shrink-0">
         <p className="text-sm font-black text-neutral-900 dark:text-white">{count}x</p>
-        <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">${revenue.toFixed(0)}</p>
+        <p className="text-[10px] font-semibold text-emerald-500">${revenue.toFixed(0)}</p>
       </div>
     </div>
   );
 };
 
-// ─── Promotion Card ────────────────────────────────────────────────────
-const PromoCard = ({ title, desc, icon: Icon, badge, badgeColor, onClick }) => (
-  <button onClick={onClick}
-    className="w-full text-left p-5 rounded-2xl bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all shadow-sm hover:shadow-md group">
+// ─── Promotion / Feature Card ──────────────────────────────────────────
+const PromoCard = ({ title, desc, icon: Icon, badge, onClick }) => (
+  <motion.button
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    className="w-full text-left p-4 rounded-2xl group transition-all"
+    style={{
+      background: 'linear-gradient(145deg, #111 0%, #0a0a0a 100%)',
+      border: '1px solid rgba(212,175,55,0.2)',
+    }}
+  >
     <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
-        <Icon size={20} className="text-blue-500" />
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)' }}>
+        <Icon size={18} style={{ color: GOLD }} />
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <p className="font-bold text-sm text-neutral-900 dark:text-white">{title}</p>
-          {badge && <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${badgeColor || 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>{badge}</span>}
+          <p className="font-bold text-sm text-white">{title}</p>
+          {badge && <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider" style={{ background: 'rgba(212,175,55,0.15)', color: GOLD }}>{badge}</span>}
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{desc}</p>
+        <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>{desc}</p>
       </div>
-      <ArrowUpRight size={16} className="text-neutral-300 dark:text-neutral-700 group-hover:text-blue-500 transition-colors shrink-0 mt-1" />
+      <ArrowUpRight size={15} className="shrink-0 mt-0.5 transition-colors" style={{ color: GOLD }} />
     </div>
-  </button>
+  </motion.button>
 );
 
 // ══════════════════════════════════════════════════════════════════════
@@ -144,6 +177,28 @@ export default function VendorDashboardPage() {
   const [dishVisibility, setDishVisibility] = React.useState({});
   const [soldOutDishes, setSoldOutDishes]   = React.useState({});
   const [analyticsRange, setAnalyticsRange] = React.useState('7d');
+  const [isGenerating3D, setIsGenerating3D] = React.useState(false);
+
+  const handleCsvUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const text = evt.target.result;
+        const rows = text.split('\n').map(row => row.split(','));
+        let count = 0;
+        for (let i = 1; i < rows.length; i++) {
+           const r = rows[i];
+           if (r.length >= 3 && r[0].trim()) {
+             await addDish({ name: r[0], price: parseFloat(r[1]), description: r[2], restId: activeRestId });
+             count++;
+           }
+        }
+        showNotification(`Imported ${count} dishes successfully!`);
+      };
+      reader.readAsText(file);
+    }
+  };
 
   const [settingsForm, setSettingsForm] = React.useState({
     name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00'
@@ -188,6 +243,24 @@ export default function VendorDashboardPage() {
       console.error(err); setScanState('error'); setScanStageLabel('Upload failed. Check your Supabase storage bucket.');
       return null;
     }
+  };
+
+  const handleAIGenerate3D = async () => {
+    if (!editingDish.cover && !editingDish.images?.length) {
+      showNotification('Please upload at least one dish image first.');
+      return;
+    }
+    setIsGenerating3D(true);
+    showNotification('Sending to Meshy.ai...');
+    setTimeout(() => {
+      // Mock generation completion
+      setEditingDish(prev => ({
+        ...prev, 
+        modelUrl: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb' // placeholder
+      }));
+      setIsGenerating3D(false);
+      showNotification('3D Model generated successfully!');
+    }, 3000);
   };
 
   // ── Order helpers ─────────────────────────────────────────────────
@@ -261,27 +334,29 @@ export default function VendorDashboardPage() {
     { key: 'menu',      icon: Utensils,     label: 'Menu' },
     { key: 'growth',    icon: Zap,          label: 'Growth' },
     { key: 'customers', icon: Users,        label: 'Customers' },
+    { key: 'events',    icon: Calendar,     label: 'Events' },
     { key: 'qr',        icon: QrIcon,       label: 'Tables' },
     { key: 'settings',  icon: Settings,     label: 'Settings' },
   ];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-[#0d0d10] text-neutral-900 dark:text-white relative">
+    <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white relative">
       
       {/* ── SERVICE ALERTS ── */}
       <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-3">
         <AnimatePresence>
           {serviceAlerts.slice(0, 5).map((alert, idx) => (
             <motion.div key={idx} initial={{ opacity: 0, x: 50, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 50, scale: 0.9 }}
-              className="bg-amber-900/90 backdrop-blur-xl border border-amber-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[280px]">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <Bell size={20} className="text-amber-400" />
+              className="backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[280px]"
+              style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.4)', boxShadow: '0 10px 40px rgba(0,0,0,0.9)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)' }}>
+                <Bell size={20} style={{ color: GOLD }} />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-0.5">Table {alert.tableNumber}</p>
+                <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: GOLD }}>Table {alert.tableNumber}</p>
                 <p className="text-sm font-black text-white">{alert.type}</p>
               </div>
-              <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all">
+              <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))} className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-all" style={{ background: 'rgba(255,255,255,0.05)' }}>
                 <CheckCircle size={16} />
               </button>
             </motion.div>
@@ -290,14 +365,24 @@ export default function VendorDashboardPage() {
       </div>
 
       {/* ── HEADER ── */}
-      <div className="px-5 py-3 flex justify-between items-center z-10 shrink-0 bg-white/95 dark:bg-[#12141D]/98 backdrop-blur-xl border-b border-neutral-200 dark:border-white/6 shadow-sm">
+      <div
+        className="px-5 py-3 flex justify-between items-center z-10 shrink-0 backdrop-blur-xl"
+        style={{
+          background: 'rgba(0,0,0,0.97)',
+          borderBottom: '1px solid rgba(212,175,55,0.2)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#AA8C2C] flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: goldGradient, boxShadow: '0 4px 15px rgba(212,175,55,0.3)' }}
+          >
             <Store size={18} className="text-black" />
           </div>
           <div>
-            <h1 className="font-display font-black text-base leading-tight">{currentRestaurant?.name || 'Dashboard'}</h1>
-            <p className="text-[11px] flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+            <h1 className="font-display font-black text-base leading-tight text-white">{currentRestaurant?.name || 'Dashboard'}</h1>
+            <p className="text-[11px] flex items-center gap-1.5 text-neutral-500">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500" />
               {user?.email || 'Synced to Cloud'}
             </p>
@@ -305,28 +390,38 @@ export default function VendorDashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={toggleTheme}
-            className="p-2 rounded-xl bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors">
+            className="p-2 rounded-xl transition-colors"
+            style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: GOLD }}
+          >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <button onClick={handleLogout}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all">
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#F87171' }}
+          >
             <LogOut size={14} /> Sign Out
           </button>
         </div>
       </div>
 
       {/* ── TABS ── */}
-      <div className="flex shrink-0 overflow-x-auto no-scrollbar bg-white dark:bg-[#12141D] border-b border-neutral-100 dark:border-white/6">
+      <div
+        className="flex shrink-0 overflow-x-auto no-scrollbar"
+        style={{ background: '#000', borderBottom: '1px solid rgba(212,175,55,0.15)' }}
+      >
         {TAB_CONFIG.map(tab => (
           <button key={tab.key} onClick={() => setVendorTab(tab.key)}
-            className={`relative px-4 py-3.5 text-[11px] font-bold flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all ${
-              vendorTab === tab.key
-                ? 'border-[#D4AF37] text-[#D4AF37] bg-amber-50/60 dark:bg-amber-900/10'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-white'
-            }`}>
+            className="relative px-4 py-3.5 text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all"
+            style={{
+              borderBottom: vendorTab === tab.key ? `2px solid ${GOLD}` : '2px solid transparent',
+              color: vendorTab === tab.key ? GOLD : 'rgba(255,255,255,0.4)',
+              background: vendorTab === tab.key ? 'rgba(212,175,55,0.06)' : 'transparent',
+            }}
+          >
             <tab.icon size={14} /> {tab.label}
             {tab.badge > 0 && (
-              <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center">
+              <span className="absolute top-2 right-1 w-4 h-4 rounded-full text-black text-[8px] font-black flex items-center justify-center"
+                style={{ background: goldGradient }}>
                 {tab.badge}
               </span>
             )}
@@ -335,7 +430,7 @@ export default function VendorDashboardPage() {
       </div>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 overflow-hidden relative bg-neutral-50 dark:bg-[#0d0d10]">
+      <div className="flex-1 overflow-hidden relative bg-neutral-50 dark:bg-black">
         <AnimatePresence mode="wait">
 
           {/* ════════════════════ KITCHEN DISPLAY ════════════════════ */}
@@ -630,10 +725,16 @@ export default function VendorDashboardPage() {
                     <h2 className="font-display font-black text-2xl">Menu Manager</h2>
                     <p className="text-sm text-neutral-500 mt-0.5">{vendDishes.length} dishes · {vendDishes.filter(d => !dishVisibility[d.id]).length} visible</p>
                   </div>
-                  <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', tags: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
-                    <Plus size={16} /> Add Dish
-                  </button>
+                  <div className="flex gap-2">
+                    <input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleCsvUpload} />
+                    <label htmlFor="csv-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
+                      <Upload size={16} /> Import CSV
+                    </label>
+                    <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', images: [], tags: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
+                      <Plus size={16} /> Add Dish
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {vendDishes.map(dish => (
@@ -699,6 +800,39 @@ export default function VendorDashboardPage() {
             </motion.div>
           )}
 
+          {/* ── EVENTS TAB ── */}
+          {activeTab === 'events' && (
+            <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-display font-black">Events & Promos</h2>
+                  <p className="text-neutral-500">Manage your upcoming restaurant events.</p>
+                </div>
+                <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2">
+                  <Plus size={16} /> Create Event
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 flex items-start gap-4">
+                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex flex-col items-center justify-center border border-orange-200 dark:border-orange-800/50">
+                     <span className="text-xs font-bold text-orange-600 dark:text-orange-400">OCT</span>
+                     <span className="text-xl font-black text-orange-700 dark:text-orange-300">28</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg">Live Jazz Night</h3>
+                    <p className="text-sm text-neutral-500">Enjoy live music with our special dinner menu.</p>
+                    <div className="mt-3 flex gap-2">
+                      <span className="px-2 py-1 bg-neutral-100 dark:bg-white/5 rounded-md text-xs font-bold">18 RSVPs</span>
+                      <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-bold">Active</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── SETTINGS TAB ── */}
           {/* ── Dish Edit Form ── */}
           {vendorTab === 'menu' && editingDish && (
             <motion.div key="menu-edit" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
@@ -772,33 +906,56 @@ export default function VendorDashboardPage() {
                       <textarea required value={editingDish.description || ''} onChange={e => setEditingDish({...editingDish, description: e.target.value})}
                         className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none dark:text-white" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Origin / Provenance</label>
-                      <input type="text" value={editingDish.origin || ''} onChange={e => setEditingDish({...editingDish, origin: e.target.value})}
-                        placeholder="e.g. Adriatic Sea, Croatia"
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Origin / Provenance</label>
+                        <input type="text" value={editingDish.origin || ''} onChange={e => setEditingDish({...editingDish, origin: e.target.value})}
+                          placeholder="e.g. Adriatic Sea, Croatia"
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Serves (People)</label>
+                        <input type="number" value={editingDish.serves || ''} onChange={e => setEditingDish({...editingDish, serves: e.target.value})}
+                          placeholder="2"
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Cover Image URL</label>
+                      <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Images (Multiple)</label>
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        {(editingDish.images || [editingDish.cover]).filter(Boolean).map((img, i) => (
+                          <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 dark:border-white/10">
+                            <img src={img} className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => {
+                              const newImgs = (editingDish.images || [editingDish.cover]).filter((_, idx) => idx !== i);
+                              setEditingDish({ ...editingDish, images: newImgs, cover: newImgs[0] || '' });
+                            }} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white">
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                       <div className="relative flex items-center">
-                        <input type="url" value={editingDish.cover || ''} onChange={e => setEditingDish({...editingDish, cover: e.target.value})}
-                          placeholder="https://..."
-                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 pr-12 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
-                        <input type="file" accept="image/*" className="hidden" id="cover-upload" onChange={async e => {
-                          const file = e.target.files[0];
-                          if(file) {
-                            showNotification('Uploading image...');
-                            const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
-                            const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
-                            if (!error) {
-                              const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
-                              setEditingDish(prev => ({...prev, cover: pub.publicUrl}));
-                              showNotification('Image uploaded!');
-                            } else showNotification('Upload failed');
+                        <input type="file" accept="image/*" className="hidden" id="cover-upload" multiple onChange={async e => {
+                          const files = Array.from(e.target.files);
+                          if(files.length > 0) {
+                            showNotification('Uploading images...');
+                            const newUrls = [];
+                            for (const file of files) {
+                              const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
+                              const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
+                              if (!error) {
+                                const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
+                                newUrls.push(pub.publicUrl);
+                              }
+                            }
+                            const updatedImgs = [...(editingDish.images || (editingDish.cover ? [editingDish.cover] : [])), ...newUrls];
+                            setEditingDish(prev => ({...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover}));
+                            showNotification('Images uploaded!');
                           }
                         }} />
-                        <label htmlFor="cover-upload" className="absolute right-3 cursor-pointer text-neutral-400 hover:text-blue-500 transition-colors p-1 bg-white dark:bg-[#1a1a1f] rounded-md shadow-sm border border-neutral-200 dark:border-white/10">
-                          <Upload size={14} />
+                        <label htmlFor="cover-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 text-xs font-bold hover:bg-neutral-50 transition-colors text-blue-500">
+                          <Upload size={14} /> Upload Images
                         </label>
                       </div>
                     </div>
@@ -830,7 +987,14 @@ export default function VendorDashboardPage() {
 
                   {/* 3D Model */}
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
-                    <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider flex items-center gap-2"><Box size={14} /> 3D AR Model (.GLB)</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider flex items-center gap-2"><Box size={14} /> 3D AR Model (.GLB)</h3>
+                      <button type="button" onClick={handleAIGenerate3D} disabled={isGenerating3D}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 transition-colors flex items-center gap-1.5">
+                        {isGenerating3D ? <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> : <Sparkles size={12} />}
+                        {isGenerating3D ? 'Generating...' : 'AI Generate'}
+                      </button>
+                    </div>
                     <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={e => { if (e.target.files[0]) uploadGlbFile(e.target.files[0]); }} />
                     {!editingDish.modelUrl ? (
                       <div onClick={() => glbInputRef.current?.click()}
@@ -1190,63 +1354,163 @@ export default function VendorDashboardPage() {
           {/* ════════════════════ SETTINGS ════════════════════ */}
           {vendorTab === 'settings' && (
             <motion.div key="settings" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 overflow-y-auto p-6">
+              className="absolute inset-0 overflow-y-auto p-6"
+              style={{ background: '#050505' }}
+            >
               <div className="max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h2 className="font-display font-black text-2xl">Restaurant Settings</h2>
-                  <p className="text-sm text-neutral-500 mt-0.5">Configure your restaurant profile and operations</p>
+                  <h2 className="text-2xl font-display font-black text-white">Restaurant Settings</h2>
+                  <p className="text-sm text-neutral-500 mt-0.5">Configure your restaurant, AI, and marketing settings</p>
                 </div>
 
                 <form onSubmit={handleSettingsSave} className="space-y-4">
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Restaurant Profile</h3>
+                  <div className="rounded-2xl p-5 space-y-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <Store size={13}/> Restaurant Profile
+                    </h3>
                     <div>
-                      <label className="text-xs font-bold text-neutral-500 block mb-1.5">Restaurant Name *</label>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Restaurant Name *</label>
                       <input required type="text" value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})}
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                        className="w-full rounded-xl p-3 text-sm" placeholder="My Restaurant" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-neutral-500 block mb-1.5">Cover Image URL</label>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Cover Image URL</label>
                       <input type="url" value={settingsForm.cover} onChange={e => setSettingsForm({...settingsForm, cover: e.target.value})}
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
-                      {settingsForm.cover && <div className="mt-2 h-28 rounded-xl bg-cover bg-center border border-neutral-100 dark:border-white/10" style={{ backgroundImage: `url(${settingsForm.cover})` }} />}
+                        className="w-full rounded-xl p-3 text-sm" placeholder="https://..." />
+                      {settingsForm.cover && <div className="mt-2 h-28 rounded-xl bg-cover bg-center border" style={{ backgroundImage: `url(${settingsForm.cover})`, borderColor: 'rgba(212,175,55,0.2)' }} />}
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-neutral-500 block mb-1.5">Phone Number</label>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Phone Number</label>
                       <input type="tel" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})}
-                        placeholder="+1 (555) 123-4567"
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                        placeholder="+1 (555) 123-4567" className="w-full rounded-xl p-3 text-sm" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-neutral-500 block mb-1.5">Operating Hours</label>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Operating Hours</label>
                       <input type="text" value={settingsForm.hours} onChange={e => setSettingsForm({...settingsForm, hours: e.target.value})}
-                        placeholder="10:00 - 22:00"
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                        placeholder="10:00 - 22:00" className="w-full rounded-xl p-3 text-sm" />
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Billing & Payments</h3>
+                  {/* Billing & Payments */}
+                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <DollarSign size={13}/> Billing & Payments
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-bold text-neutral-500 block mb-1.5">Tax Rate (%)</label>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Tax Rate (%)</label>
                         <input type="number" step="0.1" value={settingsForm.taxRate} onChange={e => setSettingsForm({...settingsForm, taxRate: parseFloat(e.target.value)})}
-                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                          className="w-full rounded-xl p-3 text-sm" />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-neutral-500 block mb-1.5">Accept Cash on Table</label>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Accept Cash</label>
                         <select value={String(settingsForm.acceptCash)} onChange={e => setSettingsForm({...settingsForm, acceptCash: e.target.value === 'true'})}
-                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white">
-                          <option value="true">Yes — Cash Accepted</option>
-                          <option value="false">No — Digital Only</option>
+                          className="w-full rounded-xl p-3 text-sm">
+                          <option value="true">✓ Yes — Cash Accepted</option>
+                          <option value="false">✗ No — Digital Only</option>
                         </select>
                       </div>
                     </div>
                   </div>
 
+                  {/* ── AI Waiter Settings ── */}
+                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <BrainCircuit size={13}/> AI Waiter Settings
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-white">Enable AI Concierge</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">Show floating AI Waiter to customers</p>
+                      </div>
+                      <button type="button" className="w-12 h-6 rounded-full transition-all relative"
+                        style={{ background: goldGradient, boxShadow: '0 2px 8px rgba(212,175,55,0.3)' }}>
+                        <span className="absolute right-1 top-1 w-4 h-4 bg-black rounded-full" />
+                      </button>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">AI Personality / Instructions</label>
+                      <textarea rows={3} placeholder="e.g. You are a formal luxury dining concierge. Always recommend the chef's special first..."
+                        className="w-full rounded-xl p-3 text-sm resize-none" />
+                    </div>
+                  </div>
+
+                  {/* ── Happy Hour / Offers Management ── */}
+                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <Flame size={13}/> Dynamic Offers (Happy Hour)
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Start Time</label>
+                        <input type="time" defaultValue="16:00" className="w-full rounded-xl p-3 text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">End Time</label>
+                        <input type="time" defaultValue="19:00" className="w-full rounded-xl p-3 text-sm" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Offer Message</label>
+                      <input type="text" defaultValue="20% off all drinks and starters" className="w-full rounded-xl p-3 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Discount %</label>
+                      <input type="number" defaultValue={20} min={0} max={100} className="w-full rounded-xl p-3 text-sm" />
+                    </div>
+                  </div>
+
+                  {/* ── Subscription Plans ── */}
+                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <Crown size={13}/> Subscription Plan
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {[
+                        { plan: 'Starter', desc: 'Basic QR Menu', price: 'Free' },
+                        { plan: 'Growth',  desc: 'AR + Analytics + AI Waiter', price: '$49/mo', active: true },
+                        { plan: 'Scale',   desc: 'Full CRM + White Label', price: '$99/mo' },
+                      ].map(({ plan, desc, price, active }) => (
+                        <div key={plan} className="rounded-xl p-4 relative"
+                          style={{
+                            background: active ? 'linear-gradient(145deg, #1a1500, #0a0a00)' : '#111',
+                            border: active ? `1px solid ${GOLD}` : '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: active ? `0 0 20px rgba(212,175,55,0.2)` : 'none',
+                          }}>
+                          {active && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 rounded-full text-black" style={{ background: goldGradient }}>ACTIVE</span>}
+                          <h4 className="font-black text-base text-white mb-0.5">{plan}</h4>
+                          <p className="text-xs text-neutral-500 mb-2">{desc}</p>
+                          <p className="font-black text-sm mb-3" style={{ color: active ? GOLD : 'rgba(255,255,255,0.5)' }}>{price}</p>
+                          <button type="button"
+                            className="w-full py-2 rounded-lg text-xs font-bold transition-all"
+                            style={active
+                              ? { background: goldGradient, color: '#000' }
+                              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }
+                            }>
+                            {active ? 'Current Plan' : 'Upgrade →'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── OCR Menu Import ── */}
+                  <div className="rounded-2xl p-5 space-y-3 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <Upload size={13}/> AI Menu Import (OCR)
+                    </h3>
+                    <p className="text-sm text-neutral-500">Upload any existing paper/PDF menu — our AI will scan and create all dishes automatically.</p>
+                    <button type="button" onClick={() => showNotification("Analyzing PDF menu... This may take a moment.")}
+                      className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
+                      style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: GOLD }}>
+                      <Upload size={15}/> Upload PDF / Image Menu
+                    </button>
+                  </div>
+
                   <button type="submit"
-                    className="w-full py-4 rounded-2xl font-display font-black flex items-center justify-center gap-2 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25">
-                    <Save size={18} /> Save Settings
+                    className="w-full py-4 mt-6 rounded-2xl font-display font-black flex items-center justify-center gap-2 text-black text-base shadow-gold"
+                    style={{ background: goldGradient, boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }}>
+                    <Save size={18}/> Save All Settings
                   </button>
                 </form>
               </div>

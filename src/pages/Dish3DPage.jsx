@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Heart, ShoppingCart, Flame, Clock, MapPin, AlertTriangle, Star, ChefHat, Leaf, Droplets, Box } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,6 +11,7 @@ export default function Dish3DPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
+  const [currentImageIdx, setCurrentImageIdx] = useState(0);
 
   // AR button ref
   const arViewerRef = useRef(null);
@@ -43,6 +44,9 @@ export default function Dish3DPage() {
     if (mv?.activateAR) mv.activateAR();
   };
 
+  const displayImages = dish.images?.length > 0 ? dish.images : (dish.cover ? [dish.cover] : []);
+  const recommendedDishes = dishes.filter(d => d.id !== id).slice(0, 3);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col h-[100dvh] relative overflow-hidden bg-white dark:bg-[#0d0d10] transition-colors">
@@ -51,9 +55,26 @@ export default function Dish3DPage() {
       {/* HERO — Full-bleed food photo / 3D model               */}
       {/* ══════════════════════════════════════════════════════ */}
       <div className="relative flex-shrink-0 h-[42vh] overflow-hidden bg-neutral-100 dark:bg-[#111115]">
-        {dish.cover ? (
-          <img src={dish.cover} alt={dish.name}
-            className="w-full h-full object-cover" />
+        {displayImages.length > 0 ? (
+          <>
+            <motion.img 
+              key={currentImageIdx}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              src={displayImages[currentImageIdx]} 
+              alt={dish.name}
+              className="w-full h-full object-cover" 
+            />
+            {displayImages.length > 1 && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20">
+                {displayImages.map((_, idx) => (
+                  <button key={idx} onClick={() => setCurrentImageIdx(idx)}
+                    className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIdx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`} />
+                ))}
+              </div>
+            )}
+          </>
         ) : modelUrl ? (
           <ModelViewer
             src={modelUrl}
@@ -241,12 +262,34 @@ export default function Dish3DPage() {
 
           {/* ── Tags ── */}
           {dish.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-5">
+            <div className="flex flex-wrap gap-2 mb-8">
               {dish.tags.map(tag => (
                 <span key={tag} className="px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-[#D4AF37]/10 text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
                   {tag}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* ── People Also Ordered ── */}
+          {recommendedDishes.length > 0 && (
+            <div className="mb-5">
+              <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white mb-4">People Also Ordered</h3>
+              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                {recommendedDishes.map(rec => (
+                  <div key={rec.id} onClick={() => navigate(`/dish/${rec.id}`)} className="shrink-0 w-36 cursor-pointer">
+                    <div className="w-full h-36 rounded-2xl overflow-hidden mb-2 relative bg-neutral-100 dark:bg-[#1a1a1f]">
+                      {(rec.images?.[0] || rec.cover) ? (
+                        <img src={rec.images?.[0] || rec.cover} alt={rec.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"><ChefHat size={24} className="text-neutral-400" /></div>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{rec.name}</h4>
+                    <p className="text-accent-blue font-black text-sm">${Number(rec.price).toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

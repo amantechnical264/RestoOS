@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Flame, Droplets, Leaf, CheckCircle2, User, Phone, Store, Trash2, Plus, Zap } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Flame, Droplets, Leaf, CheckCircle2, User, Phone, Store, Trash2, Plus, Zap, Box, Sparkles, X, Users, Share2, SplitSquareHorizontal } from 'lucide-react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -35,6 +35,11 @@ export default function CartPage() {
   const [tipPct, setTipPct] = useState(0.15);
   const [isProcessing, setIsProcessing] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showArCombo, setShowArCombo] = useState(false);
+  const [groupSession, setGroupSession] = useState(null);
+  const [splitWays, setSplitWays] = useState(1);
+
+  const cartWithModels = cart.filter(c => c.modelUrl || c.model_url);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -191,7 +196,21 @@ export default function CartPage() {
           {/* ── STEP: CART ── */}
           {step === 'cart' && (
             <motion.div key="cart" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-4">
-              <h2 className="text-lg font-display font-bold text-neutral-900 dark:text-white mb-4">Your Order</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-display font-bold text-neutral-900 dark:text-white">Your Order</h2>
+                {!groupSession ? (
+                  <button onClick={() => setGroupSession(Math.random().toString(36).substring(2, 8).toUpperCase())} 
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 transition-colors">
+                    <Users size={14}/> Group Order
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800/50">
+                    <Users size={14}/> Code: {groupSession}
+                    <button className="ml-1 hover:text-emerald-500"><Share2 size={12}/></button>
+                  </div>
+                )}
+              </div>
+              
               {cart.map((item) => (
                 <motion.div layout key={item.cartId}
                   drag="x" dragConstraints={{ left: -80, right: 0 }}
@@ -203,21 +222,34 @@ export default function CartPage() {
                     <Trash2 size={20} />
                   </div>
 
-                  <div className="relative z-10 flex-1 flex justify-between items-center bg-neutral-50 dark:bg-midnight-800 w-full rounded-3xl">
-                    <div className="flex items-center gap-4">
-                      {item.cover ? (
-                        <img src={item.cover} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-neutral-600"/></div>
-                      )}
-                      <div>
-                        <h3 className="font-bold text-neutral-900 dark:text-white font-sans">{item.name}</h3>
-                        <p className="text-[11px] text-neutral-500 mt-0.5">1x Portion</p>
+                  <div className="relative z-10 flex-1 flex flex-col bg-neutral-50 dark:bg-midnight-800 w-full rounded-3xl gap-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        {item.cover ? (
+                          <img src={item.cover} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-neutral-600"/></div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-neutral-900 dark:text-white font-sans">{item.name}</h3>
+                          <p className="text-[11px] text-neutral-500 mt-0.5">1x Portion</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-black text-lg text-accent-blue">${Number(item.price).toFixed(2)}</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-black text-lg text-accent-blue">${Number(item.price).toFixed(2)}</span>
-                    </div>
+                    
+                    <input 
+                      type="text" 
+                      placeholder="Add note (e.g. no onions)" 
+                      value={item.specialInstructions || ''}
+                      onChange={(e) => {
+                        const newCart = cart.map(c => c.cartId === item.cartId ? {...c, specialInstructions: e.target.value} : c);
+                        setCart(newCart);
+                      }}
+                      className="w-full text-xs bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 focus:outline-none focus:border-accent-blue transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                    />
                   </div>
                 </motion.div>
               ))}
@@ -234,6 +266,16 @@ export default function CartPage() {
                 />
               </div>
               
+              {/* AR Combo Builder Button */}
+              {cartWithModels.length > 0 && (
+                <motion.button 
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowArCombo(true)}
+                  className="mt-2 w-full py-3.5 rounded-[2rem] border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold flex justify-center items-center gap-2 transition-all">
+                  <Box size={18} /> View {cartWithModels.length} Item Combo in AR
+                </motion.button>
+              )}
+
               {/* Receipt Summary */}
               <div className="mt-4 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-6 backdrop-blur-md">
                 <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>${(total / 1.08).toFixed(2)}</span></div>
@@ -400,6 +442,24 @@ export default function CartPage() {
                 </div>
               </div>
 
+              {/* Split Bill */}
+              <div className="pt-6 border-t border-neutral-200 dark:border-white/5">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2"><SplitSquareHorizontal size={16}/> Split the Bill?</h3>
+                  <div className="flex items-center gap-3 bg-neutral-100 dark:bg-[#1a1a1f] rounded-full px-3 py-1 border border-neutral-200 dark:border-white/10">
+                    <button onClick={() => setSplitWays(Math.max(1, splitWays - 1))} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-black text-lg">-</button>
+                    <span className="font-bold text-sm w-4 text-center">{splitWays}</span>
+                    <button onClick={() => setSplitWays(splitWays + 1)} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-black text-lg">+</button>
+                  </div>
+                </div>
+                {splitWays > 1 && (
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/30 rounded-xl p-3 flex justify-between items-center text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                    <span>Amount per person:</span>
+                    <span>${(finalTotal / splitWays).toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
             </motion.div>
           )}
 
@@ -427,6 +487,44 @@ export default function CartPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {showArCombo && cartWithModels.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-6 backdrop-blur-md">
+             <button onClick={() => setShowArCombo(false)} className="absolute top-6 right-6 text-white bg-white/10 rounded-full p-2 hover:bg-white/20 transition-colors">
+               <X size={24}/>
+             </button>
+             <h2 className="text-white font-display font-black text-2xl mb-2 flex items-center gap-2">
+               <Sparkles className="text-purple-400"/> AR Combo View
+             </h2>
+             <p className="text-neutral-400 text-sm mb-6 text-center max-w-[250px]">Previewing {cartWithModels.length} items from your cart together.</p>
+             
+             <div className="w-full max-w-md h-[50vh] bg-white/5 rounded-[2rem] border border-white/10 overflow-hidden relative shadow-2xl">
+                <model-viewer
+                  src={cartWithModels[0].modelUrl || cartWithModels[0].model_url}
+                  auto-rotate
+                  camera-controls
+                  ar
+                  ar-modes="webxr scene-viewer quick-look"
+                  style={{ width: '100%', height: '100%' }}
+                />
+                <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md rounded-2xl p-3 flex justify-between items-center border border-white/10">
+                  <span className="text-white text-xs font-bold truncate max-w-[70%]">{cartWithModels.map(c => c.name).join(', ')}</span>
+                  <Box size={16} className="text-purple-400"/>
+                </div>
+             </div>
+             
+             <button onClick={() => {
+                const mv = document.querySelector('model-viewer');
+                if(mv && mv.activateAR) mv.activateAR();
+             }}
+             className="mt-6 w-full max-w-md py-4 rounded-2xl font-black bg-white text-black shadow-lg">
+               Launch AR Mode
+             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Action Button Footer */}
       {step !== 'auth' && (

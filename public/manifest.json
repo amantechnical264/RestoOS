@@ -1,16 +1,25 @@
 {
-  "name": "3Dish — AR Dining",
-  "short_name": "3Dish",
-  "description": "Augmented Reality restaurant menus with 3D dish previews and nutrition tracking",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#2563eb",
-  "orientation": "portrait",
+  "short_name": "TableAI",
+  "name": "TableAI - The Ultimate Digital Menu",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
   ],
-  "screenshots": [],
-  "categories": ["food", "lifestyle", "utilities"]
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#12141D",
+  "background_color": "#12141D"
 }

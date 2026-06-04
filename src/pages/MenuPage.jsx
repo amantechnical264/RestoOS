@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X } from 'lucide-react';
+import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
+import AIWaiter from '../components/AIWaiter';
 
 const CATEGORY_TABS = [
   { key: 'All',      emoji: '🍽',  label: 'All' },
@@ -15,11 +16,19 @@ const CATEGORY_TABS = [
   { key: 'Vegan',    emoji: '🌿',  label: 'Vegan' },
 ];
 
+const SPICE_LEVELS = {
+  'Mild': '🌶️',
+  'Medium': '🌶️🌶️',
+  'Hot': '🌶️🌶️🌶️',
+  'Extra Hot': '🌶️🌶️🌶️🌶️'
+};
+
 const BADGE_STYLES = {
   'Chef\'s Pick': { bg: 'bg-amber-900/80',    text: 'text-amber-300',   border: 'border-amber-700/50' },
   'Signature':    { bg: 'bg-purple-900/80',   text: 'text-purple-300',  border: 'border-purple-700/50' },
   'Popular':      { bg: 'bg-rose-900/80',     text: 'text-rose-300',    border: 'border-rose-700/50' },
   'Bestseller':   { bg: 'bg-amber-900/80',    text: 'text-amber-300',   border: 'border-amber-700/50' },
+  'Trending':     { bg: 'bg-orange-900/80',   text: 'text-orange-300',  border: 'border-orange-700/50' },
   'Vegan':        { bg: 'bg-emerald-900/80',  text: 'text-emerald-300', border: 'border-emerald-700/50' },
   'Seasonal':     { bg: 'bg-sky-900/80',      text: 'text-sky-300',     border: 'border-sky-700/50' },
   'New':          { bg: 'bg-blue-900/80',     text: 'text-blue-300',    border: 'border-blue-700/50' },
@@ -62,6 +71,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
             {primaryBadge === 'Vegan' && <Leaf size={9} />}
             {primaryBadge === 'Popular' && <Star size={9} className="fill-current" />}
             {primaryBadge === 'Seasonal' && <Zap size={9} />}
+            {primaryBadge === 'Trending' && <Flame size={9} className="text-orange-400" />}
             {primaryBadge}
           </div>
         )}
@@ -99,10 +109,17 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
           <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{dish.chef || 'Chef of the House'}</p>
         </div>
 
-        <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-1 text-[11px] text-neutral-500">
-            <Flame size={11} className="text-orange-500" />
-            <span>{dish.macros?.calories || '—'} cal</span>
+        <div className="flex flex-wrap items-center justify-between gap-1 mt-1">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
+            {dish.spiceLevel && SPICE_LEVELS[dish.spiceLevel] && (
+              <span title={dish.spiceLevel}>{SPICE_LEVELS[dish.spiceLevel]}</span>
+            )}
+            {dish.serves && (
+              <span className="flex items-center gap-0.5"><Users size={11} className="text-blue-400"/> {dish.serves}</span>
+            )}
+            {dish.prepTime && (
+              <span className="flex items-center gap-0.5">⏱ {dish.prepTime}m</span>
+            )}
           </div>
           <span className="font-display font-black text-base text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
         </div>
@@ -122,15 +139,49 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart } = useAppContext();
+  const { activeRestId, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
   const [serviceHubOpen, setServiceHubOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [dinerName, setDinerName] = useState('');
+  const [dinerPhone, setDinerPhone] = useState('');
+
   const heroRef = useRef(null);
   const { scrollY } = useScroll({ container: heroRef });
   const heroParallax = useTransform(scrollY, [0, 300], [0, 80]);
   const heroOpacity  = useTransform(scrollY, [0, 250], [1, 0.5]);
+
+  useEffect(() => {
+    const profile = localStorage.getItem('3dish_diner_profile');
+    if (!profile) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingSubmit = (e) => {
+    e.preventDefault();
+    if (dinerName && dinerPhone) {
+      const profile = { name: dinerName, phone: dinerPhone, firstVisit: new Date().toISOString() };
+      localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
+      setUser(prev => ({ ...prev, name: dinerName, phone: dinerPhone, role: 'diner' }));
+      setShowOnboarding(false);
+    }
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const dishId = entry.target.dataset.dishId;
+        }
+      });
+    }, { threshold: 0.5 });
+    
+    document.querySelectorAll('.dish-card-analytics').forEach(card => observer.observe(card));
+    return () => observer.disconnect();
+  }, [activeCategory, search, dishes]);
 
   const requestService = async (type) => {
     setServiceHubOpen(false);
@@ -141,8 +192,6 @@ export default function MenuPage() {
         event: 'waiter_call',
         payload: { tableNumber: restaurant?.tableNumber || '12', type, time: new Date().toISOString() }
       });
-      // Also show a local success notification (assuming showNotification is in context)
-      // We will assume showNotification is available or we can just let it silently succeed since the vendor gets it.
     } catch (e) {
       console.error('Failed to request service:', e);
     }
@@ -155,7 +204,7 @@ export default function MenuPage() {
   const restaurant = restaurants.find(r => r.id === activeRestId);
   const allDishes = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
 
-  const filtered = allDishes.filter(d => {
+  const filteredDishes = allDishes.filter(d => {
     const matchSearch = !search
       || d.name.toLowerCase().includes(search.toLowerCase())
       || d.description?.toLowerCase().includes(search.toLowerCase());
@@ -166,9 +215,6 @@ export default function MenuPage() {
         : d.category === activeCategory || d.tags?.includes(activeCategory);
     return matchSearch && matchCat;
   });
-
-  const handleDishClick = (id) => { setActiveDishId(id); navigate(`/dish/${id}`); };
-  const handleARClick   = (id) => { setActiveDishId(id); navigate(`/dish/${id}`); };
 
   const cartCount = cart.length;
 
@@ -181,7 +227,6 @@ export default function MenuPage() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${restaurant?.cover})`, y: heroParallax, opacity: heroOpacity }}
         />
-        {/* Gradient vignette */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d10] via-[#0d0d10]/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 
@@ -263,82 +308,34 @@ export default function MenuPage() {
         </AnimatePresence>
       </div>
 
-      {/* ── CATEGORY FILTER ── */}
-      <div className="flex gap-2 px-4 overflow-x-auto no-scrollbar pb-1 flex-shrink-0">
-        {CATEGORY_TABS.map(tab => (
-          <motion.button key={tab.key} onClick={() => setActiveCategory(tab.key)}
-            whileTap={{ scale: 0.93 }}
-            className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
-              activeCategory === tab.key
-                ? 'bg-[#D4AF37]/15 border-[#D4AF37]/40 text-[#D4AF37]'
-                : 'bg-white/4 border-white/6 text-neutral-500 dark:text-neutral-400 hover:border-neutral-200 dark:border-white/10 hover:text-neutral-900 dark:text-white'
-            }`}>
-            <span className="text-base leading-none">{tab.emoji}</span>
-            {tab.label}
-          </motion.button>
-        ))}
-      </div>
+        <div className="flex gap-2 px-5 mt-6 mb-2 overflow-x-auto no-scrollbar snap-x pb-4">
+          {CATEGORY_TABS.map((cat) => (
+            <button key={cat.key} onClick={() => setActiveCategory(cat.key)}
+              className={`snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl border font-bold text-sm transition-all ${
+                activeCategory === cat.key 
+                  ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-transparent shadow-lg shadow-black/10 dark:shadow-white/10' 
+                  : 'bg-white dark:bg-[#1a1a1f] text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-[#222228]'
+              }`}>
+              <span>{cat.emoji}</span> {cat.label}
+            </button>
+          ))}
+        </div>
 
-      {/* ── DISH GRID ── */}
-      <div className="flex-1 px-4 mt-5 pb-28">
-        {/* Section header */}
-        {activeCategory !== 'All' && (
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-bold text-lg text-neutral-900 dark:text-white">{activeCategory}</h2>
-            <span className="text-xs text-neutral-500">{filtered.length} items</span>
+        {/* Dynamic Offer Banner */}
+        {new Date().getHours() >= 16 && new Date().getHours() <= 19 && (
+          <div className="mx-5 mb-4 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-500/20 flex items-center justify-between">
+            <div>
+              <h3 className="font-display font-black text-lg flex items-center gap-2"><Flame size={18}/> Happy Hour!</h3>
+              <p className="text-sm text-white/90">20% off all drinks and starters</p>
+            </div>
+            <div className="bg-white text-orange-500 font-black px-3 py-1.5 rounded-lg text-sm">-20%</div>
           </div>
         )}
 
-        {/* Featured single (first bestseller) */}
-        {activeCategory === 'All' && (() => {
-          const featured = allDishes.find(d => d.tags?.includes('Bestseller') || d.tags?.includes("Chef's Pick"));
-          if (!featured) return null;
-          return (
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-              className="relative rounded-[2rem] overflow-hidden mb-5 cursor-pointer group"
-              onClick={() => handleDishClick(featured.id)}>
-              {/* Full-width hero card */}
-              <div className="relative h-56 overflow-hidden bg-[#111115]">
-                {featured.cover && <img src={featured.cover} alt={featured.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-900/80 border border-amber-700/50 backdrop-blur-md">
-                  <Star size={10} className="text-amber-300 fill-amber-300" />
-                  <span className="text-[11px] font-black text-amber-300 tracking-wide">Chef's Pick</span>
-                </div>
-                <button onClick={e => { e.stopPropagation(); handleARClick(featured.id); }}
-                  className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 border border-neutral-200 dark:border-white/15 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all">
-                  <Maximize2 size={15} className="text-neutral-900 dark:text-white" />
-                </button>
-              </div>
-              <div className="p-4 bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/5 border-t-0 rounded-b-[2rem]">
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 className="font-display font-black text-xl text-neutral-900 dark:text-white">{featured.name}</h3>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{featured.chef || 'Chef of the House'}</p>
-                  </div>
-                  <span className="font-display font-black text-xl text-[#D4AF37] bg-[#D4AF37]/10 px-3 py-1 rounded-xl border border-[#D4AF37]/20">
-                    ${Number(featured.price).toFixed(2)}
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-500 line-clamp-2 mt-2">{featured.description}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center gap-3 text-xs text-neutral-500">
-                    <span className="flex items-center gap-1"><Flame size={11} className="text-orange-500" />{featured.macros?.calories || '—'} cal</span>
-                    {featured.prepTime && <span>⏱ {featured.prepTime} min</span>}
-                  </div>
-                  <button onClick={e => { e.stopPropagation(); addToCart(featured); }}
-                    className="px-4 py-1.5 rounded-xl bg-[#D4AF37] text-black text-xs font-black hover:bg-amber-400 transition-all">
-                    + Add
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })()}
-
-        {/* 2-column grid */}
+        {/* ── DISH GRID ── */}
+        <div className="px-5 pb-32">
         <AnimatePresence mode="popLayout">
-          {filtered.length === 0 ? (
+          {filteredDishes.length === 0 ? (
             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="text-center py-20 text-neutral-600">
               <ChefHat size={48} className="mx-auto mb-4 opacity-30" />
@@ -346,24 +343,44 @@ export default function MenuPage() {
               <p className="text-sm mt-1">Try a different category or search</p>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {filtered
-                .filter(d => activeCategory !== 'All' || !(d.tags?.includes('Bestseller') || d.tags?.includes("Chef's Pick") || d.id === allDishes.find(x => x.tags?.includes('Bestseller') || x.tags?.includes("Chef's Pick"))?.id))
-                .map((dish, index) => (
-                  <DishCard
-                    key={dish.id}
-                    dish={dish}
-                    index={index}
-                    onDishClick={handleDishClick}
-                    onAddToCart={addToCart}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {filteredDishes.map((dish, i) => (
+                <div key={dish.id} data-dish-id={dish.id} className="dish-card-analytics">
+                  <DishCard 
+                    dish={dish} index={i}
                     isFav={favorites.includes(dish.id)}
-                    onToggleFav={toggleFavorite}
-                    onARClick={handleARClick}
+                    onToggleFav={() => toggleFavorite(dish.id)}
+                    onAddToCart={(e) => { e.stopPropagation(); addToCart(dish); }}
+                    onDishClick={() => navigate(`/dish/${dish.id}`)}
+                    onARClick={dish.modelUrl || dish.model_url ? (e) => { e.stopPropagation(); navigate(`/dish/${dish.id}`); } : undefined}
                   />
-                ))}
+                </div>
+              ))}
             </div>
           )}
         </AnimatePresence>
+        </div>
+
+        {/* ── UPCOMING EVENTS ── */}
+        <div className="px-5 pb-32">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-display font-black text-xl flex items-center gap-2"><CalendarIcon size={20} className="text-indigo-500" /> Upcoming Events</h2>
+            <button className="text-xs font-bold text-indigo-500">View All</button>
+          </div>
+          <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x pb-4">
+            <div className="shrink-0 w-[280px] snap-start bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
+              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex flex-col items-center justify-center mb-4 border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
+                 <span className="text-[10px] font-black uppercase tracking-widest">Oct</span>
+                 <span className="text-xl font-black">28</span>
+              </div>
+              <h3 className="font-display font-black text-lg mb-1">Live Jazz Night</h3>
+              <p className="text-sm text-neutral-500 mb-4 line-clamp-2">Enjoy live music with our special 3-course dinner menu. Perfect for date night!</p>
+              <button className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-black font-black text-sm rounded-xl hover:opacity-90 transition-opacity">
+                RSVP Now
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── SERVICE HUB FAB ── */}
@@ -402,6 +419,47 @@ export default function MenuPage() {
           {serviceHubOpen ? <X size={24} /> : <BellRing size={24} />}
         </button>
       </div>
+
+      <AnimatePresence>
+        {showOnboarding && (
+          // ... Onboarding logic ...
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-[#12141D] w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-neutral-200 dark:border-white/10 relative overflow-hidden"
+            >
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#D4AF37]/20 blur-3xl rounded-full pointer-events-none" />
+              <div className="text-center mb-6 relative z-10">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30 mb-4">
+                  <ChefHat size={32} className="text-black" />
+                </div>
+                <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white">Welcome!</h2>
+                <p className="text-sm text-neutral-500 mt-1">Please enter your details to view the menu and place orders.</p>
+              </div>
+              <form onSubmit={handleOnboardingSubmit} className="space-y-4 relative z-10">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Your Name</label>
+                  <input required type="text" value={dinerName} onChange={e => setDinerName(e.target.value)} placeholder="e.g. John Doe"
+                    className="w-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                  <input required type="tel" value={dinerPhone} onChange={e => setDinerPhone(e.target.value)} placeholder="e.g. 9876543210"
+                    className="w-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                </div>
+                <button type="submit" className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
+                  View Menu
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Waiter Component */}
+      <AIWaiter />
 
       <BottomNav />
     </div>
