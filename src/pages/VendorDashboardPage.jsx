@@ -801,7 +801,7 @@ export default function VendorDashboardPage() {
           )}
 
           {/* ── EVENTS TAB ── */}
-          {activeTab === 'events' && (
+          {vendorTab === 'events' && (
             <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
