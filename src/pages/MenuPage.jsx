@@ -381,7 +381,6 @@ export default function MenuPage() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* ── SERVICE HUB FAB ── */}
       <div className="fixed bottom-24 right-5 z-50 flex flex-col items-end">

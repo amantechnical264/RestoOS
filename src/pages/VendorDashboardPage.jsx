@@ -6,7 +6,7 @@ import {
   Users, Save, Trash2, RefreshCw, Printer, ChefHat, Sparkles, Crown,
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
-  ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, Toggle, ToggleRight,
+  ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
   TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
