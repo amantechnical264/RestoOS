@@ -12,7 +12,7 @@ const STEP_LABELS = ['Order', 'Dining', 'Details', 'Payment'];
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor } = useAppContext();
   const { t } = useTranslation();
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -39,7 +39,12 @@ export default function CartPage() {
   const [groupSession, setGroupSession] = useState(null);
   const [splitWays, setSplitWays] = useState(1);
 
-  const cartWithModels = cart.filter(c => c.modelUrl || c.model_url);
+  // ── Subscription plan gate ──
+  const PLANS = ['Starter', 'Pro', 'Enterprise'];
+  const restaurantPlan = planFor ? planFor(activeRestId) : 'Starter';
+  const hasEnterprise = PLANS.indexOf(restaurantPlan) >= PLANS.indexOf('Enterprise');
+
+  const cartWithModels = hasEnterprise ? cart.filter(c => c.modelUrl || c.model_url) : [];
 
   useEffect(() => {
     const checkSession = async () => {

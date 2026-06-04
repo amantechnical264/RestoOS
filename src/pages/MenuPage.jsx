@@ -139,7 +139,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser } = useAppContext();
+  const { activeRestId, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -147,6 +147,11 @@ export default function MenuPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dinerName, setDinerName] = useState('');
   const [dinerPhone, setDinerPhone] = useState('');
+
+  // ── Subscription plan gate for this restaurant ──
+  const PLANS = ['Starter', 'Pro', 'Enterprise'];
+  const restaurantPlan = planFor ? planFor(activeRestId) : 'Starter';
+  const hasEnterprise = PLANS.indexOf(restaurantPlan) >= PLANS.indexOf('Enterprise');
 
   const heroRef = useRef(null);
   const { scrollY } = useScroll({ container: heroRef });
@@ -352,7 +357,7 @@ export default function MenuPage() {
                     onToggleFav={() => toggleFavorite(dish.id)}
                     onAddToCart={(e) => { e.stopPropagation(); addToCart(dish); }}
                     onDishClick={() => navigate(`/dish/${dish.id}`)}
-                    onARClick={dish.modelUrl || dish.model_url ? (e) => { e.stopPropagation(); navigate(`/dish/${dish.id}`); } : undefined}
+                    onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? (e) => { e.stopPropagation(); navigate(`/dish/${dish.id}`); } : undefined}
                   />
                 </div>
               ))}
@@ -457,8 +462,8 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
-      {/* AI Waiter Component */}
-      <AIWaiter />
+      {/* AI Waiter Component — Enterprise Plan only */}
+      {hasEnterprise && <AIWaiter />}
 
       <BottomNav />
     </div>

@@ -67,6 +67,24 @@ export const AppProvider = ({ children }) => {
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
   const [vendorTab, setVendorTab] = useState('orders');
+
+  // ── Subscription Plan State ────────────────────────────────────────
+  // Stored per restaurant: { [restId]: 'Starter' | 'Pro' | 'Enterprise' }
+  const [plans, setPlans] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('3dish_plans') || '{}'); } catch { return {}; }
+  });
+
+  // Get plan for a given restaurant (defaults to 'Starter')
+  const planFor = (restId) => plans[restId] || 'Starter';
+
+  // Upgrade (or downgrade) a restaurant's plan
+  const upgradePlan = (restId, newPlan) => {
+    setPlans(prev => {
+      const next = { ...prev, [restId]: newPlan };
+      localStorage.setItem('3dish_plans', JSON.stringify(next));
+      return next;
+    });
+  };
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('3dish_favorites') || '[]'); } catch { return []; }
   });
@@ -451,6 +469,7 @@ export const AppProvider = ({ children }) => {
     dishes, setDishes, addDish, updateDish,
     notification, showNotification,
     vendorTab, setVendorTab,
+    plans, planFor, upgradePlan,
     serviceAlerts, setServiceAlerts,
     addToCart,
     placeOrder,

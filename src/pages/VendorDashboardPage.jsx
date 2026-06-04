@@ -147,8 +147,49 @@ export default function VendorDashboardPage() {
     orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus,
     dishes, restaurants, addDish, updateDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
-    theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts
+    theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
+    planFor, upgradePlan,
   } = useAppContext();
+
+  // ── Subscription helpers ────────────────────────────────────────
+  const PLANS = ['Starter', 'Pro', 'Enterprise'];
+  const currentPlan = planFor(activeRestId);
+  const hasPro        = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Pro');
+  const hasEnterprise = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Enterprise');
+
+  // Lock screen component for gated tabs
+  const UpgradeLock = ({ requiredPlan, feature }) => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+      className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-neutral-50 dark:bg-black"
+    >
+      <div className="max-w-md text-center">
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.35)' }}>
+          <Crown size={36} style={{ color: GOLD }} />
+        </div>
+        <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white mb-2">{feature} is a {requiredPlan} Feature</h2>
+        <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
+          Upgrade your plan to unlock {feature}, deeper analytics, customer CRM, AI concierge, and more premium capabilities.
+        </p>
+        <div className="grid grid-cols-1 gap-3">
+          {PLANS.filter(p => PLANS.indexOf(p) >= PLANS.indexOf(requiredPlan)).map(p => (
+            <button key={p} type="button"
+              onClick={() => { if (activeRestId) { upgradePlan(activeRestId, p); showNotification(`🌟 Upgraded to ${p}!`); } }}
+              className="w-full py-3.5 rounded-2xl font-black text-sm transition-all"
+              style={p === requiredPlan
+                ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }
+                : { background: 'transparent', border: `1px solid ${GOLD}`, color: GOLD }
+              }
+            >
+              {p === 'Pro' ? 'Upgrade to Pro — $49/mo' : 'Upgrade to Enterprise — $99/mo'}
+            </button>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-neutral-500">Cancel anytime. Instant access upon upgrade.</p>
+      </div>
+    </motion.div>
+  );
 
   // ── Guards ────────────────────────────────────────────────────────
   React.useEffect(() => {
@@ -366,12 +407,7 @@ export default function VendorDashboardPage() {
 
       {/* ── HEADER ── */}
       <div
-        className="px-5 py-3 flex justify-between items-center z-10 shrink-0 backdrop-blur-xl"
-        style={{
-          background: 'rgba(0,0,0,0.97)',
-          borderBottom: '1px solid rgba(212,175,55,0.2)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        }}
+        className="px-5 py-3 flex justify-between items-center z-10 shrink-0 backdrop-blur-xl bg-white dark:bg-black/95 border-b border-neutral-200 dark:border-[rgba(212,175,55,0.2)] shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
       >
         <div className="flex items-center gap-3">
           <div
@@ -381,7 +417,7 @@ export default function VendorDashboardPage() {
             <Store size={18} className="text-black" />
           </div>
           <div>
-            <h1 className="font-display font-black text-base leading-tight text-white">{currentRestaurant?.name || 'Dashboard'}</h1>
+            <h1 className="font-display font-black text-base leading-tight text-neutral-900 dark:text-white">{currentRestaurant?.name || 'Dashboard'}</h1>
             <p className="text-[11px] flex items-center gap-1.5 text-neutral-500">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500" />
               {user?.email || 'Synced to Cloud'}
@@ -406,15 +442,14 @@ export default function VendorDashboardPage() {
 
       {/* ── TABS ── */}
       <div
-        className="flex shrink-0 overflow-x-auto no-scrollbar"
-        style={{ background: '#000', borderBottom: '1px solid rgba(212,175,55,0.15)' }}
+        className="flex shrink-0 overflow-x-auto no-scrollbar bg-neutral-100 dark:bg-black border-b border-neutral-200 dark:border-[rgba(212,175,55,0.15)]"
       >
         {TAB_CONFIG.map(tab => (
           <button key={tab.key} onClick={() => setVendorTab(tab.key)}
-            className="relative px-4 py-3.5 text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all"
+            className={`relative px-4 py-3.5 text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${vendorTab !== tab.key ? 'text-neutral-500 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white' : ''}`}
             style={{
               borderBottom: vendorTab === tab.key ? `2px solid ${GOLD}` : '2px solid transparent',
-              color: vendorTab === tab.key ? GOLD : 'rgba(255,255,255,0.4)',
+              color: vendorTab === tab.key ? GOLD : 'inherit',
               background: vendorTab === tab.key ? 'rgba(212,175,55,0.06)' : 'transparent',
             }}
           >
@@ -587,6 +622,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'analytics' && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Analytics Hub" /> : (
               <div className="max-w-5xl mx-auto space-y-6">
 
                 {/* Header */}
@@ -712,6 +748,7 @@ export default function VendorDashboardPage() {
                   </div>
                 </div>
               </div>
+              )}
             </motion.div>
           )}
 
@@ -802,33 +839,36 @@ export default function VendorDashboardPage() {
 
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
-            <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-2xl font-display font-black">Events & Promos</h2>
-                  <p className="text-neutral-500">Manage your upcoming restaurant events.</p>
-                </div>
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2">
-                  <Plus size={16} /> Create Event
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 flex items-start gap-4">
-                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex flex-col items-center justify-center border border-orange-200 dark:border-orange-800/50">
-                     <span className="text-xs font-bold text-orange-600 dark:text-orange-400">OCT</span>
-                     <span className="text-xl font-black text-orange-700 dark:text-orange-300">28</span>
+            <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-0 overflow-y-auto p-6">
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Events & Promos" /> : (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-display font-black">Events & Promos</h2>
+                    <p className="text-neutral-500">Manage your upcoming restaurant events.</p>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg">Live Jazz Night</h3>
-                    <p className="text-sm text-neutral-500">Enjoy live music with our special dinner menu.</p>
-                    <div className="mt-3 flex gap-2">
-                      <span className="px-2 py-1 bg-neutral-100 dark:bg-white/5 rounded-md text-xs font-bold">18 RSVPs</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-bold">Active</span>
+                  <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2">
+                    <Plus size={16} /> Create Event
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 flex items-start gap-4">
+                    <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex flex-col items-center justify-center border border-orange-200 dark:border-orange-800/50">
+                       <span className="text-xs font-bold text-orange-600 dark:text-orange-400">OCT</span>
+                       <span className="text-xl font-black text-orange-700 dark:text-orange-300">28</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg">Live Jazz Night</h3>
+                      <p className="text-sm text-neutral-500">Enjoy live music with our special dinner menu.</p>
+                      <div className="mt-3 flex gap-2">
+                        <span className="px-2 py-1 bg-neutral-100 dark:bg-white/5 rounded-md text-xs font-bold">18 RSVPs</span>
+                        <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-bold">Active</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              )}
             </motion.div>
           )}
 
@@ -1099,6 +1139,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'growth' && (
             <motion.div key="growth" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Growth Tools" /> : (
               <div className="max-w-3xl mx-auto space-y-6">
                 <div>
                   <h2 className="font-display font-black text-2xl">Growth Tools</h2>
@@ -1210,6 +1251,7 @@ export default function VendorDashboardPage() {
                   <p className="text-xs text-blue-200">Activate promos to increase this by 15-40%</p>
                 </div>
               </div>
+              )}
             </motion.div>
           )}
 
@@ -1217,6 +1259,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'customers' && (
             <motion.div key="customers" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Customer Insights" /> : (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div>
                   <h2 className="font-display font-black text-2xl">Customer Insights</h2>
@@ -1296,6 +1339,7 @@ export default function VendorDashboardPage() {
                   </div>
                 </div>
               </div>
+              )}
             </motion.div>
           )}
 
@@ -1354,17 +1398,16 @@ export default function VendorDashboardPage() {
           {/* ════════════════════ SETTINGS ════════════════════ */}
           {vendorTab === 'settings' && (
             <motion.div key="settings" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 overflow-y-auto p-6"
-              style={{ background: '#050505' }}
+              className="absolute inset-0 overflow-y-auto p-6 bg-neutral-50 dark:bg-[#050505]"
             >
               <div className="max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-display font-black text-white">Restaurant Settings</h2>
+                  <h2 className="text-2xl font-display font-black text-neutral-900 dark:text-white">Restaurant Settings</h2>
                   <p className="text-sm text-neutral-500 mt-0.5">Configure your restaurant, AI, and marketing settings</p>
                 </div>
 
                 <form onSubmit={handleSettingsSave} className="space-y-4">
-                  <div className="rounded-2xl p-5 space-y-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                  <div className="rounded-2xl p-5 space-y-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <Store size={13}/> Restaurant Profile
                     </h3>
@@ -1392,7 +1435,7 @@ export default function VendorDashboardPage() {
                   </div>
 
                   {/* Billing & Payments */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <DollarSign size={13}/> Billing & Payments
                     </h3>
@@ -1414,13 +1457,13 @@ export default function VendorDashboardPage() {
                   </div>
 
                   {/* ── AI Waiter Settings ── */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <BrainCircuit size={13}/> AI Waiter Settings
                     </h3>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold text-white">Enable AI Concierge</p>
+                        <p className="text-sm font-bold text-neutral-900 dark:text-white">Enable AI Concierge</p>
                         <p className="text-xs text-neutral-500 mt-0.5">Show floating AI Waiter to customers</p>
                       </div>
                       <button type="button" className="w-12 h-6 rounded-full transition-all relative"
@@ -1436,7 +1479,7 @@ export default function VendorDashboardPage() {
                   </div>
 
                   {/* ── Happy Hour / Offers Management ── */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <Flame size={13}/> Dynamic Offers (Happy Hour)
                     </h3>
@@ -1461,41 +1504,51 @@ export default function VendorDashboardPage() {
                   </div>
 
                   {/* ── Subscription Plans ── */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <Crown size={13}/> Subscription Plan
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {[
-                        { plan: 'Starter', desc: 'Basic QR Menu', price: 'Free' },
-                        { plan: 'Growth',  desc: 'AR + Analytics + AI Waiter', price: '$49/mo', active: true },
-                        { plan: 'Scale',   desc: 'Full CRM + White Label', price: '$99/mo' },
-                      ].map(({ plan, desc, price, active }) => (
-                        <div key={plan} className="rounded-xl p-4 relative"
-                          style={{
-                            background: active ? 'linear-gradient(145deg, #1a1500, #0a0a00)' : '#111',
-                            border: active ? `1px solid ${GOLD}` : '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: active ? `0 0 20px rgba(212,175,55,0.2)` : 'none',
-                          }}>
-                          {active && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 rounded-full text-black" style={{ background: goldGradient }}>ACTIVE</span>}
-                          <h4 className="font-black text-base text-white mb-0.5">{plan}</h4>
+                        { plan: 'Starter',    desc: 'Basic QR Menu & Orders',      price: 'Free' },
+                        { plan: 'Pro',         desc: 'AR + Analytics + CRM',         price: '$49/mo' },
+                        { plan: 'Enterprise',  desc: 'AI Waiter + 3D + White Label', price: '$99/mo' },
+                      ].map(({ plan, desc, price }) => {
+                        const isActive = currentPlan === plan;
+                        return (
+                        <div key={plan}
+                          className={`rounded-xl p-4 relative ${
+                            isActive
+                              ? ''
+                              : 'bg-neutral-100 dark:bg-[#181818] border border-neutral-200 dark:border-white/10'
+                          }`}
+                          style={isActive ? {
+                            background: 'linear-gradient(145deg, #1a1500, #0a0a00)',
+                            border: `1px solid ${GOLD}`,
+                            boxShadow: `0 0 20px rgba(212,175,55,0.2)`,
+                          } : {}}
+                        >
+                          {isActive && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 rounded-full text-black" style={{ background: goldGradient }}>ACTIVE</span>}
+                          <h4 className="font-black text-base text-neutral-900 dark:text-white mb-0.5">{plan}</h4>
                           <p className="text-xs text-neutral-500 mb-2">{desc}</p>
-                          <p className="font-black text-sm mb-3" style={{ color: active ? GOLD : 'rgba(255,255,255,0.5)' }}>{price}</p>
+                          <p className={`font-black text-sm mb-3 ${isActive ? '' : 'text-neutral-400 dark:text-white/50'}`} style={{ color: isActive ? GOLD : undefined }}>{price}</p>
                           <button type="button"
+                            onClick={() => { if (!isActive && activeRestId) { upgradePlan(activeRestId, plan); showNotification(`🌟 Switched to ${plan} plan!`); }}}
                             className="w-full py-2 rounded-lg text-xs font-bold transition-all"
-                            style={active
+                            style={isActive
                               ? { background: goldGradient, color: '#000' }
-                              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }
+                              : { background: 'rgba(212,175,55,0.08)', color: GOLD, border: `1px solid rgba(212,175,55,0.3)` }
                             }>
-                            {active ? 'Current Plan' : 'Upgrade →'}
+                            {isActive ? 'Current Plan ✓' : `Upgrade to ${plan} →`}
                           </button>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* ── OCR Menu Import ── */}
-                  <div className="rounded-2xl p-5 space-y-3 mt-4" style={{ background: '#0a0a0a', border: '1px solid rgba(212,175,55,0.15)' }}>
+                  <div className="rounded-2xl p-5 space-y-3 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <Upload size={13}/> AI Menu Import (OCR)
                     </h3>
