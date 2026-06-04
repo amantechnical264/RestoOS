@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
+import ModelViewer from '../components/ModelViewer';
 
 // ─── Mini Bar Chart (pure SVG, no library) ────────────────────────────
 const MiniBarChart = ({ data, color = '#3B82F6', height = 80 }) => {
@@ -859,16 +860,12 @@ export default function VendorDashboardPage() {
                         
                         {/* Live Model Preview */}
                         <div className="w-full h-64 bg-neutral-100 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden relative">
-                          <div dangerouslySetInnerHTML={{__html: `
-                            <model-viewer
-                              src="${editingDish.modelUrl}"
-                              auto-rotate rotation-per-second="10deg"
-                              camera-controls touch-action="pan-y"
-                              shadow-intensity="1.5" environment-image="neutral" exposure="1.2"
-                              style="width:100%;height:100%;--poster-color:transparent;"
-                            ></model-viewer>
-                          `}} />
-                          <div className="absolute top-3 left-3 px-2 py-1 bg-black/50 backdrop-blur-md rounded-md text-[9px] font-black text-white tracking-widest uppercase border border-white/10">
+                          <ModelViewer 
+                            src={editingDish.modelUrl}
+                            autoRotate
+                            cameraControls
+                          />
+                          <div className="absolute top-3 left-3 px-2 py-1 bg-white/80 dark:bg-black/50 backdrop-blur-md rounded-md text-[9px] font-black text-neutral-900 dark:text-white tracking-widest uppercase border border-neutral-200 dark:border-white/10">
                             Live Preview
                           </div>
                         </div>

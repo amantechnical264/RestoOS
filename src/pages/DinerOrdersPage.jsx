@@ -43,11 +43,11 @@ function OrderTimeline({ currentStatus }) {
                 backgroundColor: isCompleted ? '#3b82f6' : '#262626',
                 borderColor: isCompleted ? '#60a5fa' : '#404040'
               }}
-              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-500 ${isCompleted ? 'text-white' : 'text-neutral-500'}`}
+              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-500 ${isCompleted ? 'text-neutral-900 dark:text-white' : 'text-neutral-500'}`}
             >
               <step.icon size={14} />
             </motion.div>
-            <span className={`text-[10px] font-bold absolute -bottom-5 w-20 text-center transition-colors duration-500 ${isActive ? 'text-blue-400' : isCompleted ? 'text-neutral-300' : 'text-neutral-600'}`}>
+            <span className={`text-[10px] font-bold absolute -bottom-5 w-20 text-center transition-colors duration-500 ${isActive ? 'text-blue-400' : isCompleted ? 'text-neutral-600 dark:text-neutral-300' : 'text-neutral-600'}`}>
               {step.label}
             </span>
           </div>
@@ -76,8 +76,8 @@ export default function DinerOrdersPage() {
   });
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col h-screen bg-neutral-950 text-white pb-24">
-      <div className="p-6 border-b border-neutral-900 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-10">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col h-screen bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white pb-24">
+      <div className="p-6 border-b border-neutral-900 bg-neutral-50 dark:bg-neutral-900/50 backdrop-blur-md sticky top-0 z-10">
         <h1 className="text-2xl font-black">{t('orders.liveTracking')}</h1>
       </div>
       
@@ -93,12 +93,12 @@ export default function DinerOrdersPage() {
             <motion.div 
               key={order.id} 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}
-              className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-800 rounded-[2rem] p-6 shadow-lg"
+              className="bg-neutral-50 dark:bg-neutral-900/80 backdrop-blur-sm border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-lg"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <span className="font-black text-xl">{restaurants.find(r => r.id === (order.restId || order.rest_id))?.name || 'Restaurant'}</span>
-                  <span className="block text-xs font-bold text-neutral-400 mt-1 uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mt-1 uppercase tracking-wider">
                     <span className="text-blue-400">{getOrderNumber(order)}</span> • {order.orderType === 'prepaid' ? `Pre-Order @ ${order.scheduledTime}` : 'Dine-In'}
                   </span>
                 </div>
@@ -117,7 +117,7 @@ export default function DinerOrdersPage() {
                     {order.verificationCode && (
                       <p className="text-4xl font-black text-amber-300 tracking-[0.4em] font-mono mb-3">{order.verificationCode}</p>
                     )}
-                    <p className="text-sm text-neutral-400">Show this code to the waiter to confirm your table presence.</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Show this code to the waiter to confirm your table presence.</p>
                   </div>
                 </motion.div>
               )}
@@ -139,8 +139,8 @@ export default function DinerOrdersPage() {
 
               <OrderTimeline currentStatus={order.status} />
 
-              <div className="bg-black/40 rounded-2xl p-4 mb-4 border border-white/5">
-                <ul className="text-sm font-medium text-neutral-300 space-y-2">
+              <div className="bg-black/40 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-white/5">
+                <ul className="text-sm font-medium text-neutral-600 dark:text-neutral-300 space-y-2">
                   {order.items.map((item, i) => <li key={i} className="flex justify-between"><span>1x {item.name}</span><span className="text-neutral-500">${Number(item.price).toFixed(2)}</span></li>)}
                 </ul>
               </div>
@@ -163,18 +163,18 @@ export default function DinerOrdersPage() {
                     if (btn) {
                       const original = btn.innerHTML;
                       btn.innerHTML = '✔ Waiter Notified!';
-                      btn.classList.replace('text-neutral-300', 'text-emerald-400');
-                      setTimeout(() => { btn.innerHTML = original; btn.classList.replace('text-emerald-400', 'text-neutral-300'); }, 3000);
+                      btn.classList.replace('text-neutral-600 dark:text-neutral-300', 'text-emerald-400');
+                      setTimeout(() => { btn.innerHTML = original; btn.classList.replace('text-emerald-400', 'text-neutral-600 dark:text-neutral-300'); }, 3000);
                     }
                   } catch(e) { console.error(e); }
-                }} id={`call-waiter-${order.id}`} className="w-full mb-4 bg-[#1a1a1f] hover:bg-[#D4AF37]/10 text-neutral-300 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 border border-white/10 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
+                }} id={`call-waiter-${order.id}`} className="w-full mb-4 bg-neutral-50 dark:bg-[#1a1a1f] hover:bg-[#D4AF37]/10 text-neutral-600 dark:text-neutral-300 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 border border-neutral-200 dark:border-white/10 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
                   <Bell size={16} /> Call Waiter
                 </button>
               )}
               
-              <div className="flex justify-between items-center text-sm font-black pt-2 border-t border-neutral-800/50 pt-4">
+              <div className="flex justify-between items-center text-sm font-black pt-2 border-t border-neutral-200 dark:border-neutral-800/50 pt-4">
                 <span className="text-xl">{t('orders.total')}: <span className="text-blue-400">${Number(order.total).toFixed(2)}</span></span>
-                <span className={`px-3 py-1 rounded-lg text-xs ${order.paymentStatus === 'Paid' ? 'bg-emerald-900/20 text-emerald-400' : 'bg-neutral-800 text-neutral-400'}`}>
+                <span className={`px-3 py-1 rounded-lg text-xs ${order.paymentStatus === 'Paid' ? 'bg-emerald-900/20 text-emerald-400' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400'}`}>
                   {order.paymentStatus} via {order.paymentMethod}
                 </span>
               </div>

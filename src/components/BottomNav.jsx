@@ -19,7 +19,7 @@ export default function BottomNav() {
 
   return (
     <div
-      className="fixed bottom-0 w-full flex justify-around pt-3 pb-8 z-40 bg-[#1a1a1f]/80 backdrop-blur-2xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
+      className="fixed bottom-0 w-full flex justify-around pt-3 pb-8 z-40 bg-neutral-50 dark:bg-white/80 dark:bg-[#1a1a1f]/80 backdrop-blur-2xl border-t border-neutral-200 dark:border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
     >
       {navItems.map((item) => (
         <NavLink key={item.to} to={item.to}
@@ -37,7 +37,7 @@ export default function BottomNav() {
                 <item.icon
                   size={24}
                   strokeWidth={isActive ? 2.5 : 2}
-                  className={`relative z-10 transition-colors duration-300 ${isActive ? 'text-[#D4AF37]' : 'text-neutral-500 group-hover:text-white/80'}`}
+                  className={`relative z-10 transition-colors duration-300 ${isActive ? 'text-[#D4AF37]' : 'text-neutral-500 group-hover:text-neutral-900 dark:text-white/80'}`}
                 />
                 {item.badge && (
                   <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-sans font-black text-[10px] px-1"
@@ -47,7 +47,7 @@ export default function BottomNav() {
                 )}
               </motion.div>
               <span
-                className={`text-[10px] mt-2 font-display font-bold tracking-wider uppercase transition-colors duration-300 ${isActive ? 'text-[#D4AF37]' : 'text-neutral-500 group-hover:text-white/80'}`}
+                className={`text-[10px] mt-2 font-display font-bold tracking-wider uppercase transition-colors duration-300 ${isActive ? 'text-[#D4AF37]' : 'text-neutral-500 group-hover:text-neutral-900 dark:text-white/80'}`}
               >
                 {item.label}
               </span>

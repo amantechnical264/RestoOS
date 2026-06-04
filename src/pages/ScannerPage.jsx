@@ -86,7 +86,7 @@ export default function ScannerPage() {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen relative overflow-hidden bg-neutral-50 dark:bg-midnight-900 transition-colors"
+      className="flex flex-col h-screen relative overflow-hidden bg-neutral-50 dark:bg-white dark:bg-midnight-900 transition-colors"
     >
       {/* SaaS Tech Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full opacity-20 dark:opacity-10 pointer-events-none blur-[100px]"
@@ -105,7 +105,7 @@ export default function ScannerPage() {
         <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           className="relative z-20 p-6 pt-14 flex items-center">
           <button onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 text-sm font-sans font-medium hover:text-black dark:hover:text-white transition-colors bg-white/50 dark:bg-white/5 px-4 py-2 rounded-full backdrop-blur-md border border-neutral-200 dark:border-white/10">
+            className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500 dark:text-neutral-400 text-sm font-sans font-medium hover:text-black dark:hover:text-neutral-900 dark:text-white transition-colors bg-white/50 dark:bg-white/5 px-4 py-2 rounded-full backdrop-blur-md border border-neutral-200 dark:border-white/10">
             <ChevronRight size={16} className="rotate-180" />
             Back to Menu
           </button>
@@ -121,7 +121,7 @@ export default function ScannerPage() {
           <span className="text-[#D4AF37] text-xs font-sans font-bold tracking-widest uppercase">Smart Dining</span>
         </div>
         <h1 className="text-5xl font-display font-black text-neutral-900 dark:text-white tracking-tight mb-3 transition-colors">3Dish</h1>
-        <p className="text-neutral-400 text-sm font-sans max-w-[250px] mx-auto leading-relaxed">
+        <p className="text-neutral-500 dark:text-neutral-400 text-sm font-sans max-w-[250px] mx-auto leading-relaxed">
           Align your camera with the table code to launch the augmented reality menu.
         </p>
       </motion.div>
@@ -141,7 +141,7 @@ export default function ScannerPage() {
                 <div className="absolute -inset-4 border-[1px] border-dashed border-[#AA8C2C]/20 rounded-full animate-[reticleSpin_8s_linear_infinite_reverse]" />
 
                 {/* Main viewfinder */}
-                <div className="w-72 h-72 rounded-[2rem] relative overflow-hidden bg-white/80 dark:bg-midnight-800/80 backdrop-blur-xl border border-neutral-200 dark:border-white/10 shadow-[0_0_50px_rgba(212,175,55,0.15)] transition-colors">
+                <div className="w-72 h-72 rounded-[2rem] relative overflow-hidden bg-white/80 dark:bg-neutral-50 dark:bg-midnight-800/80 backdrop-blur-xl border border-neutral-200 dark:border-white/10 shadow-[0_0_50px_rgba(212,175,55,0.15)] transition-colors">
                   
                   {/* Scanner Beam */}
                   <motion.div
@@ -187,7 +187,7 @@ export default function ScannerPage() {
             <motion.div key="success"
               initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 left-0 right-0 w-full pt-8 pb-10 px-6 rounded-t-[3rem] border-t border-white/10"
+              className="absolute bottom-0 left-0 right-0 w-full pt-8 pb-10 px-6 rounded-t-[3rem] border-t border-neutral-200 dark:border-white/10"
               style={{ background: 'rgba(18, 20, 29, 0.85)', backdropFilter: 'blur(40px)', boxShadow: '0 -20px 60px rgba(0,0,0,0.5)' }}>
               
               <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8" />
@@ -200,8 +200,8 @@ export default function ScannerPage() {
 
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
                   <p className="text-accent-emerald font-sans font-bold text-sm tracking-widest uppercase mb-2">Connected</p>
-                  <h2 className="text-4xl font-display font-black text-white mb-3">{scannedRest?.name || 'Restaurant'}</h2>
-                  <p className="text-neutral-300 text-sm font-sans mb-8 max-w-[280px] mx-auto leading-relaxed">
+                  <h2 className="text-4xl font-display font-black text-neutral-900 dark:text-white mb-3">{scannedRest?.name || 'Restaurant'}</h2>
+                  <p className="text-neutral-600 dark:text-neutral-300 text-sm font-sans mb-8 max-w-[280px] mx-auto leading-relaxed">
                     Table synchronized. Ready to explore the interactive 3D menu.
                   </p>
                 </motion.div>
@@ -224,7 +224,7 @@ export default function ScannerPage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
           className="absolute bottom-10 left-0 right-0 z-30 flex justify-center">
           <button onClick={() => navigate('/vendor-auth')}
-            className="font-sans text-xs font-bold px-8 py-4 rounded-full transition-all border border-neutral-200 dark:border-white/20 text-white bg-neutral-900 dark:text-black dark:bg-white hover:scale-105 shadow-xl flex items-center gap-2">
+            className="font-sans text-xs font-bold px-8 py-4 rounded-full transition-all border border-neutral-200 dark:border-white/20 text-neutral-900 dark:text-white bg-neutral-50 dark:bg-neutral-900 dark:text-black dark:bg-white hover:scale-105 shadow-xl flex items-center gap-2">
             Restaurant Partner? <span className="text-[#D4AF37] dark:text-[#AA8C2C]">Sign In</span>
           </button>
         </motion.div>

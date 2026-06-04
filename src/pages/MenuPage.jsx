@@ -37,7 +37,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className="relative flex flex-col rounded-[1.75rem] overflow-hidden bg-[#1a1a1f] border border-white/5 shadow-xl group cursor-pointer"
+      className="relative flex flex-col rounded-[1.75rem] overflow-hidden bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/5 shadow-xl group cursor-pointer"
       onClick={() => onDishClick(dish.id)}
     >
       {/* Food Photo */}
@@ -77,25 +77,25 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
         {hasModel && (
           <button
             onClick={e => { e.stopPropagation(); onARClick(dish.id); }}
-            className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-black/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"
+            className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-black/40 border border-neutral-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"
           >
-            <Maximize2 size={14} className="text-white" />
+            <Maximize2 size={14} className="text-neutral-900 dark:text-white" />
           </button>
         )}
 
         {/* Favorite */}
         <button
           onClick={e => { e.stopPropagation(); onToggleFav(dish.id); }}
-          className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-red-500/30 transition-all"
+          className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/40 border border-neutral-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-red-500/30 transition-all"
         >
-          <Heart size={13} className={isFav ? 'text-red-400 fill-red-400' : 'text-white'} />
+          <Heart size={13} className={isFav ? 'text-red-400 fill-red-400' : 'text-neutral-900 dark:text-white'} />
         </button>
       </div>
 
       {/* Card Body */}
       <div className="p-3 flex flex-col gap-2">
         <div>
-          <h3 className="font-display font-bold text-[15px] text-white leading-snug line-clamp-2">{dish.name}</h3>
+          <h3 className="font-display font-bold text-[15px] text-neutral-900 dark:text-white leading-snug line-clamp-2">{dish.name}</h3>
           <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{dish.chef || 'Chef of the House'}</p>
         </div>
 
@@ -111,7 +111,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
         <motion.button
           whileTap={{ scale: 0.94 }}
           onClick={e => { e.stopPropagation(); onAddToCart(dish); }}
-          className="mt-1 w-full py-2 rounded-xl bg-white/5 border border-white/8 text-xs font-bold text-neutral-300 hover:bg-[#D4AF37]/15 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all flex items-center justify-center gap-1.5"
+          className="mt-1 w-full py-2 rounded-xl bg-white/5 border border-neutral-200 dark:border-white/8 text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-[#D4AF37]/15 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all flex items-center justify-center gap-1.5"
         >
           <ShoppingCart size={12} /> Add to Order
         </motion.button>
@@ -173,7 +173,7 @@ export default function MenuPage() {
   const cartCount = cart.length;
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-[#0d0d10] text-white font-sans">
+    <div className="flex flex-col min-h-[100dvh] bg-white dark:bg-[#0d0d10] text-neutral-900 dark:text-white font-sans">
 
       {/* ── HERO ── */}
       <div className="relative h-[52vw] max-h-80 min-h-52 overflow-hidden flex-shrink-0">
@@ -188,17 +188,17 @@ export default function MenuPage() {
         {/* Top Bar */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-12 z-10">
           <button onClick={() => navigate('/scanner?rescan=true')}
-            className="p-2.5 rounded-full bg-black/30 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
-            <QrCode size={18} className="text-white/80" />
+            className="p-2.5 rounded-full bg-black/30 border border-neutral-200 dark:border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
+            <QrCode size={18} className="text-neutral-900 dark:text-white/80" />
           </button>
           <div className="flex gap-2">
             <button onClick={() => navigate('/health')}
-              className="p-2.5 rounded-full bg-black/30 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
-              <Activity size={18} className="text-white/80" />
+              className="p-2.5 rounded-full bg-black/30 border border-neutral-200 dark:border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
+              <Activity size={18} className="text-neutral-900 dark:text-white/80" />
             </button>
             <button onClick={() => navigate('/cart')}
-              className="relative p-2.5 rounded-full bg-black/30 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
-              <ShoppingCart size={18} className="text-white/80" />
+              className="relative p-2.5 rounded-full bg-black/30 border border-neutral-200 dark:border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
+              <ShoppingCart size={18} className="text-neutral-900 dark:text-white/80" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#D4AF37] text-black text-[10px] font-black flex items-center justify-center">
                   {cartCount}
@@ -218,15 +218,15 @@ export default function MenuPage() {
             </span>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-            className="font-display font-black text-4xl text-white leading-tight tracking-tight mb-3">
+            className="font-display font-black text-4xl text-neutral-900 dark:text-white leading-tight tracking-tight mb-3">
             {restaurant?.name || 'Restaurant'}
           </motion.h1>
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-bold text-white backdrop-blur-md">
+            <span className="px-3 py-1 rounded-full bg-white/10 border border-neutral-200 dark:border-white/15 text-xs font-bold text-neutral-900 dark:text-white backdrop-blur-md">
               TABLE {restaurant?.tableNumber || '12'}
             </span>
-            <span className="text-xs text-white/50">{allDishes.length} dishes available</span>
+            <span className="text-xs text-neutral-900 dark:text-white/50">{allDishes.length} dishes available</span>
             <span className="flex items-center gap-1 text-xs text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               AR Active
@@ -246,16 +246,16 @@ export default function MenuPage() {
                   autoFocus
                   value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search dishes, ingredients..."
-                  className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-[#1a1a1f] border border-white/8 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all"
+                  className="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/8 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all"
                 />
                 <button onClick={() => { setSearch(''); setSearchOpen(false); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white text-xs px-2">✕</button>
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:text-white text-xs px-2">✕</button>
               </div>
             </motion.div>
           ) : (
             <motion.button key="search-closed" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1a1a1f] border border-white/5 text-neutral-500 text-sm mb-3 hover:border-white/10 transition-all">
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/5 text-neutral-500 text-sm mb-3 hover:border-neutral-200 dark:border-white/10 transition-all">
               <Search size={15} />
               <span>Search dishes, ingredients...</span>
             </motion.button>
@@ -271,7 +271,7 @@ export default function MenuPage() {
             className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
               activeCategory === tab.key
                 ? 'bg-[#D4AF37]/15 border-[#D4AF37]/40 text-[#D4AF37]'
-                : 'bg-white/4 border-white/6 text-neutral-400 hover:border-white/10 hover:text-white'
+                : 'bg-white/4 border-white/6 text-neutral-500 dark:text-neutral-400 hover:border-neutral-200 dark:border-white/10 hover:text-neutral-900 dark:text-white'
             }`}>
             <span className="text-base leading-none">{tab.emoji}</span>
             {tab.label}
@@ -284,7 +284,7 @@ export default function MenuPage() {
         {/* Section header */}
         {activeCategory !== 'All' && (
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-bold text-lg text-white">{activeCategory}</h2>
+            <h2 className="font-display font-bold text-lg text-neutral-900 dark:text-white">{activeCategory}</h2>
             <span className="text-xs text-neutral-500">{filtered.length} items</span>
           </div>
         )}
@@ -306,15 +306,15 @@ export default function MenuPage() {
                   <span className="text-[11px] font-black text-amber-300 tracking-wide">Chef's Pick</span>
                 </div>
                 <button onClick={e => { e.stopPropagation(); handleARClick(featured.id); }}
-                  className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 border border-white/15 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all">
-                  <Maximize2 size={15} className="text-white" />
+                  className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 border border-neutral-200 dark:border-white/15 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all">
+                  <Maximize2 size={15} className="text-neutral-900 dark:text-white" />
                 </button>
               </div>
-              <div className="p-4 bg-[#1a1a1f] border border-white/5 border-t-0 rounded-b-[2rem]">
+              <div className="p-4 bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/5 border-t-0 rounded-b-[2rem]">
                 <div className="flex justify-between items-start mb-1">
                   <div>
-                    <h3 className="font-display font-black text-xl text-white">{featured.name}</h3>
-                    <p className="text-xs text-neutral-400 mt-0.5">{featured.chef || 'Chef of the House'}</p>
+                    <h3 className="font-display font-black text-xl text-neutral-900 dark:text-white">{featured.name}</h3>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{featured.chef || 'Chef of the House'}</p>
                   </div>
                   <span className="font-display font-black text-xl text-[#D4AF37] bg-[#D4AF37]/10 px-3 py-1 rounded-xl border border-[#D4AF37]/20">
                     ${Number(featured.price).toFixed(2)}
@@ -376,11 +376,11 @@ export default function MenuPage() {
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
               className="flex flex-col gap-3 mb-4 items-end"
             >
-              <button onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-[#1a1a1f]/90 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl text-white shadow-xl hover:bg-white/10">
+              <button onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#1a1a1f]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
                 <span className="text-sm font-bold">Water</span>
                 <Droplets size={16} className="text-blue-400" />
               </button>
-              <button onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-[#1a1a1f]/90 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl text-white shadow-xl hover:bg-white/10">
+              <button onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#1a1a1f]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
                 <span className="text-sm font-bold">Bill</span>
                 <Receipt size={16} className="text-emerald-400" />
               </button>
@@ -395,7 +395,7 @@ export default function MenuPage() {
           onClick={() => setServiceHubOpen(!serviceHubOpen)}
           className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border ${
             serviceHubOpen 
-              ? 'bg-[#1a1a1f] border-white/10 text-white' 
+              ? 'bg-neutral-50 dark:bg-[#1a1a1f] border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white' 
               : 'bg-gradient-to-tr from-[#D4AF37] to-amber-300 border-amber-300/50 text-black'
           }`}
         >

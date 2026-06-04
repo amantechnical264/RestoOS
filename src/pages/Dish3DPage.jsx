@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Heart, ShoppingCart, Flame, Clock, MapPin, AlertTriangle, Star, ChefHat, Leaf, Droplets } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Heart, ShoppingCart, Flame, Clock, MapPin, AlertTriangle, Star, ChefHat, Leaf, Droplets, Box } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
+import ModelViewer from '../components/ModelViewer';
 
 const ALLERGEN_ICONS = { Gluten: '🌾', Nuts: '🥜', Dairy: '🥛', Eggs: '🥚', Shellfish: '🦐', Soy: '🫘', Fish: '🐟' };
 
@@ -10,13 +11,15 @@ export default function Dish3DPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
-  const [arTip, setArTip] = useState(true);
-  const [sheetExpanded, setSheetExpanded] = useState(false);
+
+  // AR button ref
+  const arViewerRef = useRef(null);
 
   useEffect(() => {
     if (!activeRestId) navigate('/scanner', { replace: true });
   }, [activeRestId, navigate]);
 
+  // Eagerly load model-viewer script for the hidden AR activator
   useEffect(() => {
     if (!customElements.get('model-viewer')) {
       const s = document.createElement('script');
@@ -32,51 +35,47 @@ export default function Dish3DPage() {
   if (!dish) return null;
 
   const modelUrl = dish.modelUrl || dish.model_url;
-  const primaryBadge = dish.tags?.find(t => ['Chef\'s Pick', 'Signature', 'Popular', 'Bestseller', 'Seasonal', 'Vegan'].includes(t));
+  const primaryBadge = dish.tags?.find(t => ["Chef's Pick", 'Signature', 'Popular', 'Bestseller', 'Seasonal', 'Vegan'].includes(t));
   const macroPercent = (val, max) => Math.min(100, Math.round((parseInt(val) || 0) / max * 100));
+
+  const activateAR = () => {
+    const mv = arViewerRef.current?.querySelector('model-viewer');
+    if (mv?.activateAR) mv.activateAR();
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col h-[100dvh] relative overflow-hidden bg-white dark:bg-[#0d0d10] transition-colors">
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* HERO — Full-bleed food photo                          */}
+      {/* HERO — Full-bleed food photo / 3D model               */}
       {/* ══════════════════════════════════════════════════════ */}
       <div className="relative flex-shrink-0 h-[42vh] overflow-hidden bg-neutral-100 dark:bg-[#111115]">
         {dish.cover ? (
           <img src={dish.cover} alt={dish.name}
             className="w-full h-full object-cover" />
         ) : modelUrl ? (
-          <div className="w-full h-full" dangerouslySetInnerHTML={{__html: `
-            <model-viewer
-                src="${modelUrl}"
-                auto-rotate auto-rotate-delay="0" rotation-per-second="10deg"
-                camera-controls touch-action="pan-y"
-                camera-orbit="0deg 75deg 100%" min-camera-orbit="auto auto 5%" max-camera-orbit="auto auto 200%"
-                shadow-intensity="1.5" environment-image="neutral" exposure="1.2"
-                interaction-prompt="auto"
-                ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor"
-                style="width:100%;height:100%;--poster-color:transparent;"
-              ></model-viewer>
-          `}} />
+          <ModelViewer
+            src={modelUrl}
+            autoRotate
+            cameraControls
+            style={{ width: '100%', height: '100%' }}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <ChefHat size={64} className="text-neutral-700" />
+            <ChefHat size={64} className="text-neutral-300 dark:text-neutral-700" />
           </div>
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white dark:to-[#0d0d10] transition-colors" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white dark:to-[#0d0d10] pointer-events-none transition-colors" />
 
         {/* Top controls */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-12 z-20">
-          {/* Back */}
           <motion.button whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)}
             className="w-11 h-11 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/10 transition-all">
             <ChevronLeft size={22} className="text-white" />
           </motion.button>
-
-          {/* Favorite */}
           <motion.button whileTap={{ scale: 1.2 }} onClick={() => toggleFavorite(id)}
             className={`w-11 h-11 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all ${
               isFav ? 'bg-red-500/20 border-red-500/30' : 'bg-black/40 border-white/10'
@@ -85,7 +84,7 @@ export default function Dish3DPage() {
           </motion.button>
         </div>
 
-        {/* Chef's Pick badge — top left of photo */}
+        {/* Badge */}
         {primaryBadge && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="absolute top-16 left-5 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-900/85 border border-amber-600/40 backdrop-blur-md z-10">
@@ -96,17 +95,16 @@ export default function Dish3DPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* DETAILS SHEET — scrollable container                  */}
+      {/* DETAILS SHEET                                          */}
       {/* ══════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-        className="flex-1 overflow-y-auto no-scrollbar rounded-t-[2rem] bg-white dark:bg-[#0d0d10] border-t border-neutral-200 dark:border-white/8 z-30 transition-colors"
-        style={{ boxShadow: '0 -20px 60px rgba(0,0,0,0.1)' }}
+        className="flex-1 overflow-y-auto no-scrollbar rounded-t-[2rem] bg-white dark:bg-[#0d0d10] border-t border-neutral-200 dark:border-[#D4AF37]/15 z-30 transition-colors"
+        style={{ boxShadow: '0 -20px 60px rgba(0,0,0,0.08)' }}
       >
-        {/* Drag handle */}
-        <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/15 mx-auto mt-3 mb-5 cursor-grab active:cursor-grabbing" />
+        <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/15 mx-auto mt-3 mb-5" />
 
         <div className="px-5 pb-40">
 
@@ -133,7 +131,7 @@ export default function Dish3DPage() {
 
           {/* ── Stats Row: Calories + Prep Time ── */}
           <div className="grid grid-cols-2 gap-3 mb-5">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
               <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
                 <Flame size={18} className="text-orange-500" />
               </div>
@@ -142,7 +140,7 @@ export default function Dish3DPage() {
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Calories</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
               <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center">
                 <Clock size={18} className="text-blue-500 dark:text-blue-400" />
               </div>
@@ -171,7 +169,7 @@ export default function Dish3DPage() {
 
           {/* ── Provenance / Origin Story ── */}
           {(dish.origin || dish.provenance) && (
-            <div className="mb-5 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
+            <div className="mb-5 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
               <div className="flex items-center gap-2 mb-2">
                 <MapPin size={13} className="text-[#D4AF37]" />
                 <span className="text-[11px] font-black text-[#D4AF37] uppercase tracking-[0.2em]">
@@ -184,7 +182,7 @@ export default function Dish3DPage() {
 
           {/* ── Macro Bars ── */}
           {(dish.macros?.protein || dish.macros?.carbs || dish.macros?.fat) && (
-            <div className="mb-5 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/6">
+            <div className="mb-5 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
               <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-4">Nutrition</p>
               <div className="space-y-3.5">
                 {[
@@ -216,7 +214,7 @@ export default function Dish3DPage() {
               <div className="flex flex-wrap gap-2">
                 {dish.ingredients.map(ing => (
                   <span key={ing}
-                    className="px-3 py-1.5 rounded-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/8 text-[12px] font-medium text-neutral-600 dark:text-neutral-300">
+                    className="px-3 py-1.5 rounded-full bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-200 dark:border-[#D4AF37]/10 text-[12px] font-medium text-neutral-600 dark:text-neutral-300">
                     {ing}
                   </span>
                 ))}
@@ -226,14 +224,14 @@ export default function Dish3DPage() {
 
           {/* ── Allergens ── */}
           {dish.allergens?.length > 0 && (
-            <div className="mb-5 p-4 rounded-2xl bg-red-950/40 border border-red-900/40">
+            <div className="mb-5 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40">
               <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={15} className="text-red-400" />
-                <span className="text-[11px] font-black text-red-400 uppercase tracking-[0.15em]">Allergens</span>
+                <AlertTriangle size={15} className="text-red-500 dark:text-red-400" />
+                <span className="text-[11px] font-black text-red-600 dark:text-red-400 uppercase tracking-[0.15em]">Allergens</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {dish.allergens.map(a => (
-                  <span key={a} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-900/30 border border-red-800/40 text-[11px] font-semibold text-red-300">
+                  <span key={a} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800/40 text-[11px] font-semibold text-red-700 dark:text-red-300">
                     {ALLERGEN_ICONS[a] || ''} {a}
                   </span>
                 ))}
@@ -245,7 +243,7 @@ export default function Dish3DPage() {
           {dish.tags?.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-5">
               {dish.tags.map(tag => (
-                <span key={tag} className="px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/8 text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
+                <span key={tag} className="px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-[#D4AF37]/10 text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
                   {tag}
                 </span>
               ))}
@@ -257,28 +255,28 @@ export default function Dish3DPage() {
       {/* ══════════════════════════════════════════════════════ */}
       {/* STICKY BOTTOM ACTIONS                                  */}
       {/* ══════════════════════════════════════════════════════ */}
-      <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12 dark:bg-transparent bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#0d0d10] dark:via-[#0d0d10]/80 transition-colors">
+      <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#0d0d10] dark:via-[#0d0d10]/80 transition-colors">
 
-        {/* AR Button */}
+        {/* AR Button — uses hidden model-viewer activated imperatively */}
         {modelUrl && (
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            className="mb-3 w-full py-4 rounded-2xl flex items-center justify-center gap-3 cursor-pointer border border-neutral-200 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-md shadow-sm"
-            dangerouslySetInnerHTML={{__html: `
-              <model-viewer src="${modelUrl}" ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor" style="display:none;"></model-viewer>
-              <button onclick="document.querySelectorAll('model-viewer').forEach(mv=>mv.activateAR())"
-                style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
-                       background:transparent;border:none;color:inherit;font-family:Outfit,sans-serif;
-                       font-size:15px;font-weight:900;letter-spacing:0.05em;cursor:pointer;"
-                class="text-neutral-900 dark:text-white">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-                VIEW IN AUGMENTED REALITY
-              </button>
-            `}}
-          />
+          <>
+            <div ref={arViewerRef} className="hidden">
+              <model-viewer
+                src={modelUrl}
+                ar
+                ar-modes="webxr scene-viewer quick-look"
+                ar-scale="auto"
+                ar-placement="floor"
+                style={{ display: 'none' }}
+              />
+            </div>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={activateAR}
+              className="mb-3 w-full py-4 rounded-2xl flex items-center justify-center gap-3 cursor-pointer border border-neutral-200 dark:border-[#D4AF37]/20 bg-white/80 dark:bg-white/5 backdrop-blur-md shadow-sm text-neutral-900 dark:text-white font-display font-black text-[15px] tracking-wide">
+              <Box size={20} />
+              VIEW IN AUGMENTED REALITY
+            </motion.button>
+          </>
         )}
 
         {/* Add to Order CTA */}
