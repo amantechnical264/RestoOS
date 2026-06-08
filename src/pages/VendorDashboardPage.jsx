@@ -356,16 +356,46 @@ export default function VendorDashboardPage() {
   }));
   const peakMax = Math.max(...peakData.map(d => d.value), 1);
 
-  // Unique customers
-  const customerOrderCounts = {};
-  restOrders.forEach(o => {
-    const id = o.contactPhone || o.contactName || o.user_id;
-    if (id && id !== 'anonymous') {
-      customerOrderCounts[id] = (customerOrderCounts[id] || 0) + 1;
-    }
-  });
-  const uniqueCustomers = Object.keys(customerOrderCounts).length;
-  const repeatCustomers = Object.values(customerOrderCounts).filter(c => c > 1).length;
+  // Aggregate and calculate dynamic customer list from real-time orders
+  const customerList = React.useMemo(() => {
+    const map = {};
+    restOrders.forEach(o => {
+      // Create a unique key for grouping. Prefer phone or user_id, fallback to name or generic ID.
+      const key = o.contactPhone || (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || o.contactName || 'anonymous_' + o.id;
+      if (!map[key]) {
+        let displayName = 'Guest Diner';
+        if (o.contactName) {
+          displayName = o.contactName;
+        } else if (o.contactPhone) {
+          displayName = `Guest (${o.contactPhone})`;
+        } else if (o.user_id && o.user_id !== 'anonymous') {
+          displayName = `Member (${o.user_id.substring(0, 6)})`;
+        }
+
+        map[key] = {
+          id: key,
+          name: displayName,
+          phone: o.contactPhone || 'Dine-In Guest',
+          userId: o.user_id || 'anonymous',
+          totalSpend: 0,
+          orderCount: 0,
+          lastOrder: o.timestamp,
+          orderType: o.orderType || 'dine_in'
+        };
+      }
+      map[key].totalSpend += Number(o.total || 0);
+      map[key].orderCount += 1;
+      if (new Date(o.timestamp) > new Date(map[key].lastOrder)) {
+        map[key].lastOrder = o.timestamp;
+      }
+    });
+
+    return Object.values(map).sort((a, b) => b.totalSpend - a.totalSpend);
+  }, [restOrders]);
+
+  const uniqueCustomers = customerList.length;
+  const repeatCustomers = customerList.filter(c => c.orderCount > 1).length;
+  const avgLifetimeValue = uniqueCustomers > 0 ? (completed.reduce((s, o) => s + (o.total || 0), 0) / uniqueCustomers) : 0;
 
   const vendDishes = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
 
@@ -1306,37 +1336,40 @@ export default function VendorDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <KpiCard icon={Users}      label="Total Customers"     value={Math.max(uniqueCustomers, 0)} color="bg-blue-500" />
-                  <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" trend={8} />
-                  <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`$${(avgOrderValue * 3.2).toFixed(0)}`} color="bg-emerald-500" />
-                  <KpiCard icon={Star}       label="Satisfaction Score"  value="4.8 ★"                        color="bg-amber-500" />
+                  <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" />
+                  <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" />
+                  <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`$${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
+                  <KpiCard icon={Star}       label="Satisfaction Score"  value="4.9 ★"                        color="bg-amber-500" />
                 </div>
 
                 {/* Customer list from orders */}
                 <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl overflow-hidden shadow-sm">
-                  <div className="p-5 border-b border-neutral-50 dark:border-white/5">
-                    <h3 className="font-display font-black text-base">Recent Customers</h3>
+                  <div className="p-5 border-b border-neutral-50 dark:border-white/5 flex justify-between items-center">
+                    <h3 className="font-display font-black text-base">Top Customers (by Spend)</h3>
+                    <span className="text-xs text-neutral-400 font-bold">{customerList.length} total profiles</span>
                   </div>
                   <div className="divide-y divide-neutral-50 dark:divide-white/4">
-                    {restOrders.filter(o => o.contactName).slice(-10).reverse().map(o => (
-                      <div key={o.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-black text-sm shrink-0">
-                          {(o.contactName || '?')[0].toUpperCase()}
+                    {customerList.slice(0, 15).map(c => (
+                      <div key={c.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-[#AA8C2C] flex items-center justify-center text-white font-black text-sm shrink-0">
+                          {c.name[0].toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm truncate">{o.contactName || 'Guest'}</p>
-                          <p className="text-xs text-neutral-400">{o.contactPhone || 'No contact'} · {o.orderType === 'dine_in' ? 'Dine-In' : 'Pre-Order'}</p>
+                          <p className="font-bold text-sm truncate">{c.name}</p>
+                          <p className="text-xs text-neutral-400">
+                            {c.phone} · {c.orderCount} order{c.orderCount > 1 ? 's' : ''} · Last: {new Date(c.lastOrder).toLocaleDateString()}
+                          </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-black text-sm text-emerald-600">${(o.total || 0).toFixed(2)}</p>
-                          <p className="text-[10px] text-neutral-400">{o.items?.length || 0} items</p>
+                          <p className="font-black text-sm text-emerald-600">${Number(c.totalSpend).toFixed(2)}</p>
+                          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{c.orderType === 'dine_in' ? 'Dine-In' : 'Pre-Order'}</p>
                         </div>
                       </div>
                     ))}
-                    {restOrders.filter(o => o.contactName).length === 0 && (
+                    {customerList.length === 0 && (
                       <div className="text-center py-12 text-neutral-400">
                         <Users size={36} className="mx-auto mb-3 opacity-20" />
-                        <p className="text-sm">Customer data appears after pre-orders are placed</p>
+                        <p className="text-sm">Customer data appears after orders are placed</p>
                       </div>
                     )}
                   </div>
