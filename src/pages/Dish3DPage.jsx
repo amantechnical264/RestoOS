@@ -323,12 +323,19 @@ export default function Dish3DPage() {
         )}
 
         {/* Add to Order CTA */}
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+        <motion.button 
+          disabled={dish.tags?.includes('sold_out')}
+          whileHover={dish.tags?.includes('sold_out') ? undefined : { scale: 1.02 }} 
+          whileTap={dish.tags?.includes('sold_out') ? undefined : { scale: 0.98 }}
           onClick={() => { addToCart(dish); navigate(-1); }}
-          className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-display font-black text-base text-black transition-all"
-          style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 10px 40px rgba(212,175,55,0.35)' }}>
+          className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-display font-black text-base transition-all ${
+            dish.tags?.includes('sold_out')
+              ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
+              : 'text-black'
+          }`}
+          style={dish.tags?.includes('sold_out') ? {} : { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 10px 40px rgba(212,175,55,0.35)' }}>
           <ShoppingCart size={19} />
-          Add to Order — ${Number(dish.price).toFixed(2)}
+          {dish.tags?.includes('sold_out') ? 'Sold Out' : `Add to Order — $${Number(dish.price).toFixed(2)}`}
         </motion.button>
       </div>
     </motion.div>

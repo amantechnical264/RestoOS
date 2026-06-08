@@ -62,6 +62,11 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
             <ChefHat size={40} />
           </div>
         )}
+        {dish.tags?.includes('sold_out') && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+            <span className="font-display font-black text-white text-sm tracking-wider">SOLD OUT</span>
+          </div>
+        )}
         {/* Dark gradient for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1f] via-transparent to-transparent" />
 
@@ -126,11 +131,16 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
 
         {/* Add to cart quick button */}
         <motion.button
-          whileTap={{ scale: 0.94 }}
+          disabled={dish.tags?.includes('sold_out')}
+          whileTap={dish.tags?.includes('sold_out') ? undefined : { scale: 0.94 }}
           onClick={e => { e.stopPropagation(); onAddToCart(dish); }}
-          className="mt-1 w-full py-2 rounded-xl bg-white/5 border border-neutral-200 dark:border-white/8 text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-[#D4AF37]/15 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all flex items-center justify-center gap-1.5"
+          className={`mt-1 w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            dish.tags?.includes('sold_out')
+              ? 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+              : 'bg-white/5 border border-neutral-200 dark:border-white/8 text-neutral-600 dark:text-neutral-300 hover:bg-[#D4AF37]/15 hover:text-[#D4AF37] hover:border-[#D4AF37]/30'
+          }`}
         >
-          <ShoppingCart size={12} /> Add to Order
+          <ShoppingCart size={12} /> {dish.tags?.includes('sold_out') ? 'Sold Out' : 'Add to Order'}
         </motion.button>
       </div>
     </motion.div>
@@ -208,7 +218,7 @@ export default function MenuPage() {
   }, [activeRestId, navigate]);
 
   const restaurant = restaurants.find(r => r.id === activeRestId);
-  const allDishes = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
+  const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden'));
 
   const filteredDishes = allDishes.filter(d => {
     const matchSearch = !search

@@ -840,7 +840,7 @@ export default function VendorDashboardPage() {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="font-display font-black text-2xl">Menu Manager</h2>
-                    <p className="text-sm text-neutral-500 mt-0.5">{vendDishes.length} dishes · {vendDishes.filter(d => !dishVisibility[d.id]).length} visible</p>
+                    <p className="text-sm text-neutral-500 mt-0.5">{vendDishes.length} dishes · {vendDishes.filter(d => !d.tags?.includes('hidden')).length} visible</p>
                   </div>
                   <div className="flex gap-2">
                     <input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleCsvUpload} />
@@ -854,57 +854,71 @@ export default function VendorDashboardPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendDishes.map(dish => (
-                    <div key={dish.id} className={`bg-white dark:bg-[#12141D] border rounded-3xl overflow-hidden shadow-sm transition-opacity ${dishVisibility[dish.id] ? 'opacity-50' : ''} border-neutral-100 dark:border-white/6`}>
-                      <div className="relative h-36 bg-neutral-100 dark:bg-[#1a1a1f] overflow-hidden">
-                        {dish.cover
-                          ? <img src={dish.cover} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center"><ChefHat size={32} className="text-neutral-300" /></div>
-                        }
-                        {soldOutDishes[dish.id] && (
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <span className="font-display font-black text-white text-lg tracking-wider">SOLD OUT</span>
-                          </div>
-                        )}
-                        <div className="absolute top-2 right-2 flex gap-1.5">
-                          {(dish.modelUrl || dish.model_url) && (
-                            <span className="px-2 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-black flex items-center gap-1 backdrop-blur-sm">
-                              <Box size={9} /> 3D
-                            </span>
+                  {vendDishes.map(dish => {
+                    const isSoldOut = dish.tags?.includes('sold_out');
+                    const isHidden = dish.tags?.includes('hidden');
+                    return (
+                      <div key={dish.id} className={`bg-white dark:bg-[#12141D] border rounded-3xl overflow-hidden shadow-sm transition-opacity ${isHidden ? 'opacity-50' : ''} border-neutral-100 dark:border-white/6`}>
+                        <div className="relative h-36 bg-neutral-100 dark:bg-[#1a1a1f] overflow-hidden">
+                          {dish.cover
+                            ? <img src={dish.cover} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center"><ChefHat size={32} className="text-neutral-300" /></div>
+                          }
+                          {isSoldOut && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <span className="font-display font-black text-white text-lg tracking-wider">SOLD OUT</span>
+                            </div>
                           )}
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1 pr-2">
-                            <h3 className="font-bold text-sm leading-tight">{dish.name}</h3>
-                            <p className="text-xs text-neutral-500 mt-0.5">{dish.chef || 'Chef of House'}</p>
+                          <div className="absolute top-2 right-2 flex gap-1.5">
+                            {(dish.modelUrl || dish.model_url) && (
+                              <span className="px-2 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-black flex items-center gap-1 backdrop-blur-sm">
+                                <Box size={9} /> 3D
+                              </span>
+                            )}
                           </div>
-                          <span className="font-display font-black text-base text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
                         </div>
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {dish.tags?.slice(0,3).map(t => (
-                            <span key={t} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">{t}</span>
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          <button onClick={() => setEditingDish(dish)}
-                            className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
-                            <Edit2 size={11} /> Edit
-                          </button>
-                          <button onClick={() => setSoldOutDishes(p => ({ ...p, [dish.id]: !p[dish.id] }))}
-                            className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${soldOutDishes[dish.id] ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
-                            <Package size={11} /> {soldOutDishes[dish.id] ? 'Restore' : 'Sold Out'}
-                          </button>
-                          <button onClick={() => setDishVisibility(p => ({ ...p, [dish.id]: !p[dish.id] }))}
-                            className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${dishVisibility[dish.id] ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
-                            {dishVisibility[dish.id] ? <EyeOff size={11} /> : <Eye size={11} />}
-                            {dishVisibility[dish.id] ? 'Hidden' : 'Visible'}
-                          </button>
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1 pr-2">
+                              <h3 className="font-bold text-sm leading-tight">{dish.name}</h3>
+                              <p className="text-xs text-neutral-500 mt-0.5">{dish.chef || 'Chef of House'}</p>
+                            </div>
+                            <span className="font-display font-black text-base text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 mb-4">
+                            {dish.tags?.filter(t => t !== 'sold_out' && t !== 'hidden').slice(0,3).map(t => (
+                              <span key={t} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">{t}</span>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <button onClick={() => setEditingDish(dish)}
+                              className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
+                              <Edit2 size={11} /> Edit
+                            </button>
+                            <button onClick={async () => {
+                              const newTags = isSoldOut
+                                ? (dish.tags || []).filter(t => t !== 'sold_out')
+                                : [...(dish.tags || []), 'sold_out'];
+                              await updateDish(dish.id, { tags: newTags });
+                            }}
+                              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isSoldOut ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
+                              <Package size={11} /> {isSoldOut ? 'Restore' : 'Sold Out'}
+                            </button>
+                            <button onClick={async () => {
+                              const newTags = isHidden
+                                ? (dish.tags || []).filter(t => t !== 'hidden')
+                                : [...(dish.tags || []), 'hidden'];
+                              await updateDish(dish.id, { tags: newTags });
+                            }}
+                              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isHidden ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
+                              {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
+                              {isHidden ? 'Hidden' : 'Visible'}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {vendDishes.length === 0 && (
                     <div className="col-span-3 text-center py-16 text-neutral-400">
                       <ChefHat size={48} className="mx-auto mb-4 opacity-20" />
