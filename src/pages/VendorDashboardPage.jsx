@@ -208,6 +208,8 @@ export default function VendorDashboardPage() {
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
   const [editingDish, setEditingDish] = React.useState(null);
   const [editingEvent, setEditingEvent] = React.useState(null);
+  const [managingCategories, setManagingCategories] = React.useState(false);
+  const [newCategoryName, setNewCategoryName] = React.useState('');
   const [scanState, setScanState]     = React.useState('idle');
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]       = React.useState(0);
@@ -409,8 +411,11 @@ export default function VendorDashboardPage() {
     return score.toFixed(1);
   }, [completed.length, cancelled.length, restOrders.length]);
 
-  const vendDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event'));
+  const vendDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata'));
   const vendEvents = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event'));
+
+  const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
+  const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
 
   const TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
@@ -834,27 +839,164 @@ export default function VendorDashboardPage() {
             </motion.div>
           )}
 
-          {/* ════════════════════ MENU MANAGER ════════════════════ */}
+          {/* ── ════════════════════ MENU MANAGER ════════════════════ ── */}
           {vendorTab === 'menu' && !editingDish && (
-            <motion.div key="menu" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 overflow-y-auto p-6">
-              <div className="max-w-5xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="font-display font-black text-2xl">Menu Manager</h2>
-                    <p className="text-sm text-neutral-500 mt-0.5">{vendDishes.length} dishes · {vendDishes.filter(d => !d.tags?.includes('hidden')).length} visible</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleCsvUpload} />
-                    <label htmlFor="csv-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
-                      <Upload size={16} /> Import CSV
-                    </label>
-                    <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', images: [], tags: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
-                      <Plus size={16} /> Add Dish
+            managingCategories ? (
+              <motion.div key="categories-manager" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                className="absolute inset-0 overflow-y-auto p-6">
+                <div className="max-w-3xl mx-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="font-display font-black text-2xl">Manage Categories & Filters</h2>
+                      <p className="text-sm text-neutral-500 mt-0.5">Define custom menu tabs and see dishes assigned to them.</p>
+                    </div>
+                    <button onClick={() => setManagingCategories(false)}
+                      className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors">
+                      <X size={18} />
                     </button>
                   </div>
+
+                  <div className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 mb-6">
+                    <h3 className="text-sm font-bold mb-3">Add New Category Filter</h3>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!newCategoryName.trim()) return;
+                      const trimmed = newCategoryName.trim();
+                      if (customCategories.includes(trimmed)) {
+                        showNotification("Category already exists!");
+                        return;
+                      }
+                      const updated = [...customCategories, trimmed];
+                      
+                      const payload = {
+                        name: "_categories_metadata",
+                        price: 0,
+                        description: "Metadata for custom categories",
+                        tags: ["_categories_metadata"],
+                        macros: { categories: updated }
+                      };
+
+                      let success = false;
+                      if (metadataRecord?.id) {
+                        const res = await updateDish(metadataRecord.id, payload);
+                        success = res !== null;
+                      } else {
+                        const res = await addDish({
+                          ...payload,
+                          restId: activeRestId
+                        });
+                        success = res !== null;
+                      }
+
+                      if (success) {
+                        setNewCategoryName('');
+                        showNotification(`Category "${trimmed}" added!`);
+                      }
+                    }} className="flex gap-2">
+                      <input
+                        required
+                        type="text"
+                        placeholder="e.g. Seafood, Soups, Chef's Specials..."
+                        value={newCategoryName}
+                        onChange={e => setNewCategoryName(e.target.value)}
+                        className="flex-1 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white"
+                      />
+                      <button type="submit" className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center gap-1.5">
+                        <Plus size={16} /> Add
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Active Categories</h3>
+                    {customCategories.length === 0 ? (
+                      <p className="text-neutral-500 text-sm">No custom categories defined.</p>
+                    ) : (
+                      customCategories.map((cat) => {
+                        const catDishes = vendDishes.filter(d => d.tags?.includes(cat));
+                        return (
+                          <div key={cat} className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5">
+                            <div className="flex justify-between items-center mb-3">
+                              <div>
+                                <h4 className="font-bold text-lg text-neutral-900 dark:text-white">{cat}</h4>
+                                <p className="text-xs text-neutral-500">{catDishes.length} dishes in this category</p>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  if (!confirm(`Are you sure you want to delete the category "${cat}"? This will untag all dishes currently in this category.`)) return;
+                                  
+                                  const updated = customCategories.filter(c => c !== cat);
+                                  const payload = {
+                                    name: "_categories_metadata",
+                                    price: 0,
+                                    description: "Metadata for custom categories",
+                                    tags: ["_categories_metadata"],
+                                    macros: { categories: updated }
+                                  };
+
+                                  let success = false;
+                                  if (metadataRecord?.id) {
+                                    const res = await updateDish(metadataRecord.id, payload);
+                                    success = res !== null;
+                                  }
+
+                                  if (success) {
+                                    for (const dish of catDishes) {
+                                      const newTags = dish.tags.filter(t => t !== cat);
+                                      await updateDish(dish.id, { tags: newTags });
+                                    }
+                                    showNotification(`Category "${cat}" deleted.`);
+                                  }
+                                }}
+                                className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/20 transition-colors"
+                              >
+                                <Trash2 size={13} /> Delete Filter
+                              </button>
+                            </div>
+
+                            {catDishes.length === 0 ? (
+                              <p className="text-xs text-neutral-400 italic">No dishes assigned to this category. Edit a dish and select this tag to assign it.</p>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                {catDishes.map(dish => (
+                                  <div key={dish.id} className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs">
+                                    <span className="font-semibold truncate pr-2">{dish.name}</span>
+                                    <span className="text-neutral-500 shrink-0 font-sans">${Number(dish.price).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
+              </motion.div>
+            ) : (
+              <motion.div key="menu" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 overflow-y-auto p-6">
+                <div className="max-w-5xl mx-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="font-display font-black text-2xl">Menu Manager</h2>
+                      <p className="text-sm text-neutral-500 mt-0.5">{vendDishes.length} dishes · {vendDishes.filter(d => !d.tags?.includes('hidden')).length} visible</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setManagingCategories(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
+                        <Filter size={16} /> Manage Categories
+                      </button>
+                      <input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleCsvUpload} />
+                      <label htmlFor="csv-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
+                        <Upload size={16} /> Import CSV
+                      </label>
+                      <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', images: [], tags: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
+                        <Plus size={16} /> Add Dish
+                      </button>
+                    </div>
+                  </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {vendDishes.map(dish => {
                     const isSoldOut = dish.tags?.includes('sold_out');
@@ -931,7 +1073,7 @@ export default function VendorDashboardPage() {
                 </div>
               </div>
             </motion.div>
-          )}
+          ))}
 
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
@@ -1372,9 +1514,9 @@ export default function VendorDashboardPage() {
 
                   {/* Tags */}
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-3">
-                    <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Tags & Badges</h3>
+                    <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Category Filters & Badges</h3>
                     <div className="flex flex-wrap gap-2">
-                      {["Chef's Pick", 'Bestseller', 'Signature', 'Popular', 'Seasonal', 'Vegan', 'High Protein', 'Low Calorie', 'Spicy', 'New'].map(tag => {
+                      {[...customCategories, "Chef's Pick", 'Bestseller', 'Signature', 'Popular', 'Seasonal', 'Vegan', 'High Protein', 'Low Calorie', 'Spicy', 'New'].map(tag => {
                         const active = editingDish.tags?.includes(tag);
                         return (
                           <button key={tag} type="button"

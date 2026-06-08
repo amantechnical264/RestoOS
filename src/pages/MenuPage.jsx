@@ -152,6 +152,7 @@ export default function MenuPage() {
   const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor, updateDish, showNotification } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [vegOnly, setVegOnly] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [serviceHubOpen, setServiceHubOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -218,19 +219,55 @@ export default function MenuPage() {
   }, [activeRestId, navigate]);
 
   const restaurant = restaurants.find(r => r.id === activeRestId);
-  const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && !d.tags?.includes('event'));
+  const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata'));
   const events = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && d.tags?.includes('event'));
+
+  const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
+  const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
+
+  const EMOJI_MAP = {
+    'All': '🍽',
+    'Starters': '🥗',
+    'Mains': '🍖',
+    'Desserts': '🍮',
+    'Drinks': '🥂',
+    'Vegan': '🌿',
+    'Vegetarian': '🥗',
+    'Salads': '🥗',
+    'Beverages': '🍹',
+    'Appetizers': '🍟'
+  };
+
+  const dynamicCategoryTabs = [
+    { key: 'All', emoji: '🍽', label: 'All' },
+    ...customCategories.map(cat => ({
+      key: cat,
+      emoji: EMOJI_MAP[cat] || '🍽',
+      label: cat
+    }))
+  ];
 
   const filteredDishes = allDishes.filter(d => {
     const matchSearch = !search
       || d.name.toLowerCase().includes(search.toLowerCase())
       || d.description?.toLowerCase().includes(search.toLowerCase());
+    
     const matchCat = activeCategory === 'All'
       ? true
       : activeCategory === 'Vegan'
-        ? d.tags?.includes('Vegan')
+        ? d.tags?.includes('Vegan') || d.dietaryPreference === 'Vegan'
         : d.category === activeCategory || d.tags?.includes(activeCategory);
-    return matchSearch && matchCat;
+
+    const isVeg = d.dietaryPreference === 'Vegetarian' 
+      || d.dietaryPreference === 'Vegan' 
+      || d.tags?.includes('Vegetarian') 
+      || d.tags?.includes('Vegan') 
+      || d.tags?.includes('vegan')
+      || d.tags?.includes('vegetarian');
+
+    const matchVeg = vegOnly ? isVeg : true;
+
+    return matchSearch && matchCat && matchVeg;
   });
 
   const cartCount = cart.length;
@@ -326,7 +363,7 @@ export default function MenuPage() {
       </div>
 
         <div className="flex gap-2 px-5 mt-6 mb-2 overflow-x-auto no-scrollbar snap-x pb-4">
-          {CATEGORY_TABS.map((cat) => (
+          {dynamicCategoryTabs.map((cat) => (
             <button key={cat.key} onClick={() => setActiveCategory(cat.key)}
               className={`snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl border font-bold text-sm transition-all ${
                 activeCategory === cat.key 
@@ -336,6 +373,26 @@ export default function MenuPage() {
               <span>{cat.emoji}</span> {cat.label}
             </button>
           ))}
+        </div>
+
+        <div className="flex justify-between items-center px-5 mt-2 mb-4 flex-shrink-0">
+          <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+            {filteredDishes.length} items showing
+          </div>
+          <button
+            onClick={() => setVegOnly(!vegOnly)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all duration-300 ${
+              vegOnly
+                ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30 shadow-md shadow-emerald-500/5'
+                : 'bg-white dark:bg-[#0a0a0a] text-neutral-500 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/10'
+            }`}
+          >
+            <Leaf size={12} className={vegOnly ? 'fill-emerald-500 text-emerald-500' : ''} />
+            <span>Veg Only</span>
+            <div className={`w-6 h-3.5 rounded-full p-0.5 transition-colors duration-300 shrink-0 flex items-center ${vegOnly ? 'bg-emerald-500 justify-end' : 'bg-neutral-300 dark:bg-white/10 justify-start'}`}>
+              <motion.div layout className="w-2.5 h-2.5 rounded-full bg-white" />
+            </div>
+          </button>
         </div>
 
         {/* Dynamic Offer Banner */}
