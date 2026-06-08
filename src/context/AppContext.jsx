@@ -36,7 +36,14 @@ export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem('3dish_user');
-      return savedUser ? JSON.parse(savedUser) : null;
+      if (savedUser) return JSON.parse(savedUser);
+      
+      const dinerProfile = localStorage.getItem('3dish_diner_profile');
+      if (dinerProfile) {
+        const parsed = JSON.parse(dinerProfile);
+        return { name: parsed.name, phone: parsed.phone, role: 'diner', guestId: parsed.guestId };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -314,8 +321,11 @@ export const AppProvider = ({ children }) => {
     const rest = restaurants.find(r => r.id === activeRestId);
     const taxRate = rest?.tax_rate !== undefined ? rest.tax_rate / 100 : 0.08;
 
+    const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+    const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId || user?.phone || dinerProfile.phone || 'anonymous';
+
     const newOrder = {
-      user_id: user?.uid || user?.phone || 'anonymous',
+      user_id: guestId,
       rest_id: activeRestId,
       items: cart,
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),

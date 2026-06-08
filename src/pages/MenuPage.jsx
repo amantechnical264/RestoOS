@@ -168,9 +168,10 @@ export default function MenuPage() {
   const handleOnboardingSubmit = (e) => {
     e.preventDefault();
     if (dinerName && dinerPhone) {
-      const profile = { name: dinerName, phone: dinerPhone, firstVisit: new Date().toISOString() };
+      const guestId = 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      const profile = { guestId, name: dinerName, phone: dinerPhone, firstVisit: new Date().toISOString() };
       localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
-      setUser(prev => ({ ...prev, name: dinerName, phone: dinerPhone, role: 'diner' }));
+      setUser(prev => ({ ...prev, name: dinerName, phone: dinerPhone, role: 'diner', guestId }));
       setShowOnboarding(false);
     }
   };
