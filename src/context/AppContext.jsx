@@ -242,6 +242,13 @@ export const AppProvider = ({ children }) => {
     const restSub = supabase.channel('custom-restaurants')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, fetchRestaurants).subscribe();
     
+    // Polling fallback every 4 seconds to guarantee updates propagate instantly across devices/tabs
+    const pollInterval = setInterval(() => {
+      fetchOrders();
+      fetchDishes();
+      fetchRestaurants();
+    }, 4000);
+
     // Broadcast channel for real-time service requests (Customer -> Vendor)
     const serviceChannel = supabase.channel('service-requests')
       .on('broadcast', { event: 'waiter_call' }, (payload) => {
@@ -259,6 +266,7 @@ export const AppProvider = ({ children }) => {
       supabase.removeChannel(dishesSub);
       supabase.removeChannel(restSub);
       supabase.removeChannel(serviceChannel);
+      clearInterval(pollInterval);
     };
   }, [supabaseUser, user?.role]);
 
@@ -490,7 +498,12 @@ export const AppProvider = ({ children }) => {
       if (error) throw error;
       
       if (data && data[0]) {
-        setDishes(prev => prev.map(d => d.id === dishId ? data[0] : d));
+        const mappedDish = {
+          ...data[0],
+          modelUrl: data[0].model_url || data[0].modelUrl,
+          restId: data[0].rest_id || data[0].restId
+        };
+        setDishes(prev => prev.map(d => d.id === dishId ? mappedDish : d));
       }
       showNotification('Dish updated successfully.');
       return true;

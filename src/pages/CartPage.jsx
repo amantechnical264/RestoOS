@@ -12,7 +12,7 @@ const STEP_LABELS = ['Order', 'Dining', 'Details', 'Payment'];
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes } = useAppContext();
   const { t } = useTranslation();
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -38,6 +38,11 @@ export default function CartPage() {
   const [showArCombo, setShowArCombo] = useState(false);
   const [groupSession, setGroupSession] = useState(null);
   const [splitWays, setSplitWays] = useState(1);
+
+  const hasSoldOutItem = cart.some(item => {
+    const dbDish = dishes.find(d => d.id === item.id);
+    return dbDish?.tags?.includes('sold_out');
+  });
 
   // ── Subscription plan gate ──
   const PLANS = ['Starter', 'Pro', 'Enterprise'];
@@ -237,7 +242,14 @@ export default function CartPage() {
                         )}
                         <div>
                           <h3 className="font-bold text-neutral-900 dark:text-white font-sans">{item.name}</h3>
-                          <p className="text-[11px] text-neutral-500 mt-0.5">1x Portion</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[11px] text-neutral-500">1x Portion</p>
+                            {dishes.find(d => d.id === item.id)?.tags?.includes('sold_out') && (
+                              <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-[9px] uppercase tracking-wider">
+                                Sold Out
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -538,9 +550,18 @@ export default function CartPage() {
           
           <div className="pointer-events-auto flex flex-col gap-3">
             {step === 'cart' && (
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
-                className="w-full font-sans font-black py-5 rounded-2xl transition-all bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)] ">
-                Proceed to Checkout
+              <motion.button 
+                disabled={hasSoldOutItem}
+                whileHover={hasSoldOutItem ? undefined : { scale: 1.02 }} 
+                whileTap={hasSoldOutItem ? undefined : { scale: 0.98 }} 
+                onClick={handleNext}
+                className={`w-full font-sans font-black py-5 rounded-2xl transition-all ${
+                  hasSoldOutItem 
+                    ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-300 dark:border-neutral-700' 
+                    : 'bg-gradient-to-r from-[#D4AF37] to-[#AA8C2C] text-neutral-900 dark:text-white shadow-[0_10px_30px_rgba(212,175,55,0.3)]'
+                }`}
+              >
+                {hasSoldOutItem ? 'Remove Sold Out Items to Proceed' : 'Proceed to Checkout'}
               </motion.button>
             )}
             {step === 'type' && (
