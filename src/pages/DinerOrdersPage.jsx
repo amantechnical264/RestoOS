@@ -55,7 +55,7 @@ function OrderTimeline({ currentStatus }) {
 }
 
 export default function DinerOrdersPage() {
-  const { orders, user, restaurants } = useAppContext();
+  const { orders, user, restaurants, tableNumber } = useAppContext();
   const { t } = useTranslation();
 
   const getOrderNumber = (order) => {
@@ -171,7 +171,7 @@ export default function DinerOrdersPage() {
                         if (supabase) {
                           supabase.channel('service-requests').send({
                             type: 'broadcast', event: 'waiter_call',
-                            payload: { tableNumber: '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
+                            payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
                           });
                         }
                       });

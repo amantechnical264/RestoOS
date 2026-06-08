@@ -139,7 +139,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor } = useAppContext();
+  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -196,7 +196,7 @@ export default function MenuPage() {
       await supabase.channel('service-requests').send({
         type: 'broadcast',
         event: 'waiter_call',
-        payload: { tableNumber: restaurant?.tableNumber || '12', type, time: new Date().toISOString() }
+        payload: { tableNumber: tableNumber || '12', type, time: new Date().toISOString() }
       });
     } catch (e) {
       console.error('Failed to request service:', e);
@@ -275,7 +275,7 @@ export default function MenuPage() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="flex items-center gap-3">
             <span className="px-3 py-1 rounded-full bg-white/10 border border-neutral-200 dark:border-white/15 text-xs font-bold text-neutral-900 dark:text-white backdrop-blur-md">
-              TABLE {restaurant?.tableNumber || '12'}
+              TABLE {tableNumber || '12'}
             </span>
             <span className="text-xs text-neutral-900 dark:text-white/50">{allDishes.length} dishes available</span>
             <span className="flex items-center gap-1 text-xs text-emerald-400">

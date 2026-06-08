@@ -9,7 +9,7 @@ import { QrCode, Zap, Sparkles, ChevronRight, CheckCircle2, ScanLine } from 'luc
 export default function ScannerPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setActiveRestId, showNotification, restaurants } = useAppContext();
+  const { setActiveRestId, setTableNumber, showNotification, restaurants } = useAppContext();
   const { t } = useTranslation();
   const videoRef = React.useRef(null);
   const controlsRef = React.useRef(null);
@@ -20,28 +20,54 @@ export default function ScannerPage() {
 
   React.useEffect(() => {
     const restId = searchParams.get('restId');
+    const tableNum = searchParams.get('table');
     if (restId) {
       setActiveRestId(restId);
+      if (tableNum) setTableNumber(tableNum);
       const rest = restaurants.find(r => r.id === restId);
       if (rest) setScannedRest(rest);
       setScanned(true);
     }
-  }, [searchParams, setActiveRestId, restaurants]);
+  }, [searchParams, setActiveRestId, setTableNumber, restaurants]);
 
   React.useEffect(() => {
     if (scanned) return;
     const codeReader = new BrowserQRCodeReader();
+    let isStopped = false;
     const startScan = async () => {
       try {
-        const controls = await codeReader.decodeFromVideoDevice(undefined, videoRef.current, (result, err) => {
-          if (result && !scanned) {
+        // Request permission and back camera preference using facingMode
+        try {
+          const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          tempStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          console.warn("Permission pre-request failed or denied:", e);
+        }
+
+        const devices = await BrowserQRCodeReader.listVideoInputDevices();
+        
+        // Find a camera device labeled back/rear/environment
+        const backCamera = devices.find(d => {
+          const lbl = (d.label || '').toLowerCase();
+          return lbl.includes('back') || lbl.includes('rear') || lbl.includes('environment') || lbl.includes('direction: back');
+        });
+
+        const deviceId = backCamera ? backCamera.deviceId : undefined;
+
+        if (isStopped) return;
+
+        const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+          if (result && !scanned && !isStopped) {
             const text = result.getText();
             try {
               const url = new URL(text);
               const restId = url.searchParams.get('restId');
+              const tableNum = url.searchParams.get('table');
               if (restId) {
+                isStopped = true;
                 if (controlsRef.current) controlsRef.current.stop();
                 setActiveRestId(restId);
+                if (tableNum) setTableNumber(tableNum);
                 const rest = restaurants.find(r => r.id === restId);
                 if (rest) setScannedRest(rest);
                 setScanned(true);
@@ -50,6 +76,7 @@ export default function ScannerPage() {
               }
             } catch (e) {
               if (text.startsWith('rest-')) {
+                isStopped = true;
                 if (controlsRef.current) controlsRef.current.stop();
                 setActiveRestId(text);
                 const rest = restaurants.find(r => r.id === text);
@@ -61,13 +88,16 @@ export default function ScannerPage() {
         });
         controlsRef.current = controls;
       } catch (err) {
-        console.error(err);
+        console.error("Camera startup error:", err);
         setHasCamera(false);
       }
     };
     startScan();
-    return () => { if (controlsRef.current) controlsRef.current.stop(); };
-  }, [scanned, setActiveRestId, showNotification, restaurants]);
+    return () => { 
+      isStopped = true;
+      if (controlsRef.current) controlsRef.current.stop(); 
+    };
+  }, [scanned, setActiveRestId, setTableNumber, showNotification, restaurants]);
 
   const handleEnterMenu = () => {
     navigate('/menu', { replace: true });

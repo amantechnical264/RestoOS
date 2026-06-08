@@ -49,12 +49,19 @@ export const AppProvider = ({ children }) => {
     }
   }); 
   const [activeRestId, setActiveRestIdState] = useState(() => sessionStorage.getItem('3dish_active_rest') || null);
+  const [tableNumber, setTableNumberState] = useState(() => sessionStorage.getItem('3dish_table_number') || null);
   const [activeDishId, setActiveDishId] = useState(null);
 
   const setActiveRestId = (id) => {
     if (id) sessionStorage.setItem('3dish_active_rest', id);
     else sessionStorage.removeItem('3dish_active_rest');
     setActiveRestIdState(id);
+  };
+
+  const setTableNumber = (num) => {
+    if (num) sessionStorage.setItem('3dish_table_number', num);
+    else sessionStorage.removeItem('3dish_table_number');
+    setTableNumberState(num);
   };
   
   // Persist user state to localStorage
@@ -331,6 +338,7 @@ export const AppProvider = ({ children }) => {
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
       status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
+      table_number: parseInt(tableNumber) || (orderData?.tableNumber ? parseInt(orderData.tableNumber) : null),
     };
 
     // Merge extra fields from checkout flow (snake_case for Supabase)
@@ -510,6 +518,7 @@ export const AppProvider = ({ children }) => {
     isInitializing,
     user, setUser,
     activeRestId, setActiveRestId,
+    tableNumber, setTableNumber,
     activeDishId, setActiveDishId,
     restaurants, setRestaurants, addRestaurant, updateRestaurant,
     cart, setCart,
