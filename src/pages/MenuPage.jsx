@@ -149,7 +149,7 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor } = useAppContext();
+  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor, updateDish, showNotification } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -218,7 +218,8 @@ export default function MenuPage() {
   }, [activeRestId, navigate]);
 
   const restaurant = restaurants.find(r => r.id === activeRestId);
-  const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden'));
+  const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && !d.tags?.includes('event'));
+  const events = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && d.tags?.includes('event'));
 
   const filteredDishes = allDishes.filter(d => {
     const matchSearch = !search
@@ -381,20 +382,97 @@ export default function MenuPage() {
         <div className="px-5 pb-32">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-display font-black text-xl flex items-center gap-2"><CalendarIcon size={20} className="text-indigo-500" /> Upcoming Events</h2>
-            <button className="text-xs font-bold text-indigo-500">View All</button>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x pb-4">
-            <div className="shrink-0 w-[280px] snap-start bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
-              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex flex-col items-center justify-center mb-4 border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
-                 <span className="text-[10px] font-black uppercase tracking-widest">Oct</span>
-                 <span className="text-xl font-black">28</span>
+            {events.map((event) => {
+              const profile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+              const guestId = profile.guestId || 'anonymous';
+              const rsvpsList = event.macros?.rsvps || [];
+              const isRsvpd = rsvpsList.includes(guestId);
+              
+              // Extract date parts
+              const dateStr = event.macros?.date || '';
+              let month = 'OCT';
+              let day = '28';
+              if (dateStr) {
+                try {
+                  const d = new Date(dateStr + 'T12:00:00');
+                  month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                  day = d.getDate().toString();
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+
+              return (
+                <div key={event.id} className="shrink-0 w-[280px] snap-start bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm relative overflow-hidden">
+                  {/* Event Cover Image if exists */}
+                  {event.cover && (
+                    <div className="w-full h-24 rounded-2xl overflow-hidden mb-4 relative">
+                      <img src={event.cover} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/60 to-transparent" />
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex flex-col items-center justify-center border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
+                       <span className="text-[10px] font-black uppercase tracking-widest">{month}</span>
+                       <span className="text-xl font-black">{day}</span>
+                    </div>
+                    {event.price > 0 && (
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-200 dark:border-emerald-800/30">
+                        ${Number(event.price).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-display font-black text-lg mb-1 truncate">{event.name}</h3>
+                  <p className="text-xs text-neutral-500 mb-4 line-clamp-2 h-8">{event.description || 'Join us for a wonderful time!'}</p>
+                  
+                  <button 
+                    onClick={async () => {
+                      if (guestId === 'anonymous') {
+                        showNotification('Please fill in your name and phone first to RSVP!');
+                        setShowOnboarding(true);
+                        return;
+                      }
+                      
+                      const hasRsvpd = rsvpsList.includes(guestId);
+                      const newRsvps = hasRsvpd
+                        ? rsvpsList.filter(id => id !== guestId)
+                        : [...rsvpsList, guestId];
+                        
+                      const updatedMacros = {
+                        ...(event.macros || {}),
+                        isEvent: true,
+                        rsvps: newRsvps,
+                        date: dateStr
+                      };
+                      
+                      await updateDish(event.id, { macros: updatedMacros });
+                      showNotification(hasRsvpd ? 'RSVP Cancelled' : 'Successfully RSVP\'d!');
+                    }}
+                    className={`w-full py-3 font-black text-sm rounded-xl transition-all shadow-sm ${
+                      isRsvpd
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
+                  >
+                    {isRsvpd ? '✓ RSVP\'d' : 'RSVP Now'}
+                  </button>
+                  <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-2 text-center font-bold">
+                    {rsvpsList.length} guest(s) attending
+                  </p>
+                </div>
+              );
+            })}
+
+            {events.length === 0 && (
+              <div className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-dashed border-neutral-200 dark:border-white/10 rounded-3xl p-8 text-center flex flex-col items-center justify-center">
+                <CalendarIcon size={32} className="text-neutral-400 mb-3" />
+                <h3 className="font-display font-black text-base mb-1">No Upcoming Events</h3>
+                <p className="text-xs text-neutral-500 max-w-[200px]">Check back later for exciting dining events and promotions!</p>
               </div>
-              <h3 className="font-display font-black text-lg mb-1">Live Jazz Night</h3>
-              <p className="text-sm text-neutral-500 mb-4 line-clamp-2">Enjoy live music with our special 3-course dinner menu. Perfect for date night!</p>
-              <button className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-black font-black text-sm rounded-xl hover:opacity-90 transition-opacity">
-                RSVP Now
-              </button>
-            </div>
+            )}
           </div>
         </div>
 

@@ -207,6 +207,7 @@ export default function VendorDashboardPage() {
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
   const [editingDish, setEditingDish] = React.useState(null);
+  const [editingEvent, setEditingEvent] = React.useState(null);
   const [scanState, setScanState]     = React.useState('idle');
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]       = React.useState(0);
@@ -408,7 +409,8 @@ export default function VendorDashboardPage() {
     return score.toFixed(1);
   }, [completed.length, cancelled.length, restOrders.length]);
 
-  const vendDishes = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
+  const vendDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event'));
+  const vendEvents = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event'));
 
   const TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
@@ -935,33 +937,215 @@ export default function VendorDashboardPage() {
           {vendorTab === 'events' && (
             <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-0 overflow-y-auto p-6">
               {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Events & Promos" /> : (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-2xl font-display font-black">Events & Promos</h2>
-                    <p className="text-neutral-500">Manage your upcoming restaurant events.</p>
-                  </div>
-                  <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2">
-                    <Plus size={16} /> Create Event
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 flex items-start gap-4">
-                    <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex flex-col items-center justify-center border border-orange-200 dark:border-orange-800/50">
-                       <span className="text-xs font-bold text-orange-600 dark:text-orange-400">OCT</span>
-                       <span className="text-xl font-black text-orange-700 dark:text-orange-300">28</span>
+                editingEvent ? (
+                  <div className="max-w-2xl mx-auto bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl p-6 relative">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-display font-black text-xl">{editingEvent.id ? 'Edit Event' : 'Create New Event'}</h3>
+                      <button onClick={() => setEditingEvent(null)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                        <X size={16} />
+                      </button>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg">Live Jazz Night</h3>
-                      <p className="text-sm text-neutral-500">Enjoy live music with our special dinner menu.</p>
-                      <div className="mt-3 flex gap-2">
-                        <span className="px-2 py-1 bg-neutral-100 dark:bg-white/5 rounded-md text-xs font-bold">18 RSVPs</span>
-                        <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-bold">Active</span>
+
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      let success = false;
+                      const payload = {
+                        name: editingEvent.name,
+                        price: parseFloat(editingEvent.price) || 0,
+                        description: editingEvent.description,
+                        cover: editingEvent.cover || '',
+                        macros: {
+                          ...(editingEvent.macros || {}),
+                          isEvent: true,
+                          date: editingEvent.macros?.date || new Date().toISOString().split('T')[0],
+                          time: editingEvent.macros?.time || '19:00',
+                          rsvps: editingEvent.macros?.rsvps || []
+                        }
+                      };
+
+                      if (editingEvent.id) {
+                        const res = await updateDish(editingEvent.id, payload);
+                        success = res !== null;
+                      } else {
+                        const res = await addDish({
+                          ...payload,
+                          tags: ['event'],
+                          restId: activeRestId
+                        });
+                        success = res !== null;
+                      }
+
+                      if (success) {
+                        setEditingEvent(null);
+                        showNotification(editingEvent.id ? 'Event updated!' : 'Event created!');
+                      }
+                    }} className="space-y-4 font-sans">
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Event Name *</label>
+                        <input required type="text" value={editingEvent.name || ''} onChange={e => setEditingEvent({...editingEvent, name: e.target.value})}
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
                       </div>
-                    </div>
+
+                      <div className="grid grid-cols-2 gap-4 font-sans">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Date *</label>
+                          <input required type="date" value={editingEvent.macros?.date || ''} onChange={e => setEditingEvent({
+                            ...editingEvent,
+                            macros: { ...(editingEvent.macros || {}), date: e.target.value }
+                          })}
+                            className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Time *</label>
+                          <input required type="time" value={editingEvent.macros?.time || ''} onChange={e => setEditingEvent({
+                            ...editingEvent,
+                            macros: { ...(editingEvent.macros || {}), time: e.target.value }
+                          })}
+                            className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 font-sans">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Entry Price ($) (0 if free)</label>
+                          <input type="number" step="0.01" value={editingEvent.price || 0} onChange={e => setEditingEvent({...editingEvent, price: e.target.value})}
+                            className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Event Banner Image</label>
+                          <div className="relative">
+                            <input type="file" accept="image/*" className="hidden" id="event-cover-upload" onChange={async e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                showNotification('Uploading event banner...');
+                                const filePath = `events/${activeRestId}/${Date.now()}_${file.name}`;
+                                const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
+                                if (!error) {
+                                  const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
+                                  setEditingEvent(prev => ({ ...prev, cover: pub.publicUrl }));
+                                  showNotification('Banner uploaded successfully!');
+                                } else {
+                                  showNotification('Upload failed.');
+                                }
+                              }
+                            }} />
+                            <label htmlFor="event-cover-upload" className="cursor-pointer flex items-center gap-2 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 text-xs font-bold hover:bg-neutral-100 transition-colors text-indigo-500 justify-center">
+                              <Upload size={14} /> {editingEvent.cover ? 'Change Banner' : 'Upload Banner'}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {editingEvent.cover && (
+                        <div className="w-full h-32 rounded-2xl overflow-hidden border border-neutral-200 dark:border-white/10 relative">
+                          <img src={editingEvent.cover} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5 font-sans">Description *</label>
+                        <textarea required value={editingEvent.description || ''} onChange={e => setEditingEvent({...editingEvent, description: e.target.value})}
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 h-24 resize-none dark:text-white" />
+                      </div>
+
+                      <button type="submit"
+                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-all shadow-md">
+                        Save Event
+                      </button>
+                    </form>
                   </div>
-                </div>
-              </div>
+                ) : (
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <div>
+                        <h2 className="text-2xl font-display font-black">Events & Promos</h2>
+                        <p className="text-neutral-500 font-sans">Manage your upcoming restaurant events.</p>
+                      </div>
+                      <button 
+                        onClick={() => setEditingEvent({ name: '', price: 0, description: '', cover: '', macros: { isEvent: true, date: '', time: '19:00', rsvps: [] } })}
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 transition-colors">
+                        <Plus size={16} /> Create Event
+                      </button>
+                    </div>
+
+                    {vendEvents.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#12141D] border border-dashed border-neutral-200 dark:border-white/10 rounded-3xl">
+                        <Calendar size={48} className="text-neutral-400 mb-3" />
+                        <h3 className="font-bold text-lg">No events created yet</h3>
+                        <p className="text-neutral-500 text-sm mb-6 font-sans">Promote special dining nights, live music, or holiday menus.</p>
+                        <button 
+                          onClick={() => setEditingEvent({ name: '', price: 0, description: '', cover: '', macros: { isEvent: true, date: '', time: '19:00', rsvps: [] } })}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold">
+                          Get Started
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {vendEvents.map((event) => {
+                          const dateStr = event.macros?.date || '';
+                          let month = 'OCT';
+                          let day = '28';
+                          if (dateStr) {
+                            try {
+                              const d = new Date(dateStr + 'T12:00:00');
+                              month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                              day = d.getDate().toString();
+                            } catch {}
+                          }
+                          const rsvpsCount = event.macros?.rsvps?.length || 0;
+
+                          return (
+                            <div key={event.id} className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-sm relative overflow-hidden">
+                              <div className="flex items-start gap-4">
+                                <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex flex-col items-center justify-center border border-orange-200 dark:border-orange-800/50 shrink-0 font-sans">
+                                   <span className="text-xs font-bold text-orange-600 dark:text-orange-400">{month}</span>
+                                   <span className="text-xl font-black text-orange-700 dark:text-orange-300">{day}</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-start">
+                                    <h3 className="font-bold text-lg truncate pr-2">{event.name}</h3>
+                                    {event.price > 0 ? (
+                                      <span className="text-emerald-500 font-black text-sm font-sans">${Number(event.price).toFixed(2)}</span>
+                                    ) : (
+                                      <span className="text-indigo-500 font-bold text-xs font-sans">Free</span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-neutral-500 line-clamp-2 mt-1">{event.description}</p>
+                                  <div className="mt-3 flex gap-2">
+                                    <span className="px-2 py-1 bg-neutral-100 dark:bg-white/5 rounded-md text-xs font-bold font-sans">{rsvpsCount} RSVP(s)</span>
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-bold font-sans">Active</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 border-t border-neutral-100 dark:border-white/5 pt-3">
+                                <button 
+                                  onClick={() => setEditingEvent(event)}
+                                  className="p-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 rounded-lg transition-colors flex items-center justify-center">
+                                  <Edit2 size={14} />
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if (confirm("Are you sure you want to delete this event?")) {
+                                      const { error } = await supabase.from('dishes').delete().eq('id', event.id);
+                                      if (error) {
+                                        showNotification("Failed to delete event.");
+                                      } else {
+                                        showNotification("Event deleted successfully.");
+                                        setDishes(prev => prev.filter(d => d.id !== event.id));
+                                      }
+                                    }
+                                  }}
+                                  className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/20 text-red-600 rounded-lg transition-colors flex items-center justify-center font-sans">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
               )}
             </motion.div>
           )}
