@@ -397,6 +397,17 @@ export default function VendorDashboardPage() {
   const repeatCustomers = customerList.filter(c => c.orderCount > 1).length;
   const avgLifetimeValue = uniqueCustomers > 0 ? (completed.reduce((s, o) => s + (o.total || 0), 0) / uniqueCustomers) : 0;
 
+  const satisfactionScore = React.useMemo(() => {
+    if (restOrders.length === 0) return '5.0';
+    const completedCount = completed.length;
+    const cancelledCount = cancelled.length;
+    const totalProcessed = completedCount + cancelledCount;
+    if (totalProcessed === 0) return '4.9';
+    const ratio = completedCount / totalProcessed;
+    const score = 3.5 + (ratio * 1.5);
+    return score.toFixed(1);
+  }, [completed.length, cancelled.length, restOrders.length]);
+
   const vendDishes = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
 
   const TAB_CONFIG = [
@@ -1339,7 +1350,7 @@ export default function VendorDashboardPage() {
                   <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" />
                   <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" />
                   <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`$${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
-                  <KpiCard icon={Star}       label="Satisfaction Score"  value="4.9 ★"                        color="bg-amber-500" />
+                  <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    color="bg-amber-500" />
                 </div>
 
                 {/* Customer list from orders */}
