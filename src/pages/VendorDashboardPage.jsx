@@ -219,6 +219,7 @@ export default function VendorDashboardPage() {
   const [soldOutDishes, setSoldOutDishes]   = React.useState({});
   const [analyticsRange, setAnalyticsRange] = React.useState('7d');
   const [isGenerating3D, setIsGenerating3D] = React.useState(false);
+  const [enteredCodes, setEnteredCodes] = React.useState({});
 
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
@@ -493,15 +494,53 @@ export default function VendorDashboardPage() {
                         <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
                           {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}
                         </ul>
-                        {o.verificationCode && (
-                          <div className="text-center mb-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3">
-                            <p className="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-1">Verification Code</p>
-                            <p className="text-3xl font-black text-amber-700 dark:text-amber-300 tracking-[0.25em] font-mono">{o.verificationCode}</p>
-                          </div>
-                        )}
+                        
+                        <div className="mb-3 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 rounded-xl p-3">
+                          <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">
+                            {o.verificationCode ? "Enter Customer Code" : "Verification Status"}
+                          </p>
+                          {o.verificationCode ? (
+                            <div className="space-y-2">
+                              <input 
+                                type="text"
+                                maxLength={4}
+                                placeholder="Enter 4-digit code"
+                                value={enteredCodes[o.id] || ''}
+                                onChange={(e) => setEnteredCodes({ ...enteredCodes, [o.id]: e.target.value })}
+                                className="w-full text-center bg-white dark:bg-black border border-neutral-300 dark:border-neutral-800 rounded-lg py-2 font-mono font-bold text-lg tracking-[0.25em] focus:outline-none focus:border-[#D4AF37] text-neutral-900 dark:text-white"
+                              />
+                              <p className="text-[10px] text-center font-semibold text-neutral-400">
+                                { (enteredCodes[o.id] || '').length === 4 ? (
+                                    (enteredCodes[o.id] === o.verificationCode) ? (
+                                      <span className="text-emerald-500">✓ Code matches</span>
+                                    ) : (
+                                      <span className="text-red-500">✕ Code mismatch</span>
+                                    )
+                                  ) : "Code required to approve"
+                                }
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-bold text-amber-500">
+                              ⚠️ No code generated. Tap Approve to bypass verification.
+                            </p>
+                          )}
+                        </div>
+
                         <div className="flex gap-2">
-                          <button onClick={() => updateOrderStatus(o.id, 'Pending')} className="flex-1 py-2 rounded-lg text-xs font-black bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">✓ Approve</button>
-                          <button onClick={() => updateOrderStatus(o.id, 'Cancelled')} className="flex-1 py-2 rounded-lg text-xs font-black bg-red-500 text-white hover:bg-red-600 transition-colors">✕ Reject</button>
+                          <button 
+                            disabled={o.verificationCode ? enteredCodes[o.id] !== o.verificationCode : false}
+                            onClick={() => updateOrderStatus(o.id, 'Pending')} 
+                            className="flex-1 py-2.5 rounded-lg text-xs font-black bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500"
+                          >
+                            ✓ Approve
+                          </button>
+                          <button 
+                            onClick={() => updateOrderStatus(o.id, 'Cancelled')} 
+                            className="flex-1 py-2.5 rounded-lg text-xs font-black bg-red-500 text-white hover:bg-red-600 transition-colors"
+                          >
+                            ✕ Reject
+                          </button>
                         </div>
                       </motion.div>
                     ))}
