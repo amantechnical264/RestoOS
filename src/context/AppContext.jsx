@@ -174,7 +174,18 @@ export const AppProvider = ({ children }) => {
     const fetchOrders = async () => {
       const { data } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
       if (data) {
-        const mappedOrders = data.map(o => ({ ...o, restId: o.rest_id || o.restId }));
+        const mappedOrders = data.map(o => ({
+          ...o,
+          restId: o.rest_id || o.restId,
+          orderType: o.order_type || o.orderType,
+          verificationCode: o.verification_code || o.verificationCode,
+          contactName: o.contact_name || o.contactName,
+          contactPhone: o.contact_phone || o.contactPhone,
+          paymentStatus: o.payment_status || o.paymentStatus,
+          paymentMethod: o.payment_method || o.paymentMethod,
+          scheduledTime: o.scheduled_time || o.scheduledTime,
+          tipAmount: o.tip_amount || o.tipAmount,
+        }));
         setOrders(mappedOrders);
       }
     };
@@ -308,14 +319,41 @@ export const AppProvider = ({ children }) => {
       rest_id: activeRestId,
       items: cart,
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
-      status: 'Pending',
+      status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
-      metadata: { specialInstructions: orderData?.specialInstructions || '' }
     };
+
+    // Merge extra fields from checkout flow (snake_case for Supabase)
+    if (orderData?.orderType)         newOrder.order_type        = orderData.orderType;
+    if (orderData?.paymentMethod)     newOrder.payment_method    = orderData.paymentMethod;
+    if (orderData?.paymentStatus)     newOrder.payment_status    = orderData.paymentStatus;
+    if (orderData?.verificationCode)  newOrder.verification_code = orderData.verificationCode;
+    if (orderData?.contactName)       newOrder.contact_name      = orderData.contactName;
+    if (orderData?.contactPhone)      newOrder.contact_phone     = orderData.contactPhone;
+    if (orderData?.scheduledTime)     newOrder.scheduled_time    = orderData.scheduledTime;
+    if (orderData?.tipAmount != null) newOrder.tip_amount        = orderData.tipAmount;
+    if (orderData?.specialInstructions) newOrder.metadata = { specialInstructions: orderData.specialInstructions };
 
     try {
       const { error } = await supabase.from('orders').insert([newOrder]);
-      if (error) throw error;
+      if (error) {
+        // If insert fails because extra columns don't exist in DB, retry with core fields only
+        if (error.message && (error.message.includes('column') || error.code === '42703')) {
+          console.warn('Full insert failed, retrying with core fields:', error.message);
+          const coreOrder = {
+            user_id: newOrder.user_id,
+            rest_id: newOrder.rest_id,
+            items: newOrder.items,
+            total: newOrder.total,
+            status: newOrder.status,
+            timestamp: newOrder.timestamp,
+          };
+          const { error: retryError } = await supabase.from('orders').insert([coreOrder]);
+          if (retryError) throw retryError;
+        } else {
+          throw error;
+        }
+      }
       
       setCart([]);
       const restName = restaurants.find(r => r.id === activeRestId)?.name || 'Restaurant';
@@ -323,8 +361,8 @@ export const AppProvider = ({ children }) => {
       showNotification('Order placed successfully!');
       return true;
     } catch (error) { 
-      console.error(error);
-      showNotification('Failed to place order.');
+      console.error('Place order error:', error);
+      showNotification(`Failed to place order: ${error.message || 'Unknown error'}`);
       return false;
     }
   };
