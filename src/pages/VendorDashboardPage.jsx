@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -915,7 +915,19 @@ export default function VendorDashboardPage() {
                       <p className="text-neutral-500 text-sm">No custom categories defined.</p>
                     ) : (
                       customCategories.map((cat) => {
-                        const catDishes = vendDishes.filter(d => d.tags?.includes(cat));
+                        let catDishes = vendDishes.filter(d => d.tags?.includes(cat));
+                        const orderArray = metadataRecord?.macros?.categoryOrders?.[cat] || [];
+                        if (orderArray.length > 0) {
+                          catDishes.sort((a, b) => {
+                            const idxA = orderArray.indexOf(a.id);
+                            const idxB = orderArray.indexOf(b.id);
+                            if (idxA === -1 && idxB === -1) return 0;
+                            if (idxA === -1) return 1;
+                            if (idxB === -1) return -1;
+                            return idxA - idxB;
+                          });
+                        }
+
                         return (
                           <div key={cat} className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5">
                             <div className="flex justify-between items-center mb-3">
@@ -928,12 +940,15 @@ export default function VendorDashboardPage() {
                                   if (!confirm(`Are you sure you want to delete the category "${cat}"? This will untag all dishes currently in this category.`)) return;
                                   
                                   const updated = customCategories.filter(c => c !== cat);
+                                  const newCategoryOrders = { ...(metadataRecord?.macros?.categoryOrders || {}) };
+                                  delete newCategoryOrders[cat];
+
                                   const payload = {
                                     name: "_categories_metadata",
                                     price: 0,
                                     description: "Metadata for custom categories",
                                     tags: ["_categories_metadata"],
-                                    macros: { categories: updated }
+                                    macros: { categories: updated, categoryOrders: newCategoryOrders }
                                   };
 
                                   let success = false;
@@ -960,10 +975,52 @@ export default function VendorDashboardPage() {
                               <p className="text-xs text-neutral-400 italic">No dishes assigned to this category. Edit a dish and select this tag to assign it.</p>
                             ) : (
                               <div className="flex flex-col gap-2 mt-2">
-                                {catDishes.map(dish => (
-                                  <div key={dish.id} className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs">
-                                    <span className="font-semibold truncate pr-2">{dish.name}</span>
-                                    <span className="text-neutral-500 shrink-0 font-sans">${Number(dish.price).toFixed(2)}</span>
+                                {catDishes.map((dish, index) => (
+                                  <div key={dish.id} className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs group">
+                                    <span className="font-semibold truncate pr-2 flex-1">{dish.name}</span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="text-neutral-500 font-sans mr-2">${Number(dish.price).toFixed(2)}</span>
+                                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                          disabled={index === 0}
+                                          onClick={async () => {
+                                            const currentOrder = metadataRecord?.macros?.categoryOrders?.[cat] || catDishes.map(d => d.id);
+                                            if (!currentOrder.includes(dish.id)) {
+                                              currentOrder.push(...catDishes.map(d => d.id).filter(id => !currentOrder.includes(id)));
+                                            }
+                                            const idx = currentOrder.indexOf(dish.id);
+                                            if (idx > 0) {
+                                              const newOrder = [...currentOrder];
+                                              [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+                                              await updateDish(metadataRecord.id, { 
+                                                macros: { ...metadataRecord.macros, categoryOrders: { ...(metadataRecord.macros?.categoryOrders || {}), [cat]: newOrder } }
+                                              });
+                                            }
+                                          }}
+                                          className={`p-1.5 rounded-lg transition-colors ${index === 0 ? 'text-neutral-300 dark:text-neutral-700 cursor-not-allowed' : 'bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-200'}`}>
+                                          <ChevronUp size={14} />
+                                        </button>
+                                        <button 
+                                          disabled={index === catDishes.length - 1}
+                                          onClick={async () => {
+                                            const currentOrder = metadataRecord?.macros?.categoryOrders?.[cat] || catDishes.map(d => d.id);
+                                            if (!currentOrder.includes(dish.id)) {
+                                              currentOrder.push(...catDishes.map(d => d.id).filter(id => !currentOrder.includes(id)));
+                                            }
+                                            const idx = currentOrder.indexOf(dish.id);
+                                            if (idx < currentOrder.length - 1 && idx !== -1) {
+                                              const newOrder = [...currentOrder];
+                                              [newOrder[idx + 1], newOrder[idx]] = [newOrder[idx], newOrder[idx + 1]];
+                                              await updateDish(metadataRecord.id, { 
+                                                macros: { ...metadataRecord.macros, categoryOrders: { ...(metadataRecord.macros?.categoryOrders || {}), [cat]: newOrder } }
+                                              });
+                                            }
+                                          }}
+                                          className={`p-1.5 rounded-lg transition-colors ${index === catDishes.length - 1 ? 'text-neutral-300 dark:text-neutral-700 cursor-not-allowed' : 'bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-200'}`}>
+                                          <ChevronDown size={14} />
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>

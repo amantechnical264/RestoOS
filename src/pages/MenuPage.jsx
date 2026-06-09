@@ -270,6 +270,18 @@ export default function MenuPage() {
     return matchSearch && matchCat && matchVeg;
   });
 
+  const orderArray = metadataRecord?.macros?.categoryOrders?.[activeCategory] || [];
+  if (orderArray.length > 0 && activeCategory !== 'All') {
+    filteredDishes.sort((a, b) => {
+      const idxA = orderArray.indexOf(a.id);
+      const idxB = orderArray.indexOf(b.id);
+      if (idxA === -1 && idxB === -1) return 0;
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+  }
+
   const cartCount = cart.length;
 
   return (
