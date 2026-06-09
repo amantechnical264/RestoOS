@@ -220,14 +220,19 @@ export const AppProvider = ({ children }) => {
     };
 
     const fetchRestaurants = async () => {
-      const { data } = await supabase.from('restaurants').select('*');
+      const { data } = await supabase.from('restaurants').select('id, vendor_id, name, tax_rate, accept_cash, created_at');
       if (data) {
-        // Map snake_case from DB to camelCase for frontend
-        const mapped = data.map(r => ({
-          ...r,
-          vendorId: r.vendor_id || r.vendorId
-        }));
-        setRestaurants(mapped);
+        // Map snake_case from DB to camelCase for frontend, preserving already fetched cover images
+        setRestaurants(prev => {
+          return data.map(r => {
+            const existing = prev.find(ex => ex.id === r.id);
+            return {
+              ...r,
+              vendorId: r.vendor_id || r.vendorId,
+              cover: existing?.cover || ''
+            };
+          });
+        });
       }
     };
 
@@ -281,6 +286,32 @@ export const AppProvider = ({ children }) => {
       }
     }
   }, [restaurants, supabaseUser, activeRestId]);
+
+  // Fetch cover image dynamically for the active restaurant to prevent huge base64 query timeouts on select('*')
+  useEffect(() => {
+    if (!activeRestId) return;
+    
+    const fetchActiveCover = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('restaurants')
+          .select('cover')
+          .eq('id', activeRestId)
+          .single();
+          
+        if (error) throw error;
+        if (data && data.cover) {
+          setRestaurants(prev =>
+            prev.map(r => r.id === activeRestId ? { ...r, cover: data.cover } : r)
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch active restaurant cover:', err);
+      }
+    };
+    
+    fetchActiveCover();
+  }, [activeRestId]);
 
   // Audio Notification for Vendors
   const [prevOrdersCount, setPrevOrdersCount] = useState(0);
@@ -371,15 +402,14 @@ export const AppProvider = ({ children }) => {
     if (orderData?.specialInstructions) newOrder.metadata = { specialInstructions: orderData.specialInstructions };
 
     try {
-      let insertedOrder = null;
-      const { data, error } = await supabase.from('orders').insert([newOrder]).select();
+      const { error } = await supabase.from('orders').insert([newOrder]);
       if (error) {
         // If insert fails because extra columns don't exist in DB (e.g. metadata), retry without it
         if (error.message && (error.message.includes('column') || error.code === '42703')) {
           console.warn('Full insert failed, retrying without metadata:', error.message);
           const { metadata, ...orderWithoutMetadata } = newOrder;
           
-          const { data: retryData, error: retryError } = await supabase.from('orders').insert([orderWithoutMetadata]).select();
+          const { error: retryError } = await supabase.from('orders').insert([orderWithoutMetadata]);
           if (retryError) {
             console.warn('Retry without metadata failed, falling back to core fields only:', retryError.message);
             const coreOrder = {
@@ -390,33 +420,12 @@ export const AppProvider = ({ children }) => {
               status: newOrder.status,
               timestamp: newOrder.timestamp,
             };
-            const { data: coreData, error: coreError } = await supabase.from('orders').insert([coreOrder]).select();
+            const { error: coreError } = await supabase.from('orders').insert([coreOrder]);
             if (coreError) throw coreError;
-            insertedOrder = coreData[0];
-          } else {
-            insertedOrder = retryData[0];
           }
         } else {
           throw error;
         }
-      } else {
-        insertedOrder = data[0];
-      }
-      
-      if (insertedOrder) {
-        const mappedNewOrder = {
-          ...insertedOrder,
-          restId: insertedOrder.rest_id,
-          orderType: insertedOrder.order_type,
-          verificationCode: insertedOrder.verification_code,
-          contactName: insertedOrder.contact_name,
-          contactPhone: insertedOrder.contact_phone,
-          paymentStatus: insertedOrder.payment_status,
-          paymentMethod: insertedOrder.payment_method,
-          scheduledTime: insertedOrder.scheduled_time,
-          tipAmount: insertedOrder.tip_amount,
-        };
-        setOrders(prev => [mappedNewOrder, ...prev]);
       }
       
       setCart([]);
@@ -471,6 +480,18 @@ export const AppProvider = ({ children }) => {
         .update(updatePayload)
         .eq('id', restId);
       if (error) throw error;
+      
+      // Update local state immediately to avoid waiting for polling
+      setRestaurants(prev =>
+        prev.map(r => r.id === restId ? { 
+          ...r, 
+          name: updateData.name !== undefined ? updateData.name : r.name,
+          cover: updateData.cover !== undefined ? updateData.cover : r.cover,
+          taxRate: updateData.taxRate !== undefined ? updateData.taxRate : r.taxRate,
+          acceptCash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.acceptCash,
+        } : r)
+      );
+      
       showNotification('Settings updated successfully!');
     } catch (error) {
       console.error('Update restaurant error:', error);

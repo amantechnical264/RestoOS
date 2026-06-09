@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
-import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
 
 const GOLD = '#D4AF37';
@@ -67,35 +66,10 @@ export default function DinerOrdersPage() {
     return index !== -1 ? `${String(index + 1).padStart(3, '0')}` : `${order.id.slice(-3)}`;
   };
 
-  const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
-  const guestId = dinerProfile.phone || dinerProfile.guestId || 'anonymous';
-
   const myOrders = orders.filter(o => {
     const userId = o.user_id || o.userId;
-    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous' || userId === guestId;
+    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous';
   });
-
-  const [localRestNames, setLocalRestNames] = useState({});
-
-  useEffect(() => {
-    const missingRestIds = myOrders
-      .map(o => o.restId || o.rest_id)
-      .filter(id => id && !restaurants.find(r => r.id === id) && !localRestNames[id]);
-    
-    if (missingRestIds.length > 0) {
-      // Deduplicate
-      const uniqueIds = [...new Set(missingRestIds)];
-      supabase.from('restaurants').select('id, name').in('id', uniqueIds)
-        .then(({ data }) => {
-          if (data) {
-            const newNames = {};
-            data.forEach(r => { newNames[r.id] = r.name; });
-            setLocalRestNames(prev => ({ ...prev, ...newNames }));
-          }
-        })
-        .catch(() => {});
-    }
-  }, [myOrders, restaurants, localRestNames]);
 
   const cardStyleClass = "bg-white dark:bg-gradient-to-br dark:from-[#111111] dark:to-[#080808] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)] shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.8)]";
 
@@ -133,9 +107,8 @@ export default function DinerOrdersPage() {
 
         <AnimatePresence>
           {myOrders.map((order, index) => {
-            const rId = order.restId || order.rest_id;
-            const rest = restaurants.find(r => r.id === rId);
-            const restaurantName = rest?.name || localRestNames[rId] || 'Restaurant';
+            const rest = restaurants.find(r => r.id === (order.restId || order.rest_id) || r.id === order.rest_id);
+            const restaurantName = rest ? rest.name : 'Restaurant';
             const orderDate = order.timestamp ? new Date(order.timestamp) : null;
             const formattedDate = orderDate 
               ? orderDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })

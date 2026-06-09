@@ -337,15 +337,6 @@ export default function MenuPage() {
   const [dinerName, setDinerName] = useState('');
   const [dinerPhone, setDinerPhone] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [localRest, setLocalRest] = useState(null);
-
-  useEffect(() => {
-    if (activeRestId && !restaurants.find(r => r.id === activeRestId)) {
-      supabase.from('restaurants').select('*').eq('id', activeRestId).single()
-        .then(({ data }) => { if (data) setLocalRest(data); })
-        .catch(() => {});
-    }
-  }, [activeRestId, restaurants]);
 
   // ── Subscription plan gate for this restaurant ──
   const PLANS = ['Starter', 'Pro', 'Enterprise'];
@@ -406,7 +397,7 @@ export default function MenuPage() {
     if (!activeRestId) navigate('/scanner', { replace: true });
   }, [activeRestId, navigate]);
 
-  const restaurant = restaurants.find(r => r.id === activeRestId) || localRest;
+  const restaurant = restaurants.find(r => r.id === activeRestId);
   const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata'));
   const events = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && d.tags?.includes('event'));
 

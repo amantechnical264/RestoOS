@@ -198,7 +198,7 @@ export default function VendorDashboardPage() {
   const navigate = useNavigate();
   const {
     orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus,
-    dishes, setDishes, restaurants, addDish, updateDish, user, setUser,
+    dishes, restaurants, addDish, updateDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
     planFor, upgradePlan,
@@ -480,11 +480,11 @@ export default function VendorDashboardPage() {
     return score.toFixed(1);
   }, [completed.length, cancelled.length, restOrders.length]);
 
-  const vendDishes = React.useMemo(() => dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata')), [dishes, activeRestId]);
-  const vendEvents = React.useMemo(() => dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event')), [dishes, activeRestId]);
+  const vendDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata'));
+  const vendEvents = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event'));
 
-  const metadataRecord = React.useMemo(() => dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId)), [dishes, activeRestId]);
-  const customCategories = React.useMemo(() => metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'], [metadataRecord]);
+  const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
+  const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
 
   const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
 
@@ -629,16 +629,9 @@ export default function VendorDashboardPage() {
                         className="bg-white dark:bg-[#1a1a1f] border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 shadow-sm">
                         <div className="flex justify-between mb-3">
                           <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
-                          <div className="flex gap-1.5 flex-wrap">
-                            {o.orderType === 'dine_in' && (o.tableNumber || o.table_number) && (
-                              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
-                                TABLE {o.tableNumber || o.table_number}
-                              </span>
-                            )}
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
-                              {o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}
-                            </span>
-                          </div>
+                          <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                            {o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}
+                          </span>
                         </div>
                         <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
                           {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}
@@ -716,15 +709,7 @@ export default function VendorDashboardPage() {
                           className="bg-white dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/5 rounded-xl p-4 shadow-sm">
                           <div className="flex justify-between mb-2">
                             <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
-                            <div className="flex gap-1.5">
-                              {o.orderType === 'dine_in' && (o.tableNumber || o.table_number) && (
-                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300">
-                                  TABLE {o.tableNumber || o.table_number}
-                                </span>
-                              )}
-                              {o.orderType === 'prepaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">DUE {o.scheduledTime}</span>}
-                              {o.orderType === 'dine_in' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">DINE-IN</span>}
-                            </div>
+                            {o.orderType === 'prepaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">DUE {o.scheduledTime}</span>}
                           </div>
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
                             {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}
