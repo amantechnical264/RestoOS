@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Flame, Droplets, Leaf, CheckCircle2, User, Phone, Store, Trash2, Plus, Zap, Box, Sparkles, X, Users, Share2, SplitSquareHorizontal } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Flame, Droplets, Leaf, CheckCircle2, User, Phone, Store, Trash2, Plus, Minus, Zap, Box, Sparkles, X, Users, Share2, SplitSquareHorizontal } from 'lucide-react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -12,7 +12,7 @@ const STEP_LABELS = ['Order', 'Dining', 'Details', 'Payment'];
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart } = useAppContext();
   const { t } = useTranslation();
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -25,6 +25,18 @@ export default function CartPage() {
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
   const total = subtotal * (1 + taxRate);
   
+  const groupedCart = Object.values(cart.reduce((acc, item) => {
+    if (!acc[item.id]) {
+      acc[item.id] = { ...item, quantity: 0, cartIds: [] };
+    }
+    acc[item.id].quantity += 1;
+    acc[item.id].cartIds.push(item.cartId);
+    if (!acc[item.id].specialInstructions && item.specialInstructions) {
+        acc[item.id].specialInstructions = item.specialInstructions;
+    }
+    return acc;
+  }, {}));
+
   const [step, setStep] = useState(() => sessionStorage.getItem('cart_step') || 'cart');
   const [orderConf, setOrderConf] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem('cart_orderConf')) || { type: 'dine_in', time: '19:30', method: 'Card' }; }
@@ -221,10 +233,10 @@ export default function CartPage() {
                 )}
               </div>
               
-              {cart.map((item) => (
-                <motion.div layout key={item.cartId}
+              {groupedCart.map((item) => (
+                <motion.div layout key={item.id}
                   drag="x" dragConstraints={{ left: -80, right: 0 }}
-                  onDragEnd={(e, info) => { if (info.offset.x < -50) setCart(cart.filter(c => c.cartId !== item.cartId)); }}
+                  onDragEnd={(e, info) => { if (info.offset.x < -50) setCart(cart.filter(c => c.id !== item.id)); }}
                   className="relative flex items-center bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/5 rounded-3xl p-4 shadow-md cursor-grab active:cursor-grabbing group">
                   
                   {/* Swipe to delete background indicator */}
@@ -233,7 +245,7 @@ export default function CartPage() {
                   </div>
 
                   <div className="relative z-10 flex-1 flex flex-col bg-neutral-50 dark:bg-[#111] w-full rounded-3xl gap-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start">
                       <div className="flex items-center gap-4">
                         {item.cover ? (
                           <img src={item.cover} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10" />
@@ -241,9 +253,8 @@ export default function CartPage() {
                           <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-neutral-600"/></div>
                         )}
                         <div>
-                          <h3 className="font-bold text-neutral-900 dark:text-white font-sans">{item.name}</h3>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <p className="text-[11px] text-neutral-500">1x Portion</p>
+                          <h3 className="font-bold text-neutral-900 dark:text-white font-sans max-w-[150px] leading-tight mb-1">{item.name}</h3>
+                          <div className="flex items-center gap-2">
                             {dishes.find(d => d.id === item.id)?.tags?.includes('sold_out') && (
                               <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-[9px] uppercase tracking-wider">
                                 Sold Out
@@ -252,8 +263,19 @@ export default function CartPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="font-black text-lg text-[#D4AF37]">${Number(item.price).toFixed(2)}</span>
+                      <div className="text-right flex flex-col items-end gap-2">
+                        <span className="font-black text-lg text-[#D4AF37]">${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                        
+                        {/* Stepper */}
+                        <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg overflow-hidden">
+                          <button onClick={(e) => { e.stopPropagation(); removeOneFromCart(item.id); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
+                            <Minus size={14} strokeWidth={2.5} />
+                          </button>
+                          <span className="px-2 text-sm font-bold text-emerald-700 dark:text-emerald-300 w-6 text-center">{item.quantity}</span>
+                          <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
+                            <Plus size={14} strokeWidth={2.5} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
@@ -262,7 +284,7 @@ export default function CartPage() {
                       placeholder="Add note (e.g. no onions)" 
                       value={item.specialInstructions || ''}
                       onChange={(e) => {
-                        const newCart = cart.map(c => c.cartId === item.cartId ? {...c, specialInstructions: e.target.value} : c);
+                        const newCart = cart.map(c => c.id === item.id ? {...c, specialInstructions: e.target.value} : c);
                         setCart(newCart);
                       }}
                       className="w-full text-xs bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 focus:outline-none focus:border-[#D4AF37] transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-500"
