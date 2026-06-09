@@ -373,19 +373,25 @@ export const AppProvider = ({ children }) => {
     try {
       const { error } = await supabase.from('orders').insert([newOrder]);
       if (error) {
-        // If insert fails because extra columns don't exist in DB, retry with core fields only
+        // If insert fails because extra columns don't exist in DB (e.g. metadata), retry without it
         if (error.message && (error.message.includes('column') || error.code === '42703')) {
-          console.warn('Full insert failed, retrying with core fields:', error.message);
-          const coreOrder = {
-            user_id: newOrder.user_id,
-            rest_id: newOrder.rest_id,
-            items: newOrder.items,
-            total: newOrder.total,
-            status: newOrder.status,
-            timestamp: newOrder.timestamp,
-          };
-          const { error: retryError } = await supabase.from('orders').insert([coreOrder]);
-          if (retryError) throw retryError;
+          console.warn('Full insert failed, retrying without metadata:', error.message);
+          const { metadata, ...orderWithoutMetadata } = newOrder;
+          
+          const { error: retryError } = await supabase.from('orders').insert([orderWithoutMetadata]);
+          if (retryError) {
+            console.warn('Retry without metadata failed, falling back to core fields only:', retryError.message);
+            const coreOrder = {
+              user_id: newOrder.user_id,
+              rest_id: newOrder.rest_id,
+              items: newOrder.items,
+              total: newOrder.total,
+              status: newOrder.status,
+              timestamp: newOrder.timestamp,
+            };
+            const { error: coreError } = await supabase.from('orders').insert([coreOrder]);
+            if (coreError) throw coreError;
+          }
         } else {
           throw error;
         }
