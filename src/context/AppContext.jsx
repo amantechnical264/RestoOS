@@ -291,8 +291,16 @@ export const AppProvider = ({ children }) => {
   }, [orders.length, user, prevOrdersCount]);
 
   const addToCart = (dish) => {
-    setCart([...cart, { ...dish, cartId: Date.now() }]);
+    setCart(prev => [...prev, { ...dish, cartId: Date.now() }]);
     showNotification('Added to cart');
+  };
+
+  const removeOneFromCart = (dishId) => {
+    setCart(prev => {
+      const idx = prev.findLastIndex(item => item.id === dishId);
+      if (idx === -1) return prev;
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const toggleFavorite = (dishId) => {
@@ -541,7 +549,7 @@ export const AppProvider = ({ children }) => {
     vendorTab, setVendorTab,
     plans, planFor, upgradePlan,
     serviceAlerts, setServiceAlerts,
-    addToCart,
+    addToCart, removeOneFromCart,
     placeOrder,
     updateOrderStatus,
     favorites, toggleFavorite,

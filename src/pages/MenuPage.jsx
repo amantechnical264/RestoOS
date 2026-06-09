@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
+import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen, Minus, Plus, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
@@ -34,7 +34,74 @@ const BADGE_STYLES = {
   'New':          { bg: 'bg-blue-900/80',     text: 'text-amber-300',    border: 'border-blue-700/50' },
 };
 
-const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, onARClick }) => {
+// ─── Blinkit-Style Add / Stepper Button ──────────────────────────────────────
+const BlinkitAddButton = ({ qty, onAdd, onRemove, isSoldOut, variant = 'overlay' }) => {
+  if (isSoldOut) {
+    return (
+      <div className={`${
+        variant === 'overlay'
+          ? 'w-24 py-2 bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 rounded-xl text-xs font-bold text-center uppercase tracking-wider cursor-not-allowed'
+          : 'w-full py-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 rounded-xl text-xs font-bold text-center uppercase cursor-not-allowed'
+      }`}>
+        Sold Out
+      </div>
+    );
+  }
+
+  if (qty === 0) {
+    return (
+      <motion.button
+        whileTap={{ scale: 0.92 }}
+        onClick={onAdd}
+        className={`${
+          variant === 'overlay'
+            ? 'w-24 py-2 bg-white dark:bg-[#12141D] text-emerald-600 dark:text-emerald-400 font-extrabold text-xs rounded-xl shadow-lg border border-neutral-200 dark:border-white/10 hover:border-emerald-500/30 transition-all uppercase tracking-wider flex items-center justify-center gap-1'
+            : 'w-full py-2 bg-white/5 border border-neutral-200 dark:border-white/8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider'
+        }`}
+      >
+        <span>Add</span>
+        <span className="text-sm font-light">+</span>
+      </motion.button>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ scale: 0.9 }}
+      animate={{ scale: 1 }}
+      className={`${
+        variant === 'overlay'
+          ? 'w-24 flex items-center justify-between bg-emerald-600 rounded-xl shadow-lg overflow-hidden'
+          : 'w-full flex items-center justify-between bg-emerald-600 rounded-xl overflow-hidden'
+      }`}
+    >
+      <motion.button
+        whileTap={{ scale: 0.85 }}
+        onClick={onRemove}
+        className="flex-1 py-2 flex items-center justify-center text-white hover:bg-emerald-700 transition-colors active:bg-emerald-800"
+      >
+        <Minus size={14} strokeWidth={3} />
+      </motion.button>
+      <motion.span
+        key={qty}
+        initial={{ scale: 1.3, opacity: 0.5 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="flex-1 text-center text-white font-extrabold text-sm tabular-nums select-none"
+      >
+        {qty}
+      </motion.span>
+      <motion.button
+        whileTap={{ scale: 0.85 }}
+        onClick={onAdd}
+        className="flex-1 py-2 flex items-center justify-center text-white hover:bg-emerald-700 transition-colors active:bg-emerald-800"
+      >
+        <Plus size={14} strokeWidth={3} />
+      </motion.button>
+    </motion.div>
+  );
+};
+
+const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, onARClick, qty, onAdd, onRemove }) => {
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
   const hasModel = !!(dish.modelUrl || dish.model_url);
@@ -129,25 +196,22 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
           <span className="font-display font-black text-base text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
         </div>
 
-        {/* Add to cart quick button */}
-        <motion.button
-          disabled={dish.tags?.includes('sold_out')}
-          whileTap={dish.tags?.includes('sold_out') ? undefined : { scale: 0.94 }}
-          onClick={e => { e.stopPropagation(); onAddToCart(dish); }}
-          className={`mt-1 w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-            dish.tags?.includes('sold_out')
-              ? 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : 'bg-white/5 border border-neutral-200 dark:border-white/8 text-neutral-600 dark:text-neutral-300 hover:bg-[#D4AF37]/15 hover:text-[#D4AF37] hover:border-[#D4AF37]/30'
-          }`}
-        >
-          <ShoppingCart size={12} /> {dish.tags?.includes('sold_out') ? 'Sold Out' : 'Add to Order'}
-        </motion.button>
+        {/* Blinkit-style Add / Stepper button */}
+        <div className="mt-1" onClick={e => e.stopPropagation()}>
+          <BlinkitAddButton
+            qty={qty}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            isSoldOut={dish.tags?.includes('sold_out')}
+            variant="inline"
+          />
+        </div>
       </div>
     </motion.div>
   );
 };
 
-const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick }) => {
+const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove }) => {
   const hasModel = !!(dish.modelUrl || dish.model_url);
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
@@ -246,19 +310,16 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
           )}
         </div>
 
-        {/* Add + / Customise Button Overlay */}
-        {!dish.tags?.includes('sold_out') && (
-          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-10 w-24">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={onAddToCart}
-              className="w-full py-2 bg-white dark:bg-[#12141D] text-emerald-600 dark:text-emerald-400 font-extrabold text-xs rounded-xl shadow-lg border border-neutral-200 dark:border-white/10 hover:border-emerald-500/30 transition-colors uppercase tracking-wider flex items-center justify-center gap-1"
-            >
-              <span>Add</span>
-              <span className="text-sm font-light">+</span>
-            </motion.button>
-          </div>
-        )}
+        {/* Blinkit-style Add / Stepper Button Overlay */}
+        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-10 w-24">
+          <BlinkitAddButton
+            qty={qty}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            isSoldOut={dish.tags?.includes('sold_out')}
+            variant="overlay"
+          />
+        </div>
       </div>
     </div>
   );
@@ -266,7 +327,7 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor, updateDish, showNotification } = useAppContext();
+  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(false);
@@ -604,18 +665,24 @@ export default function MenuPage() {
 
                 {/* Vertical Dishes List */}
                 <div className="divide-y divide-neutral-100 dark:divide-white/5 px-5">
-                  {catGroup.dishes.map((dish, i) => (
-                    <div key={dish.id} data-dish-id={dish.id} className="dish-card-analytics py-5 first:pt-4 last:pb-4">
-                      <ZomatoDishRow 
-                        dish={dish} 
-                        isFav={favorites.includes(dish.id)}
-                        onToggleFav={() => toggleFavorite(dish.id)}
-                        onAddToCart={() => addToCart(dish)}
-                        onDishClick={() => navigate(`/dish/${dish.id}`)}
-                        onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? () => navigate(`/dish/${dish.id}`) : undefined}
-                      />
-                    </div>
-                  ))}
+                  {catGroup.dishes.map((dish, i) => {
+                    const dishQty = cart.filter(c => c.id === dish.id).length;
+                    return (
+                      <div key={dish.id} data-dish-id={dish.id} className="dish-card-analytics py-5 first:pt-4 last:pb-4">
+                        <ZomatoDishRow 
+                          dish={dish} 
+                          isFav={favorites.includes(dish.id)}
+                          onToggleFav={() => toggleFavorite(dish.id)}
+                          onAddToCart={() => addToCart(dish)}
+                          onDishClick={() => navigate(`/dish/${dish.id}`)}
+                          onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? () => navigate(`/dish/${dish.id}`) : undefined}
+                          qty={dishQty}
+                          onAdd={(e) => { if (e) e.stopPropagation(); addToCart(dish); }}
+                          onRemove={(e) => { if (e) e.stopPropagation(); removeOneFromCart(dish.id); }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))
@@ -876,6 +943,41 @@ export default function MenuPage() {
               <span>Close</span>
             </motion.button>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── BLINKIT-STYLE FLOATING CART BAR ── */}
+      <AnimatePresence>
+        {cart.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+            className="fixed bottom-20 left-4 right-4 z-50"
+          >
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/cart')}
+              className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 border border-emerald-500/50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                  <ShoppingCart size={16} />
+                </div>
+                <div className="text-left">
+                  <span className="text-xs font-bold opacity-90">{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
+                  <p className="text-[10px] opacity-70 -mt-0.5">added to cart</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-base tabular-nums">
+                  ${cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0).toFixed(2)}
+                </span>
+                <ChevronRight size={18} strokeWidth={2.5} />
+              </div>
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 
