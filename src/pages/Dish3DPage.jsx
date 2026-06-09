@@ -13,9 +13,6 @@ export default function Dish3DPage() {
   const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
 
-  // AR button ref
-  const arViewerRef = useRef(null);
-
   useEffect(() => {
     if (!activeRestId) navigate('/scanner', { replace: true });
   }, [activeRestId, navigate]);
@@ -40,8 +37,12 @@ export default function Dish3DPage() {
   const macroPercent = (val, max) => Math.min(100, Math.round((parseInt(val) || 0) / max * 100));
 
   const activateAR = () => {
-    const mv = arViewerRef.current?.querySelector('model-viewer');
-    if (mv?.activateAR) mv.activateAR();
+    const mv = document.querySelector('model-viewer');
+    if (mv?.activateAR) {
+      mv.activateAR();
+    } else {
+      console.warn('AR viewer not ready yet.');
+    }
   };
 
   const displayImages = dish.images?.length > 0 ? dish.images : (dish.cover ? [dish.cover] : []);
@@ -300,18 +301,11 @@ export default function Dish3DPage() {
       {/* ══════════════════════════════════════════════════════ */}
       <div className="absolute bottom-0 left-0 right-0 z-40 px-5 pb-8 pt-12 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-black dark:via-black/80 transition-colors">
 
-        {/* AR Button — uses hidden model-viewer activated imperatively */}
+        {/* AR Button — uses hidden ModelViewer activated imperatively */}
         {modelUrl && (
           <>
-            <div ref={arViewerRef} className="hidden">
-              <model-viewer
-                src={modelUrl}
-                ar
-                ar-modes="webxr scene-viewer quick-look"
-                ar-scale="auto"
-                ar-placement="floor"
-                style={{ display: 'none' }}
-              />
+            <div className="absolute w-[1px] h-[1px] opacity-0 pointer-events-none overflow-hidden">
+              <ModelViewer src={modelUrl} ar />
             </div>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={activateAR}
