@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon } from 'lucide-react';
+import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
@@ -147,6 +147,123 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
   );
 };
 
+const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick }) => {
+  const hasModel = !!(dish.modelUrl || dish.model_url);
+  const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
+  const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
+
+  const isVeg = dish.dietaryPreference === 'Vegetarian' 
+    || dish.dietaryPreference === 'Vegan' 
+    || dish.tags?.includes('Vegetarian') 
+    || dish.tags?.includes('Vegan') 
+    || dish.tags?.includes('vegan')
+    || dish.tags?.includes('vegetarian');
+
+  return (
+    <div className="flex justify-between items-start gap-4 cursor-pointer group" onClick={onDishClick}>
+      {/* Left Details Panel */}
+      <div className="flex-1 min-w-0 flex flex-col gap-1.5 text-left">
+        {/* Veg / Non-veg Indicator */}
+        <div className="flex items-center gap-2">
+          <div className={`w-4 h-4 border-2 rounded flex items-center justify-center shrink-0 ${isVeg ? 'border-green-600' : 'border-red-600'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
+          </div>
+          {badgeStyle && (
+            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border backdrop-blur-md ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}>
+              {primaryBadge}
+            </span>
+          )}
+        </div>
+
+        {/* Dish Name */}
+        <h3 className="font-display font-bold text-base text-neutral-900 dark:text-white leading-snug group-hover:text-[#D4AF37] transition-colors">
+          {dish.name}
+        </h3>
+
+        {/* Price */}
+        <div className="font-display font-black text-base text-[#D4AF37] mt-0.5">
+          ${Number(dish.price).toFixed(2)}
+        </div>
+
+        {/* Chef / Prep Details */}
+        <div className="flex items-center gap-3 text-[11px] text-neutral-500 font-sans">
+          {dish.prepTime && <span>⏱ {dish.prepTime}m</span>}
+          {dish.serves && <span className="flex items-center gap-0.5"><Users size={11}/> {dish.serves}</span>}
+        </div>
+
+        {/* Description */}
+        {dish.description && (
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed line-clamp-2">
+            {dish.description}
+          </p>
+        )}
+
+        {/* Action icons (Bookmark/AR) */}
+        <div className="flex items-center gap-2 mt-2" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={onToggleFav}
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${
+              isFav 
+                ? 'bg-red-500/10 border-red-500/25 text-red-500' 
+                : 'bg-white dark:bg-[#0d0d10] border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5'
+            }`}
+          >
+            <Heart size={12} className={isFav ? 'fill-current' : ''} />
+            <span>{isFav ? 'Bookmarked' : 'Bookmark'}</span>
+          </button>
+          
+          {hasModel && (
+            <button
+              onClick={onARClick}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border bg-white dark:bg-[#0d0d10] border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 text-[11px] font-bold transition-all"
+            >
+              <Maximize2 size={12} className="text-indigo-400" />
+              <span>View in AR</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Right Image / Add Button Panel */}
+      <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#111115] border border-neutral-200 dark:border-white/10 shadow-sm">
+          {dish.cover ? (
+            <img
+              src={dish.cover}
+              alt={dish.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-neutral-400 dark:text-neutral-600">
+              <ChefHat size={32} />
+            </div>
+          )}
+          
+          {dish.tags?.includes('sold_out') && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl z-10">
+              <span className="font-display font-black text-white text-[10px] tracking-wider uppercase">SOLD OUT</span>
+            </div>
+          )}
+        </div>
+
+        {/* Add + / Customise Button Overlay */}
+        {!dish.tags?.includes('sold_out') && (
+          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-10 w-24">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onAddToCart}
+              className="w-full py-2 bg-white dark:bg-[#12141D] text-emerald-600 dark:text-emerald-400 font-extrabold text-xs rounded-xl shadow-lg border border-neutral-200 dark:border-white/10 hover:border-emerald-500/30 transition-colors uppercase tracking-wider flex items-center justify-center gap-1"
+            >
+              <span>Add</span>
+              <span className="text-sm font-light">+</span>
+            </motion.button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function MenuPage() {
   const navigate = useNavigate();
   const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, cart, setUser, planFor, updateDish, showNotification } = useAppContext();
@@ -158,6 +275,7 @@ export default function MenuPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dinerName, setDinerName] = useState('');
   const [dinerPhone, setDinerPhone] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // ── Subscription plan gate for this restaurant ──
   const PLANS = ['Starter', 'Pro', 'Enterprise'];
@@ -247,41 +365,79 @@ export default function MenuPage() {
     }))
   ];
 
-  const filteredDishes = allDishes.filter(d => {
-    const matchSearch = !search
-      || d.name.toLowerCase().includes(search.toLowerCase())
-      || d.description?.toLowerCase().includes(search.toLowerCase());
-    
-    const matchCat = activeCategory === 'All'
-      ? true
-      : activeCategory === 'Vegan'
+  const categoriesToRender = activeCategory === 'All'
+    ? customCategories
+    : customCategories.filter(cat => cat === activeCategory);
+
+  const categoriesWithDishes = categoriesToRender.map(cat => {
+    const catDishes = allDishes.filter(d => {
+      const matchSearch = !search
+        || d.name.toLowerCase().includes(search.toLowerCase())
+        || d.description?.toLowerCase().includes(search.toLowerCase());
+      
+      const matchCat = cat === 'Vegan'
         ? d.tags?.includes('Vegan') || d.dietaryPreference === 'Vegan'
-        : d.category === activeCategory || d.tags?.includes(activeCategory);
-
-    const isVeg = d.dietaryPreference === 'Vegetarian' 
-      || d.dietaryPreference === 'Vegan' 
-      || d.tags?.includes('Vegetarian') 
-      || d.tags?.includes('Vegan') 
-      || d.tags?.includes('vegan')
-      || d.tags?.includes('vegetarian');
-
-    const matchVeg = vegOnly ? isVeg : true;
-
-    return matchSearch && matchCat && matchVeg;
-  });
-
-  const orderArray = metadataRecord?.macros?.categoryOrders?.[activeCategory] || [];
-  if (orderArray.length > 0 && activeCategory !== 'All') {
-    filteredDishes.sort((a, b) => {
-      const idxA = orderArray.indexOf(a.id);
-      const idxB = orderArray.indexOf(b.id);
-      if (idxA === -1 && idxB === -1) return 0;
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
+        : d.category === cat || d.tags?.includes(cat);
+        
+      const isVeg = d.dietaryPreference === 'Vegetarian' 
+        || d.dietaryPreference === 'Vegan' 
+        || d.tags?.includes('Vegetarian') 
+        || d.tags?.includes('Vegan') 
+        || d.tags?.includes('vegan')
+        || d.tags?.includes('vegetarian');
+        
+      const matchVeg = vegOnly ? isVeg : true;
+      return matchSearch && matchCat && matchVeg;
     });
+
+    const orderArray = metadataRecord?.macros?.categoryOrders?.[cat] || [];
+    if (orderArray.length > 0) {
+      catDishes.sort((a, b) => {
+        const idxA = orderArray.indexOf(a.id);
+        const idxB = orderArray.indexOf(b.id);
+        if (idxA === -1 && idxB === -1) return 0;
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+    }
+
+    return {
+      category: cat,
+      dishes: catDishes
+    };
+  }).filter(c => c.dishes.length > 0);
+
+  // Add uncategorized if activeCategory is 'All'
+  if (activeCategory === 'All') {
+    const uncategorizedDishes = allDishes.filter(d => {
+      const hasCategory = customCategories.some(cat => d.category === cat || d.tags?.includes(cat));
+      if (hasCategory) return false;
+      
+      const matchSearch = !search
+        || d.name.toLowerCase().includes(search.toLowerCase())
+        || d.description?.toLowerCase().includes(search.toLowerCase());
+      
+      const isVeg = d.dietaryPreference === 'Vegetarian' 
+        || d.dietaryPreference === 'Vegan' 
+        || d.tags?.includes('Vegetarian') 
+        || d.tags?.includes('Vegan') 
+        || d.tags?.includes('vegan')
+        || d.tags?.includes('vegetarian');
+        
+      const matchVeg = vegOnly ? isVeg : true;
+      return matchSearch && matchVeg;
+    });
+
+    if (uncategorizedDishes.length > 0) {
+      categoriesWithDishes.push({
+        category: 'Others',
+        dishes: uncategorizedDishes
+      });
+    }
   }
 
+  const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
   const cartCount = cart.length;
 
   return (
@@ -376,7 +532,10 @@ export default function MenuPage() {
 
         <div className="flex gap-2 px-5 mt-6 mb-2 overflow-x-auto no-scrollbar snap-x pb-4">
           {dynamicCategoryTabs.map((cat) => (
-            <button key={cat.key} onClick={() => setActiveCategory(cat.key)}
+            <button key={cat.key} onClick={() => {
+              setActiveCategory(cat.key);
+              window.scrollTo({ top: 380, behavior: 'smooth' });
+            }}
               className={`snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl border font-bold text-sm transition-all ${
                 activeCategory === cat.key 
                   ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-transparent shadow-lg shadow-black/10 dark:shadow-white/10' 
@@ -389,7 +548,7 @@ export default function MenuPage() {
 
         <div className="flex justify-between items-center px-5 mt-2 mb-4 flex-shrink-0">
           <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-            {filteredDishes.length} items showing
+            {totalItemsCount} items showing
           </div>
           <button
             onClick={() => setVegOnly(!vegOnly)}
@@ -418,33 +577,49 @@ export default function MenuPage() {
           </div>
         )}
 
-        {/* ── DISH GRID ── */}
-        <div className="px-5 pb-32">
-        <AnimatePresence mode="popLayout">
-          {filteredDishes.length === 0 ? (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-center py-20 text-neutral-600">
+        {/* ── ZOMATO-STYLE GROUPED DISH LIST ── */}
+        <div className="pb-32">
+          {categoriesWithDishes.length === 0 ? (
+            <div className="text-center py-20 text-neutral-600 px-5">
               <ChefHat size={48} className="mx-auto mb-4 opacity-30" />
               <p className="font-display font-bold text-lg">No dishes found</p>
               <p className="text-sm mt-1">Try a different category or search</p>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              {filteredDishes.map((dish, i) => (
-                <div key={dish.id} data-dish-id={dish.id} className="dish-card-analytics">
-                  <DishCard 
-                    dish={dish} index={i}
-                    isFav={favorites.includes(dish.id)}
-                    onToggleFav={() => toggleFavorite(dish.id)}
-                    onAddToCart={(e) => { e.stopPropagation(); addToCart(dish); }}
-                    onDishClick={() => navigate(`/dish/${dish.id}`)}
-                    onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? (e) => { e.stopPropagation(); navigate(`/dish/${dish.id}`); } : undefined}
-                  />
-                </div>
-              ))}
             </div>
+          ) : (
+            categoriesWithDishes.map((catGroup) => (
+              <div 
+                key={catGroup.category} 
+                id={`category-${catGroup.category.replace(/\s+/g, '-').toLowerCase()}`}
+                className="mb-8 scroll-mt-24"
+              >
+                {/* Sticky Header */}
+                <div className="sticky top-0 bg-white/95 dark:bg-[#0d0d10]/95 backdrop-blur-md py-4 px-5 z-20 border-b border-neutral-100 dark:border-white/5 flex justify-between items-center">
+                  <h2 className="font-display font-black text-lg text-neutral-900 dark:text-white tracking-tight">
+                    {catGroup.category}
+                  </h2>
+                  <span className="text-xs font-bold text-neutral-400 bg-neutral-100 dark:bg-white/5 px-2.5 py-1 rounded-full font-sans">
+                    {catGroup.dishes.length} items
+                  </span>
+                </div>
+
+                {/* Vertical Dishes List */}
+                <div className="divide-y divide-neutral-100 dark:divide-white/5 px-5">
+                  {catGroup.dishes.map((dish, i) => (
+                    <div key={dish.id} data-dish-id={dish.id} className="dish-card-analytics py-5 first:pt-4 last:pb-4">
+                      <ZomatoDishRow 
+                        dish={dish} 
+                        isFav={favorites.includes(dish.id)}
+                        onToggleFav={() => toggleFavorite(dish.id)}
+                        onAddToCart={() => addToCart(dish)}
+                        onDishClick={() => navigate(`/dish/${dish.id}`)}
+                        onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? () => navigate(`/dish/${dish.id}`) : undefined}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
           )}
-        </AnimatePresence>
         </div>
 
         {/* ── UPCOMING EVENTS ── */}
@@ -622,6 +797,87 @@ export default function MenuPage() {
 
       {/* AI Waiter Component — Enterprise Plan only */}
       {hasEnterprise && <AIWaiter />}
+
+      {/* ── FLOATING ZOMATO MENU BUTTON ── */}
+      {categoriesWithDishes.length > 0 && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setMenuOpen(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xl font-bold text-sm tracking-wide transition-all border border-white/10 dark:border-black/5"
+          >
+            <BookOpen size={16} />
+            <span>Menu</span>
+          </motion.button>
+        </div>
+      )}
+
+      {/* ── MENU POPUP OVERLAY ── */}
+      <AnimatePresence>
+        {menuOpen && (
+          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-5 bg-black/60 backdrop-blur-sm">
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-[#12141D] w-full max-w-[280px] rounded-[2rem] p-6 shadow-2xl border border-neutral-200 dark:border-white/10 relative overflow-hidden flex flex-col max-h-[60vh] mb-4"
+            >
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#D4AF37]/10 blur-3xl rounded-full pointer-events-none" />
+              
+              {/* Categories list */}
+              <div className="overflow-y-auto pr-1 flex-1 py-2 space-y-4">
+                {categoriesWithDishes.map((catGroup) => {
+                  const isActive = activeCategory === catGroup.category;
+                  return (
+                    <button
+                      key={catGroup.category}
+                      onClick={() => {
+                        setActiveCategory(catGroup.category);
+                        setMenuOpen(false);
+                        // Scroll to the category header
+                        setTimeout(() => {
+                          const el = document.getElementById(`category-${catGroup.category.replace(/\s+/g, '-').toLowerCase()}`);
+                          if (el) {
+                            const yOffset = -90;
+                            const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                          }
+                        }, 100);
+                      }}
+                      className="w-full flex justify-between items-center text-left py-1"
+                    >
+                      <span className={`text-base font-bold transition-colors ${
+                        isActive ? 'text-green-600 dark:text-green-400 font-extrabold' : 'text-neutral-700 dark:text-neutral-300'
+                      }`}>
+                        {catGroup.category}
+                      </span>
+                      <span className={`text-sm font-semibold transition-colors ${
+                        isActive ? 'text-green-600 dark:text-green-400 font-extrabold' : 'text-neutral-400 dark:text-neutral-500'
+                      }`}>
+                        {catGroup.dishes.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* Standalone Close Button at Bottom */}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-black font-extrabold text-sm shadow-xl border border-white/10 dark:border-black/5"
+            >
+              <X size={16} />
+              <span>Close</span>
+            </motion.button>
+          </div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>
