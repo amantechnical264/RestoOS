@@ -1781,7 +1781,7 @@ export default function VendorDashboardPage() {
                       </button>
                     </div>
                     <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={e => { if (e.target.files[0]) uploadGlbFile(e.target.files[0]); }} />
-                    {!editingDish.modelUrl ? (
+                    {!(editingDish.modelUrl || editingDish.model_url) ? (
                       <div onClick={() => glbInputRef.current?.click()}
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) uploadGlbFile(f); }}
@@ -1797,11 +1797,11 @@ export default function VendorDashboardPage() {
                             <CheckCircle size={16} className="text-emerald-500 shrink-0" />
                             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate">3D Model Attached</span>
                           </div>
-                          <button type="button" onClick={() => window.open(editingDish.modelUrl, '_blank')}
+                          <button type="button" onClick={() => window.open((editingDish.modelUrl || editingDish.model_url), '_blank')}
                             className="px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors font-bold text-xs flex items-center gap-2">
                             <Eye size={15} /> Preview
                           </button>
-                          <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: ''})}
+                          <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: '', model_url: ''})}
                             className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-500 hover:bg-red-100 transition-colors">
                             <Trash2 size={15} />
                           </button>
@@ -1810,7 +1810,7 @@ export default function VendorDashboardPage() {
                         {/* Live Model Preview */}
                         <div className="w-full h-64 bg-neutral-100 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden relative">
                           <ModelViewer 
-                            src={editingDish.modelUrl}
+                            src={editingDish.modelUrl || editingDish.model_url}
                             autoRotate
                             cameraControls
                           />
