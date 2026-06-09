@@ -330,37 +330,31 @@ export default function VendorDashboardPage() {
     setEditingDish(prev => prev ? { ...prev, modelUrl: url } : prev);
   }, []);
 
+  const [glbUpload, setGlbUpload] = React.useState({ uploading: false, progress: 0, error: null });
+
   const uploadGlbFile = async (file) => {
-    setScanState('uploading'); setScanStageLabel('Uploading .glb model...'); 
-    setProgress(0);
-    
+    setGlbUpload({ uploading: true, progress: 0, error: null });
+
     let currentProgress = 0;
     const progressInterval = setInterval(() => {
-      currentProgress += (90 - currentProgress) * 0.15;
-      setProgress(Math.round(currentProgress));
-    }, 300);
+      currentProgress += (90 - currentProgress) * 0.12;
+      setGlbUpload(prev => ({ ...prev, progress: Math.min(Math.round(currentProgress), 89) }));
+    }, 250);
 
     try {
       const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
       const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
-      
       clearInterval(progressInterval);
-      
       if (error) throw error;
       const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
-      
-      setProgress(100);
-      finalizeGlbResult(pub.publicUrl);
-      
-      // Auto dismiss the success message after 2 seconds
-      setTimeout(() => {
-        setScanState('idle');
-      }, 2000);
-      
+      setGlbUpload({ uploading: false, progress: 100, error: null });
+      // Set the model URL — preview renders immediately
+      setEditingDish(prev => prev ? { ...prev, modelUrl: pub.publicUrl } : prev);
       return pub.publicUrl;
     } catch (err) {
       clearInterval(progressInterval);
-      console.error(err); setScanState('error'); setScanStageLabel('Upload failed. Check your Supabase storage bucket.');
+      console.error(err);
+      setGlbUpload({ uploading: false, progress: 0, error: 'Upload failed. Check your Supabase storage bucket.' });
       return null;
     }
   };
@@ -1802,7 +1796,34 @@ export default function VendorDashboardPage() {
                       </button>
                     </div>
                     <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={e => { if (e.target.files[0]) uploadGlbFile(e.target.files[0]); }} />
-                    {!(editingDish.modelUrl || editingDish.model_url) ? (
+                    
+                    {/* Uploading state — inline progress bar */}
+                    {glbUpload.uploading ? (
+                      <div className="rounded-2xl p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                          <span className="text-sm font-bold text-blue-700 dark:text-blue-300">Uploading 3D model...</span>
+                          <span className="ml-auto text-sm font-black text-blue-600 dark:text-blue-400 tabular-nums">{glbUpload.progress}%</span>
+                        </div>
+                        <div className="h-2.5 bg-blue-200 dark:bg-blue-900/40 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${glbUpload.progress}%` }}
+                            transition={{ duration: 0.3, ease: 'easeOut' }}
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500"
+                          />
+                        </div>
+                        <p className="text-[11px] text-blue-500 dark:text-blue-400 mt-2">Please wait, large files may take a moment...</p>
+                      </div>
+                    ) : glbUpload.error ? (
+                      <div className="rounded-2xl p-5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40">
+                        <p className="text-sm font-bold text-red-600 dark:text-red-400 mb-3">{glbUpload.error}</p>
+                        <button type="button" onClick={() => { setGlbUpload({ uploading: false, progress: 0, error: null }); glbInputRef.current?.click(); }}
+                          className="text-xs font-bold px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 flex items-center gap-1.5">
+                          <RefreshCw size={12} /> Try Again
+                        </button>
+                      </div>
+                    ) : !(editingDish.modelUrl || editingDish.model_url) ? (
                       <div onClick={() => glbInputRef.current?.click()}
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) uploadGlbFile(f); }}
@@ -1822,13 +1843,13 @@ export default function VendorDashboardPage() {
                             className="px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors font-bold text-xs flex items-center gap-2">
                             <Eye size={15} /> Preview
                           </button>
-                          <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: '', model_url: ''})}
+                          <button type="button" onClick={() => { setEditingDish({...editingDish, modelUrl: '', model_url: ''}); setGlbUpload({ uploading: false, progress: 0, error: null }); }}
                             className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-500 hover:bg-red-100 transition-colors">
                             <Trash2 size={15} />
                           </button>
                         </div>
                         
-                        {/* Live Model Preview */}
+                        {/* Live Model Preview — shows immediately after upload */}
                         <div className="w-full h-64 bg-neutral-100 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden relative">
                           <ModelViewer 
                             src={editingDish.modelUrl || editingDish.model_url}
