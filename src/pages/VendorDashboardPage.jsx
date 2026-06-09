@@ -959,7 +959,7 @@ export default function VendorDashboardPage() {
                             {catDishes.length === 0 ? (
                               <p className="text-xs text-neutral-400 italic">No dishes assigned to this category. Edit a dish and select this tag to assign it.</p>
                             ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                              <div className="flex flex-col gap-2 mt-2">
                                 {catDishes.map(dish => (
                                   <div key={dish.id} className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs">
                                     <span className="font-semibold truncate pr-2">{dish.name}</span>
