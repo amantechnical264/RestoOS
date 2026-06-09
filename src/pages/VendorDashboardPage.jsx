@@ -303,29 +303,6 @@ export default function VendorDashboardPage() {
     name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00'
   });
 
-  const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
-
-  React.useEffect(() => {
-    let display = [...vendDishes].sort((a, b) => (a.macros?.sort_order || 0) - (b.macros?.sort_order || 0));
-    if (selectedEditCategory === '__uncategorised__') {
-      display = display.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
-    } else if (selectedEditCategory !== 'All') {
-      display = display.filter(d => d.tags?.includes(selectedEditCategory));
-    }
-    setLocalDisplayDishes(display);
-  }, [vendDishes, selectedEditCategory, customCategories]);
-
-  const handleReorderDishes = (newOrder) => {
-    setLocalDisplayDishes(newOrder);
-    newOrder.forEach((dish, index) => {
-      if ((dish.macros?.sort_order || 0) !== index) {
-        updateDish(dish.id, {
-          ...dish,
-          macros: { ...(dish.macros || {}), sort_order: index }
-        });
-      }
-    });
-  };
 
   React.useEffect(() => {
     if (currentRestaurant) {
@@ -494,6 +471,30 @@ export default function VendorDashboardPage() {
 
   const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
   const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
+
+  const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
+
+  React.useEffect(() => {
+    let display = [...vendDishes].sort((a, b) => (a.macros?.sort_order || 0) - (b.macros?.sort_order || 0));
+    if (selectedEditCategory === '__uncategorised__') {
+      display = display.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
+    } else if (selectedEditCategory !== 'All') {
+      display = display.filter(d => d.tags?.includes(selectedEditCategory));
+    }
+    setLocalDisplayDishes(display);
+  }, [vendDishes, selectedEditCategory, customCategories]);
+
+  const handleReorderDishes = (newOrder) => {
+    setLocalDisplayDishes(newOrder);
+    newOrder.forEach((dish, index) => {
+      if ((dish.macros?.sort_order || 0) !== index) {
+        updateDish(dish.id, {
+          ...dish,
+          macros: { ...(dish.macros || {}), sort_order: index }
+        });
+      }
+    });
+  };
 
   const TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
