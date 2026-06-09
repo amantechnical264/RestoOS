@@ -210,6 +210,8 @@ export const AppProvider = ({ children }) => {
         // Map snake_case from DB to camelCase for frontend
         const mapped = data.map(d => ({
           ...d,
+          cover: d.macros?.cover || d.cover || '',
+          images: d.macros?.images || d.images || [],
           modelUrl: d.model_url || d.modelUrl,
           restId: d.rest_id || d.restId
         }));
@@ -463,10 +465,10 @@ export const AppProvider = ({ children }) => {
         price: parseFloat(dishData.price) || 0,
         description: dishData.description || '',
         model_url: dishData.modelUrl || '',
-        cover: dishData.cover || '',
-        images: dishData.images || [],
-        macros: dishData.macros || {},
+        macros: { ...(dishData.macros || {}), cover: dishData.cover || '', images: dishData.images || [] },
         tags: dishData.tags || [],
+        allergens: dishData.allergens || [],
+        ingredients: dishData.ingredients || [],
         rest_id: dishData.restId
       };
       
@@ -474,7 +476,13 @@ export const AppProvider = ({ children }) => {
       const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
       
-      setDishes(prev => [...prev, data[0]]);
+      setDishes(prev => [...prev, {
+        ...data[0],
+        cover: data[0].macros?.cover || '',
+        images: data[0].macros?.images || [],
+        modelUrl: data[0].model_url || data[0].modelUrl,
+        restId: data[0].rest_id || data[0].restId
+      }]);
       showNotification('Dish saved successfully!');
       return data[0].id;
     } catch (error) {
@@ -494,11 +502,16 @@ export const AppProvider = ({ children }) => {
       if (updates.name !== undefined) dbUpdate.name = updates.name;
       if (updates.price !== undefined) dbUpdate.price = parseFloat(updates.price) || 0;
       if (updates.description !== undefined) dbUpdate.description = updates.description;
-      if (updates.modelUrl !== undefined) dbUpdate.model_url = updates.modelUrl;
       if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
-      if (updates.cover !== undefined) dbUpdate.cover = updates.cover;
-      if (updates.images !== undefined) dbUpdate.images = updates.images;
-      if (updates.macros !== undefined) dbUpdate.macros = updates.macros;
+      if (updates.modelUrl !== undefined) dbUpdate.model_url = updates.modelUrl;
+      
+      // Handle macros JSONB column for custom data (like cover, images)
+      const currentDish = dishes.find(d => d.id === dishId);
+      dbUpdate.macros = { ...(currentDish?.macros || {}) };
+      if (updates.macros !== undefined) dbUpdate.macros = { ...dbUpdate.macros, ...updates.macros };
+      if (updates.cover !== undefined) dbUpdate.macros.cover = updates.cover;
+      if (updates.images !== undefined) dbUpdate.macros.images = updates.images;
+      
       if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
       if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;
       if (updates.ingredients !== undefined) dbUpdate.ingredients = updates.ingredients;
@@ -512,6 +525,8 @@ export const AppProvider = ({ children }) => {
       if (data && data[0]) {
         const mappedDish = {
           ...data[0],
+          cover: data[0].macros?.cover || '',
+          images: data[0].macros?.images || [],
           modelUrl: data[0].model_url || data[0].modelUrl,
           restId: data[0].rest_id || data[0].restId
         };
