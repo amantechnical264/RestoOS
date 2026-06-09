@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -210,6 +210,7 @@ export default function VendorDashboardPage() {
   const [editingEvent, setEditingEvent] = React.useState(null);
   const [managingCategories, setManagingCategories] = React.useState(false);
   const [newCategoryName, setNewCategoryName] = React.useState('');
+  const [selectedEditCategory, setSelectedEditCategory] = React.useState('All');
   const [scanState, setScanState]     = React.useState('idle');
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]       = React.useState(0);
@@ -425,6 +426,7 @@ export default function VendorDashboardPage() {
     { key: 'growth',    icon: Zap,          label: 'Growth' },
     { key: 'customers', icon: Users,        label: 'Customers' },
     { key: 'events',    icon: Calendar,     label: 'Events' },
+    { key: 'editmenu',  icon: BookOpen,     label: 'Edit Menu' },
     { key: 'qr',        icon: QrIcon,       label: 'Tables' },
     { key: 'settings',  icon: Settings,     label: 'Settings' },
   ];
@@ -1074,6 +1076,216 @@ export default function VendorDashboardPage() {
               </div>
             </motion.div>
           ))}
+
+          {/* ── EDIT MENU TAB ── */}
+          {vendorTab === 'editmenu' && (
+            <motion.div key="editmenu" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 flex overflow-hidden">
+
+              {/* ── LEFT: Category Sidebar ── */}
+              <div className="w-52 shrink-0 border-r border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
+                <div className="p-4 border-b border-neutral-100 dark:border-white/5">
+                  <h2 className="font-display font-black text-base">Edit Menu</h2>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">{vendDishes.length} dishes</p>
+                </div>
+
+                {/* Add Dish shortcut */}
+                <button
+                  onClick={() => { setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', images: [], tags: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] }); setVendorTab('menu'); }}
+                  className="mx-3 mt-3 mb-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-xs font-bold hover:opacity-90 transition-opacity"
+                >
+                  <Plus size={13} /> Add Dish
+                </button>
+
+                <nav className="flex flex-col gap-0.5 p-2 flex-1">
+                  {/* All category */}
+                  {[{ key: 'All', label: 'All', count: vendDishes.length }, ...customCategories.map(cat => ({ key: cat, label: cat, count: vendDishes.filter(d => d.tags?.includes(cat)).length }))].map(cat => (
+                    <button
+                      key={cat.key}
+                      onClick={() => setSelectedEditCategory(cat.key)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
+                        selectedEditCategory === cat.key
+                          ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="truncate">{cat.label}</span>
+                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
+                        selectedEditCategory === cat.key
+                          ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+                          : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
+                      }`}>{cat.count}</span>
+                    </button>
+                  ))}
+
+                  {/* Uncategorised bucket */}
+                  {(() => {
+                    const uncatCount = vendDishes.filter(d => !customCategories.some(cat => d.tags?.includes(cat))).length;
+                    return uncatCount > 0 ? (
+                      <button
+                        onClick={() => setSelectedEditCategory('__uncategorised__')}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
+                          selectedEditCategory === '__uncategorised__'
+                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="truncate italic">Uncategorised</span>
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
+                          selectedEditCategory === '__uncategorised__'
+                            ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+                            : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
+                        }`}>{uncatCount}</span>
+                      </button>
+                    ) : null;
+                  })()}
+                </nav>
+              </div>
+
+              {/* ── RIGHT: Dish List ── */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Section header */}
+                <div className="sticky top-0 z-10 bg-white dark:bg-[#0d0d10] border-b border-neutral-100 dark:border-white/5 px-5 py-3.5 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-display font-black text-base">
+                      {selectedEditCategory === 'All' ? 'All Dishes'
+                        : selectedEditCategory === '__uncategorised__' ? 'Uncategorised'
+                        : selectedEditCategory}
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      {(() => {
+                        if (selectedEditCategory === 'All') return vendDishes.length;
+                        if (selectedEditCategory === '__uncategorised__') return vendDishes.filter(d => !customCategories.some(cat => d.tags?.includes(cat))).length;
+                        return vendDishes.filter(d => d.tags?.includes(selectedEditCategory)).length;
+                      })()} items
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dish rows */}
+                <div className="divide-y divide-neutral-100 dark:divide-white/5">
+                  {(() => {
+                    let displayDishes = vendDishes;
+                    if (selectedEditCategory === '__uncategorised__') {
+                      displayDishes = vendDishes.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
+                    } else if (selectedEditCategory !== 'All') {
+                      displayDishes = vendDishes.filter(d => d.tags?.includes(selectedEditCategory));
+                    }
+
+                    if (displayDishes.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
+                          <ChefHat size={40} className="mb-3 opacity-20" />
+                          <p className="font-bold">No dishes here</p>
+                          <p className="text-xs mt-1">Add a dish or assign one to this category</p>
+                        </div>
+                      );
+                    }
+
+                    return displayDishes.map(dish => {
+                      const isSoldOut = dish.tags?.includes('sold_out');
+                      const isHidden  = dish.tags?.includes('hidden');
+                      return (
+                        <motion.div
+                          key={dish.id}
+                          layout
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex items-center gap-4 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors group ${
+                            isHidden ? 'opacity-50' : ''
+                          }`}
+                        >
+                          {/* Thumbnail */}
+                          <div className="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-white/5 shrink-0 border border-neutral-200 dark:border-white/5">
+                            {dish.cover
+                              ? <img src={dish.cover} className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex items-center justify-center"><ChefHat size={20} className="text-neutral-300" /></div>
+                            }
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-sm text-neutral-900 dark:text-white truncate">{dish.name}</span>
+                              {isSoldOut && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600">SOLD OUT</span>}
+                              {isHidden  && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-500">HIDDEN</span>}
+                              {(dish.modelUrl || dish.model_url) && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-500">3D</span>}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <span className="font-display font-black text-sm text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
+                              <span className="text-[11px] text-neutral-400">{dish.chef || 'Chef of House'}</span>
+                            </div>
+                            {/* Category tags on this dish */}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {dish.tags?.filter(t => !['sold_out','hidden','event','_categories_metadata'].includes(t)).slice(0, 4).map(t => (
+                                <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/6 text-neutral-500">{t}</span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => { setEditingDish(dish); setVendorTab('menu'); }}
+                              className="p-2 rounded-lg bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-600 dark:text-neutral-300 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const newTags = isSoldOut
+                                  ? (dish.tags || []).filter(t => t !== 'sold_out')
+                                  : [...(dish.tags || []), 'sold_out'];
+                                await updateDish(dish.id, { tags: newTags });
+                              }}
+                              className={`p-2 rounded-lg transition-colors ${
+                                isSoldOut
+                                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
+                                  : 'bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-500'
+                              }`}
+                              title={isSoldOut ? 'Mark Available' : 'Mark Sold Out'}
+                            >
+                              <Package size={13} />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const newTags = isHidden
+                                  ? (dish.tags || []).filter(t => t !== 'hidden')
+                                  : [...(dish.tags || []), 'hidden'];
+                                await updateDish(dish.id, { tags: newTags });
+                              }}
+                              className={`p-2 rounded-lg transition-colors ${
+                                isHidden
+                                  ? 'bg-neutral-200 dark:bg-white/15 text-neutral-700 dark:text-neutral-200'
+                                  : 'bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-500'
+                              }`}
+                              title={isHidden ? 'Make Visible' : 'Hide Dish'}
+                            >
+                              {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Delete "${dish.name}"? This cannot be undone.`)) {
+                                  const { error } = await supabase.from('dishes').delete().eq('id', dish.id);
+                                  if (!error) { setDishes(prev => prev.filter(d => d.id !== dish.id)); showNotification('Dish deleted.'); }
+                                  else showNotification('Failed to delete dish.');
+                                }
+                              }}
+                              className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
