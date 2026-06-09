@@ -68,7 +68,7 @@ export default function DinerOrdersPage() {
 
   const myOrders = orders.filter(o => {
     const userId = o.user_id || o.userId;
-    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous';
+    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous' || userId === guestId;
   });
 
   const cardStyleClass = "bg-white dark:bg-gradient-to-br dark:from-[#111111] dark:to-[#080808] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)] shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.8)]";
