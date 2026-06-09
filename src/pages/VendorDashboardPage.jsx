@@ -7,9 +7,9 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
@@ -139,6 +139,44 @@ const PromoCard = ({ title, desc, icon: Icon, badge, onClick }) => (
     </div>
   </motion.button>
 );
+
+// ─── Category Reorder List Helper ──────────────────────────────────────
+const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish }) => {
+  const [items, setItems] = React.useState(initialDishes);
+
+  React.useEffect(() => {
+    setItems(initialDishes);
+  }, [initialDishes]);
+
+  const saveOrder = async (newOrder) => {
+    if (!metadataRecord) return;
+    const ids = newOrder.map(d => d.id);
+    await updateDish(metadataRecord.id, { 
+      macros: { ...metadataRecord.macros, categoryOrders: { ...(metadataRecord.macros?.categoryOrders || {}), [cat]: ids } }
+    });
+  };
+
+  return (
+    <Reorder.Group axis="y" values={items} onReorder={setItems} className="flex flex-col gap-2 mt-2">
+      {items.map((dish) => (
+        <Reorder.Item 
+          key={dish.id} 
+          value={dish}
+          onDragEnd={() => saveOrder(items)}
+          className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs group cursor-grab active:cursor-grabbing relative select-none touch-none"
+        >
+          <span className="font-semibold truncate pr-2 flex-1">{dish.name}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-neutral-500 font-sans mr-2">${Number(dish.price).toFixed(2)}</span>
+            <div className="p-1 text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 transition-colors">
+               <GripVertical size={16} />
+            </div>
+          </div>
+        </Reorder.Item>
+      ))}
+    </Reorder.Group>
+  );
+};
 
 // ══════════════════════════════════════════════════════════════════════
 export default function VendorDashboardPage() {
@@ -974,56 +1012,12 @@ export default function VendorDashboardPage() {
                             {catDishes.length === 0 ? (
                               <p className="text-xs text-neutral-400 italic">No dishes assigned to this category. Edit a dish and select this tag to assign it.</p>
                             ) : (
-                              <div className="flex flex-col gap-2 mt-2">
-                                {catDishes.map((dish, index) => (
-                                  <div key={dish.id} className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs group">
-                                    <span className="font-semibold truncate pr-2 flex-1">{dish.name}</span>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-neutral-500 font-sans mr-2">${Number(dish.price).toFixed(2)}</span>
-                                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button 
-                                          disabled={index === 0}
-                                          onClick={async () => {
-                                            const currentOrder = metadataRecord?.macros?.categoryOrders?.[cat] || catDishes.map(d => d.id);
-                                            if (!currentOrder.includes(dish.id)) {
-                                              currentOrder.push(...catDishes.map(d => d.id).filter(id => !currentOrder.includes(id)));
-                                            }
-                                            const idx = currentOrder.indexOf(dish.id);
-                                            if (idx > 0) {
-                                              const newOrder = [...currentOrder];
-                                              [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
-                                              await updateDish(metadataRecord.id, { 
-                                                macros: { ...metadataRecord.macros, categoryOrders: { ...(metadataRecord.macros?.categoryOrders || {}), [cat]: newOrder } }
-                                              });
-                                            }
-                                          }}
-                                          className={`p-1.5 rounded-lg transition-colors ${index === 0 ? 'text-neutral-300 dark:text-neutral-700 cursor-not-allowed' : 'bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-200'}`}>
-                                          <ChevronUp size={14} />
-                                        </button>
-                                        <button 
-                                          disabled={index === catDishes.length - 1}
-                                          onClick={async () => {
-                                            const currentOrder = metadataRecord?.macros?.categoryOrders?.[cat] || catDishes.map(d => d.id);
-                                            if (!currentOrder.includes(dish.id)) {
-                                              currentOrder.push(...catDishes.map(d => d.id).filter(id => !currentOrder.includes(id)));
-                                            }
-                                            const idx = currentOrder.indexOf(dish.id);
-                                            if (idx < currentOrder.length - 1 && idx !== -1) {
-                                              const newOrder = [...currentOrder];
-                                              [newOrder[idx + 1], newOrder[idx]] = [newOrder[idx], newOrder[idx + 1]];
-                                              await updateDish(metadataRecord.id, { 
-                                                macros: { ...metadataRecord.macros, categoryOrders: { ...(metadataRecord.macros?.categoryOrders || {}), [cat]: newOrder } }
-                                              });
-                                            }
-                                          }}
-                                          className={`p-1.5 rounded-lg transition-colors ${index === catDishes.length - 1 ? 'text-neutral-300 dark:text-neutral-700 cursor-not-allowed' : 'bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-200'}`}>
-                                          <ChevronDown size={14} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                              <CategoryReorderList 
+                                cat={cat} 
+                                initialDishes={catDishes} 
+                                metadataRecord={metadataRecord} 
+                                updateDish={updateDish} 
+                              />
                             )}
                           </div>
                         );
