@@ -1592,6 +1592,34 @@ export default function VendorDashboardPage() {
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
                     </div>
+
+                    {/* ── Category Dropdown ── */}
+                    {customCategories.length > 0 && (
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">
+                          Category <span className="text-neutral-400 font-normal">(shows on menu filter tabs)</span>
+                        </label>
+                        <select
+                          value={editingDish.tags?.find(t => customCategories.includes(t)) || ''}
+                          onChange={e => {
+                            const selected = e.target.value;
+                            // Remove any existing category tags, then add the new one
+                            const stripped = (editingDish.tags || []).filter(t => !customCategories.includes(t));
+                            setEditingDish({
+                              ...editingDish,
+                              tags: selected ? [...stripped, selected] : stripped
+                            });
+                          }}
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white transition-all cursor-pointer"
+                        >
+                          <option value="">— No category —</option>
+                          {customCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Images (Multiple)</label>
                       <div className="flex gap-2 mb-2 flex-wrap">
