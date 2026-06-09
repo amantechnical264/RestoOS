@@ -88,26 +88,7 @@ export default function CustomerProfilePage() {
   const levelProgressPct = Math.min(100, ((totalXp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100);
   const xpNeeded = levelInfo.max - totalXp;
 
-  // City Rank approximation based on XP tiers
-  const cityRank = React.useMemo(() => {
-    if (totalXp > 2500) return 1;
-    if (totalXp > 2000) return 2;
-    if (totalXp > 1500) return 3;
-    if (totalXp > 1000) return 4;
-    if (totalXp > 500) return 8;
-    return 12;
-  }, [totalXp]);
 
-  // Static mock leaderboard entries above the current user
-  const leaderboard = React.useMemo(() => {
-    const defaultLeaders = [
-      { rank: 1, name: 'FoodNinja', xp: 2800, avatar: 'F' },
-      { rank: 2, name: 'GourmetKing', xp: 2200, avatar: 'G' },
-      { rank: 3, name: 'SpiceHunter', xp: 1600, avatar: 'S' },
-    ];
-    // Filter out mock leaders that have less XP than the user to preserve rank order
-    return defaultLeaders.filter(l => l.xp > totalXp);
-  }, [totalXp]);
 
   const cardStyleClass = "bg-white dark:bg-gradient-to-br dark:from-[#111111] dark:to-[#080808] border border-neutral-200 dark:border-[rgba(212,175,55,0.18)] shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.8)]";
   const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
@@ -147,16 +128,11 @@ export default function CustomerProfilePage() {
       <div className="flex-1 overflow-y-auto px-5 pt-5 pb-4 space-y-5 no-scrollbar">
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <motion.div whileHover={{ scale: 1.02 }} className={`rounded-2xl p-5 flex flex-col items-center text-center ${cardStyleClass}`}>
             <Trophy size={26} style={{ color: '#D4AF37', marginBottom: 8 }} />
             <p className="font-display font-black text-2xl text-neutral-900 dark:text-white">{totalXp.toLocaleString()}</p>
             <p className="text-xs font-bold uppercase tracking-widest mt-1 text-neutral-500">XP Points</p>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} className={`rounded-2xl p-5 flex flex-col items-center text-center ${cardStyleClass}`}>
-            <Crown size={26} style={{ color: '#D4AF37', marginBottom: 8 }} />
-            <p className="font-display font-black text-2xl text-neutral-900 dark:text-white">#{cityRank}</p>
-            <p className="text-xs font-bold uppercase tracking-widest mt-1 text-neutral-500">City Rank</p>
           </motion.div>
         </div>
 
@@ -180,45 +156,6 @@ export default function CustomerProfilePage() {
           </p>
         </div>
 
-        {/* Leaderboard */}
-        <div>
-          <div className={`rounded-2xl p-5 bg-white dark:bg-gradient-to-br dark:from-[#111] dark:to-[#0a0a00] border border-neutral-200 dark:border-[rgba(212,175,55,0.25)]`}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-display font-black text-lg flex items-center gap-2">
-                <span style={{ color: '#D4AF37' }}>🏆</span> City Leaderboard
-              </h3>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(212,175,55,0.15)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.3)' }}>
-                Top 5%
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {leaderboard.map((p, idx) => (
-                <div key={p.name} className="flex items-center gap-3">
-                  <span className="w-6 text-xs font-black text-neutral-500">#{idx + 1}</span>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-black"
-                    style={{ background: goldGradient }}>
-                    {p.avatar}
-                  </div>
-                  <span className="font-bold text-sm text-neutral-900 dark:text-white flex-1">{p.name}</span>
-                  <span className="text-xs font-black" style={{ color: '#D4AF37' }}>{p.xp.toLocaleString()} XP</span>
-                </div>
-              ))}
-
-              {/* Dynamic Diner Rank row */}
-              <div className="flex items-center gap-3 rounded-xl p-2 -mx-1 bg-neutral-100 dark:bg-[rgba(212,175,55,0.08)] border border-neutral-200 dark:border-[rgba(212,175,55,0.2)]">
-                <span className="w-6 text-xs font-black" style={{ color: '#D4AF37' }}>#{cityRank}</span>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-black"
-                  style={{ background: goldGradient }}>
-                  {initial}
-                </div>
-                <span className="font-bold text-sm text-neutral-900 dark:text-white flex-1">You</span>
-                <span className="text-xs font-black" style={{ color: '#D4AF37' }}>{totalXp.toLocaleString()} XP</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Achievements / Badges Grid */}
         <div>
