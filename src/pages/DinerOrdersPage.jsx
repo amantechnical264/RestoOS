@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown } from 'lucide-react';
+import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -106,105 +106,133 @@ export default function DinerOrdersPage() {
         )}
 
         <AnimatePresence>
-          {myOrders.map((order, index) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
-              className={`rounded-3xl p-6 shadow-lg ${cardStyleClass}`}
-            >
-              <div className="flex justify-between items-center pb-3 mb-3 border-b border-neutral-100 dark:border-white/5">
-                <span className="font-display font-black text-lg text-neutral-900 dark:text-white">
-                  {t('orders.orderNo', 'Order')} #{getOrderNumber(order)}
-                </span>
-                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}</span>
-              </div>
+          {myOrders.map((order, index) => {
+            const rest = restaurants.find(r => r.id === (order.restId || order.rest_id) || r.id === order.rest_id);
+            const restaurantName = rest ? rest.name : 'Restaurant';
+            const orderDate = order.timestamp ? new Date(order.timestamp) : null;
+            const formattedDate = orderDate 
+              ? orderDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+              : '';
+            const formattedTime = orderDate 
+              ? orderDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+              : '';
 
-              {/* Pending Verification */}
-              {order.status === 'Pending Verification' && (
-                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className={`mt-4 rounded-3xl p-5 ${cardStyleClass}`}>
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(212,175,55,0.1)' }}>
-                      <ShieldCheck size={24} style={{ color: GOLD }} />
+            return (
+              <motion.div
+                key={order.id}
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
+                className={`rounded-3xl p-6 shadow-lg ${cardStyleClass}`}
+              >
+                <div className="pb-4 mb-3 border-b border-neutral-100 dark:border-white/5 flex justify-between items-start">
+                  <div className="space-y-1">
+                    <span className="font-display font-black text-lg text-neutral-900 dark:text-white block">
+                      {t('orders.orderNo', 'Order')} #{getOrderNumber(order)}
+                    </span>
+                    
+                    {/* Restaurant Name */}
+                    <div className="flex items-center gap-1.5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                      <Store size={14} style={{ color: GOLD }} />
+                      <span>{restaurantName}</span>
                     </div>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
-                    {order.verificationCode && (
-                      <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
+
+                    {/* Date and Time */}
+                    {orderDate && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 dark:text-neutral-500 font-sans">
+                        <Clock size={11} />
+                        <span>Ordered on {formattedDate} at {formattedTime}</span>
+                      </div>
                     )}
-                    <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
-                </motion.div>
-              )}
-
-              {/* Cancelled */}
-              {order.status === 'Cancelled' && (
-                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
-                  <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-                      <XCircle size={20} className="text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-red-400">Order Rejected</p>
-                      <p className="text-xs text-neutral-500">This order was not verified by the restaurant staff.</p>
-                    </div>
                   </div>
-                </motion.div>
-              )}
+                  <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-100 dark:bg-white/5 px-2.5 py-1 rounded-full">{order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}</span>
+                </div>
 
-              <OrderTimeline currentStatus={order.status} />
+                {/* Pending Verification */}
+                {order.status === 'Pending Verification' && (
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className={`mt-4 rounded-3xl p-5 ${cardStyleClass}`}>
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(212,175,55,0.1)' }}>
+                        <ShieldCheck size={24} style={{ color: GOLD }} />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
+                      {order.verificationCode && (
+                        <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
+                      )}
+                      <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
+                  </motion.div>
+                )}
 
-              {/* Items list */}
-              <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
-                <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
-                  {order.items.map((item, i) => (
-                    <li key={i} className="flex justify-between">
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{item.quantity}x {item.name}</span>
-                      <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {/* Cancelled */}
+                {order.status === 'Cancelled' && (
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
+                    <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                        <XCircle size={20} className="text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-red-400">Order Rejected</p>
+                        <p className="text-xs text-neutral-500">This order was not verified by the restaurant staff.</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
-              {/* Call Waiter button */}
-              {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
-                <button
-                  onClick={async () => {
-                    try {
-                      await import('../services/supabase').then(({ supabase }) => {
-                        if (supabase) {
-                          supabase.channel('service-requests').send({
-                            type: 'broadcast', event: 'waiter_call',
-                            payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
-                          });
+                <OrderTimeline currentStatus={order.status} />
+
+                {/* Items list */}
+                <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
+                  <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
+                    {order.items.map((item, i) => (
+                      <li key={i} className="flex justify-between">
+                        <span className="text-sm font-bold text-neutral-900 dark:text-white">{item.quantity}x {item.name}</span>
+                        <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Call Waiter button */}
+                {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await import('../services/supabase').then(({ supabase }) => {
+                          if (supabase) {
+                            supabase.channel('service-requests').send({
+                              type: 'broadcast', event: 'waiter_call',
+                              payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
+                            });
+                          }
+                        });
+                        const btn = document.getElementById(`call-waiter-${order.id}`);
+                        if (btn) {
+                          btn.textContent = '✔ Waiter Notified!';
+                          setTimeout(() => { btn.textContent = '🔔 Call Waiter'; }, 3000);
                         }
-                      });
-                      const btn = document.getElementById(`call-waiter-${order.id}`);
-                      if (btn) {
-                        btn.textContent = '✔ Waiter Notified!';
-                        setTimeout(() => { btn.textContent = '🔔 Call Waiter'; }, 3000);
-                      }
-                    } catch(e) { console.error(e); }
-                  }}
-                  id={`call-waiter-${order.id}`}
-                  className="w-full mb-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                  style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
-                >
-                  <Bell size={15}/> Call Waiter
-                </button>
-              )}
+                      } catch(e) { console.error(e); }
+                    }}
+                    id={`call-waiter-${order.id}`}
+                    className="w-full mb-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                    style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
+                  >
+                    <Bell size={15}/> Call Waiter
+                  </button>
+                )}
 
-              {/* Total */}
-              <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}>
-                <span className="text-lg font-black text-neutral-900 dark:text-white">
-                  Total: <span style={{ color: GOLD }}>${Number(order.total).toFixed(2)}</span>
-                </span>
-                <span className={`px-3 py-1 rounded-lg text-xs font-bold`}
-                  style={order.paymentStatus === 'Paid'
-                    ? { background: 'rgba(16,185,129,0.1)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }
-                    : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }
-                  }>
-                  {order.paymentStatus} · {order.paymentMethod}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+                {/* Total */}
+                <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}>
+                  <span className="text-lg font-black text-neutral-900 dark:text-white">
+                    Total: <span style={{ color: GOLD }}>${Number(order.total).toFixed(2)}</span>
+                  </span>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold`}
+                    style={order.paymentStatus === 'Paid'
+                      ? { background: 'rgba(16,185,129,0.1)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }
+                      : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }
+                    }>
+                    {order.paymentStatus} · {order.paymentMethod}
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
