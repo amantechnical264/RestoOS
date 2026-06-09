@@ -66,6 +66,9 @@ export default function DinerOrdersPage() {
     return index !== -1 ? `${String(index + 1).padStart(3, '0')}` : `${order.id.slice(-3)}`;
   };
 
+  const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+  const guestId = dinerProfile.phone || dinerProfile.guestId || 'anonymous';
+
   const myOrders = orders.filter(o => {
     const userId = o.user_id || o.userId;
     return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous' || userId === guestId;
