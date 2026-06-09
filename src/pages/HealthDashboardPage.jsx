@@ -34,21 +34,40 @@ function MacroRing({ value, max, color, label, unit }) {
 
 export default function HealthDashboardPage() {
   const navigate = useNavigate();
-  const { nutritionHistory, userPreferences } = useAppContext();
+  const { user, orders, restaurants, userPreferences } = useAppContext();
   const DAILY_GOALS = userPreferences?.goals || { calories: 2000, protein: 150, carbs: 250, fat: 65 };
 
-  const today     = new Date().toDateString();
-  const todayRecs = nutritionHistory.filter(r => new Date(r.date).toDateString() === today);
-  const todayTotals = todayRecs.reduce((acc, r) => {
-    acc.calories += r.macros.calories;
-    acc.protein  += r.macros.protein;
-    acc.carbs    += r.macros.carbs;
-    acc.fat      += r.macros.fat;
+  const myOrders = orders.filter(o => {
+    const userId = o.user_id || o.userId;
+    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous';
+  });
+
+  const validOrders = myOrders.filter(o => o.status !== 'Cancelled' && o.status !== 'Rejected');
+
+  const today = new Date().toDateString();
+  const todayOrders = validOrders.filter(o => new Date(o.timestamp || o.created_at).toDateString() === today);
+
+  const calculateMacros = (items) => (items || []).reduce((acc, item) => {
+    if (item.macros) {
+      acc.calories += parseInt(item.macros.calories) || 0;
+      acc.protein  += parseInt(item.macros.protein)  || 0;
+      acc.carbs    += parseInt(item.macros.carbs)    || 0;
+      acc.fat      += parseInt(item.macros.fat)      || 0;
+    }
     return acc;
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-  const weeklyAvg = nutritionHistory.length > 0
-    ? Math.round(nutritionHistory.reduce((s, r) => s + r.macros.calories, 0) / nutritionHistory.length)
+  const todayTotals = todayOrders.reduce((acc, order) => {
+    const m = calculateMacros(order.items || []);
+    acc.calories += m.calories;
+    acc.protein  += m.protein;
+    acc.carbs    += m.carbs;
+    acc.fat      += m.fat;
+    return acc;
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+  const weeklyAvg = validOrders.length > 0
+    ? Math.round(validOrders.reduce((s, r) => s + calculateMacros(r.items || []).calories, 0) / validOrders.length)
     : 0;
 
   return (
@@ -83,7 +102,7 @@ export default function HealthDashboardPage() {
             </h2>
             <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest text-black"
               style={{ background: goldGradient }}>
-              {todayRecs.length} meal{todayRecs.length !== 1 ? 's' : ''}
+              {todayOrders.length} meal{todayOrders.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="grid grid-cols-4 gap-2 relative z-10">
@@ -103,7 +122,7 @@ export default function HealthDashboardPage() {
           </div>
           <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)' }}>
             <Calendar size={18} style={{ color: GOLD }} className="mb-2" />
-            <p className="text-2xl font-black text-white">{nutritionHistory.length}</p>
+            <p className="text-2xl font-black text-white">{validOrders.length}</p>
             <p className="text-[10px] text-neutral-500 font-bold mt-1 uppercase tracking-widest">Meals Tracked</p>
           </div>
         </div>
@@ -113,7 +132,7 @@ export default function HealthDashboardPage() {
           <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
             <TrendingUp size={16} style={{ color: GOLD }} /> Meal History
           </h2>
-          {nutritionHistory.length === 0 ? (
+          {validOrders.length === 0 ? (
             <div className="text-center py-12 rounded-3xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}>
               <Flame size={32} style={{ color: 'rgba(212,175,55,0.3)' }} className="mx-auto mb-3" />
               <p className="font-bold text-neutral-400">No meals tracked yet.</p>
@@ -121,35 +140,42 @@ export default function HealthDashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {nutritionHistory.map((rec, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  className="rounded-3xl p-5" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="font-black text-sm text-white">{rec.restName}</p>
-                      <p className="text-[10px] text-neutral-500 font-medium mt-0.5">{new Date(rec.date).toLocaleString()}</p>
+              {[...validOrders].sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at)).map((order, i) => {
+                const m = calculateMacros(order.items || []);
+                const restName = restaurants.find(r => r.id === (order.rest_id || order.restId))?.name || 'Restaurant';
+                const itemsStr = (order.items || []).map(item => item.name).join(' · ');
+                const orderDate = new Date(order.timestamp || order.created_at).toLocaleString();
+
+                return (
+                  <motion.div key={order.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="rounded-3xl p-5" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-black text-sm text-white">{restName}</p>
+                        <p className="text-[10px] text-neutral-500 font-medium mt-0.5">{orderDate}</p>
+                      </div>
+                      <span className="font-black text-xs px-2.5 py-1 rounded-lg text-black" style={{ background: goldGradient }}>
+                        {m.calories} kcal
+                      </span>
                     </div>
-                    <span className="font-black text-xs px-2.5 py-1 rounded-lg text-black" style={{ background: goldGradient }}>
-                      {rec.macros.calories} kcal
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-400 mb-4">{rec.items.join(' · ')}</p>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="rounded-xl p-2" style={{ background: 'rgba(59,130,246,0.1)' }}>
-                      <span className="text-blue-400 font-black text-sm block">{rec.macros.protein}g</span>
-                      <span className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest">Protein</span>
+                    <p className="text-xs text-neutral-400 mb-4">{itemsStr}</p>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-xl p-2" style={{ background: 'rgba(59,130,246,0.1)' }}>
+                        <span className="text-blue-400 font-black text-sm block">{m.protein}g</span>
+                        <span className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest">Protein</span>
+                      </div>
+                      <div className="rounded-xl p-2" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                        <span className="text-emerald-400 font-black text-sm block">{m.carbs}g</span>
+                        <span className="text-[9px] font-bold text-emerald-500/60 uppercase tracking-widest">Carbs</span>
+                      </div>
+                      <div className="rounded-xl p-2" style={{ background: 'rgba(212,175,55,0.1)' }}>
+                        <span className="font-black text-sm block" style={{ color: GOLD }}>{m.fat}g</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Fat</span>
+                      </div>
                     </div>
-                    <div className="rounded-xl p-2" style={{ background: 'rgba(16,185,129,0.1)' }}>
-                      <span className="text-emerald-400 font-black text-sm block">{rec.macros.carbs}g</span>
-                      <span className="text-[9px] font-bold text-emerald-500/60 uppercase tracking-widest">Carbs</span>
-                    </div>
-                    <div className="rounded-xl p-2" style={{ background: 'rgba(212,175,55,0.1)' }}>
-                      <span className="font-black text-sm block" style={{ color: GOLD }}>{rec.macros.fat}g</span>
-                      <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Fat</span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
