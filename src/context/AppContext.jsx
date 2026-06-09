@@ -371,14 +371,15 @@ export const AppProvider = ({ children }) => {
     if (orderData?.specialInstructions) newOrder.metadata = { specialInstructions: orderData.specialInstructions };
 
     try {
-      const { error } = await supabase.from('orders').insert([newOrder]);
+      let insertedOrder = null;
+      const { data, error } = await supabase.from('orders').insert([newOrder]).select();
       if (error) {
         // If insert fails because extra columns don't exist in DB (e.g. metadata), retry without it
         if (error.message && (error.message.includes('column') || error.code === '42703')) {
           console.warn('Full insert failed, retrying without metadata:', error.message);
           const { metadata, ...orderWithoutMetadata } = newOrder;
           
-          const { error: retryError } = await supabase.from('orders').insert([orderWithoutMetadata]);
+          const { data: retryData, error: retryError } = await supabase.from('orders').insert([orderWithoutMetadata]).select();
           if (retryError) {
             console.warn('Retry without metadata failed, falling back to core fields only:', retryError.message);
             const coreOrder = {
@@ -389,12 +390,33 @@ export const AppProvider = ({ children }) => {
               status: newOrder.status,
               timestamp: newOrder.timestamp,
             };
-            const { error: coreError } = await supabase.from('orders').insert([coreOrder]);
+            const { data: coreData, error: coreError } = await supabase.from('orders').insert([coreOrder]).select();
             if (coreError) throw coreError;
+            insertedOrder = coreData[0];
+          } else {
+            insertedOrder = retryData[0];
           }
         } else {
           throw error;
         }
+      } else {
+        insertedOrder = data[0];
+      }
+      
+      if (insertedOrder) {
+        const mappedNewOrder = {
+          ...insertedOrder,
+          restId: insertedOrder.rest_id,
+          orderType: insertedOrder.order_type,
+          verificationCode: insertedOrder.verification_code,
+          contactName: insertedOrder.contact_name,
+          contactPhone: insertedOrder.contact_phone,
+          paymentStatus: insertedOrder.payment_status,
+          paymentMethod: insertedOrder.payment_method,
+          scheduledTime: insertedOrder.scheduled_time,
+          tipAmount: insertedOrder.tip_amount,
+        };
+        setOrders(prev => [mappedNewOrder, ...prev]);
       }
       
       setCart([]);

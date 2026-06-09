@@ -629,9 +629,9 @@ export default function VendorDashboardPage() {
                         className="bg-white dark:bg-[#1a1a1f] border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 shadow-sm">
                         <div className="flex justify-between mb-3">
                           <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5 flex-wrap">
                             {o.orderType === 'dine_in' && (o.tableNumber || o.table_number) && (
-                              <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300">
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
                                 TABLE {o.tableNumber || o.table_number}
                               </span>
                             )}
