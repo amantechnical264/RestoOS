@@ -1072,8 +1072,8 @@ export default function VendorDashboardPage() {
                     return (
                       <div key={dish.id} className={`bg-white dark:bg-[#12141D] border rounded-3xl overflow-hidden shadow-sm transition-opacity ${isHidden ? 'opacity-50' : ''} border-neutral-100 dark:border-white/6`}>
                         <div className="relative h-36 bg-neutral-100 dark:bg-[#1a1a1f] overflow-hidden">
-                          {dish.cover
-                            ? <img src={dish.cover} className="w-full h-full object-cover" />
+                          {(dish.cover || dish.images?.[0])
+                            ? <img src={dish.cover || dish.images[0]} className="w-full h-full object-cover" />
                             : <div className="w-full h-full flex items-center justify-center"><ChefHat size={32} className="text-neutral-300" /></div>
                           }
                           {isSoldOut && (
@@ -1263,8 +1263,8 @@ export default function VendorDashboardPage() {
                         >
                           {/* Thumbnail */}
                           <div className="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-white/5 shrink-0 border border-neutral-200 dark:border-white/5">
-                            {dish.cover
-                              ? <img src={dish.cover} className="w-full h-full object-cover" />
+                            {(dish.cover || dish.images?.[0])
+                              ? <img src={dish.cover || dish.images[0]} className="w-full h-full object-cover" />
                               : <div className="w-full h-full flex items-center justify-center"><ChefHat size={20} className="text-neutral-300" /></div>
                             }
                           </div>
