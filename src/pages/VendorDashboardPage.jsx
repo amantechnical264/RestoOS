@@ -1813,6 +1813,7 @@ export default function VendorDashboardPage() {
                             src={editingDish.modelUrl || editingDish.model_url}
                             autoRotate
                             cameraControls
+                            className="w-full h-full"
                           />
                           <div className="absolute top-3 left-3 px-2 py-1 bg-white/80 dark:bg-black/50 backdrop-blur-md rounded-md text-[9px] font-black text-neutral-900 dark:text-white tracking-widest uppercase border border-neutral-200 dark:border-white/10">
                             Live Preview
