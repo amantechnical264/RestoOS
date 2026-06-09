@@ -81,6 +81,7 @@ export default function Dish3DPage() {
             src={modelUrl}
             autoRotate
             cameraControls
+            ar={true}
             style={{ width: '100%', height: '100%' }}
           />
         ) : (

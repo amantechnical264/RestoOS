@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import { useAppContext } from '../context/AppContext';
+import { supabase } from '../services/supabase';
 import { QrCode, Zap, Sparkles, ChevronRight, CheckCircle2, ScanLine } from 'lucide-react';
 
 export default function ScannerPage() {
@@ -25,7 +26,13 @@ export default function ScannerPage() {
       setActiveRestId(restId);
       if (tableNum) setTableNumber(tableNum);
       const rest = restaurants.find(r => r.id === restId);
-      if (rest) setScannedRest(rest);
+      if (rest) {
+        setScannedRest(rest);
+      } else {
+        supabase.from('restaurants').select('*').eq('id', restId).single()
+          .then(({ data }) => { if (data) setScannedRest(data); })
+          .catch(() => {});
+      }
       setScanned(true);
     }
   }, [searchParams, setActiveRestId, setTableNumber, restaurants]);
@@ -69,7 +76,13 @@ export default function ScannerPage() {
                 setActiveRestId(restId);
                 if (tableNum) setTableNumber(tableNum);
                 const rest = restaurants.find(r => r.id === restId);
-                if (rest) setScannedRest(rest);
+                if (rest) {
+                  setScannedRest(rest);
+                } else {
+                  supabase.from('restaurants').select('*').eq('id', restId).single()
+                    .then(({ data }) => { if (data) setScannedRest(data); })
+                    .catch(() => {});
+                }
                 setScanned(true);
               } else {
                 showNotification('Invalid Table QR Code');
@@ -80,7 +93,13 @@ export default function ScannerPage() {
                 if (controlsRef.current) controlsRef.current.stop();
                 setActiveRestId(text);
                 const rest = restaurants.find(r => r.id === text);
-                if (rest) setScannedRest(rest);
+                if (rest) {
+                  setScannedRest(rest);
+                } else {
+                  supabase.from('restaurants').select('*').eq('id', text).single()
+                    .then(({ data }) => { if (data) setScannedRest(data); })
+                    .catch(() => {});
+                }
                 setScanned(true);
               }
             }
