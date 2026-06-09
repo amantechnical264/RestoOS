@@ -198,7 +198,7 @@ export default function VendorDashboardPage() {
   const navigate = useNavigate();
   const {
     orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus,
-    dishes, restaurants, addDish, updateDish, user, setUser,
+    dishes, setDishes, restaurants, addDish, updateDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
     planFor, upgradePlan,
@@ -483,10 +483,8 @@ export default function VendorDashboardPage() {
   const vendDishes = React.useMemo(() => dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata')), [dishes, activeRestId]);
   const vendEvents = React.useMemo(() => dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event')), [dishes, activeRestId]);
 
-  const customCategories = React.useMemo(() => {
-    const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
-    return metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
-  }, [dishes, activeRestId]);
+  const metadataRecord = React.useMemo(() => dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId)), [dishes, activeRestId]);
+  const customCategories = React.useMemo(() => metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'], [metadataRecord]);
 
   const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
 
