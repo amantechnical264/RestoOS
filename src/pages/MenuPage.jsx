@@ -118,9 +118,9 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
     >
       {/* Food Photo */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#111115]">
-        {dish.cover ? (
+        {(dish.cover || dish.images?.[0]) ? (
           <img
-            src={dish.cover}
+            src={dish.cover || dish.images[0]}
             alt={dish.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
@@ -291,9 +291,9 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
       {/* Right Image / Add Button Panel */}
       <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
         <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#111115] border border-neutral-200 dark:border-white/10 shadow-sm">
-          {dish.cover ? (
+          {(dish.cover || dish.images?.[0]) ? (
             <img
-              src={dish.cover}
+              src={dish.cover || dish.images[0]}
               alt={dish.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />

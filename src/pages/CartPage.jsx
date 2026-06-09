@@ -234,8 +234,8 @@ export default function CartPage() {
                   <div className="relative z-10 flex-1 flex flex-col bg-neutral-50 dark:bg-[#111] w-full rounded-3xl gap-3">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-4">
-                        {item.cover ? (
-                          <img src={item.cover} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10" />
+                        {(item.cover || item.images?.[0]) ? (
+                          <img src={item.cover || item.images[0]} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10" />
                         ) : (
                           <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-neutral-600"/></div>
                         )}
