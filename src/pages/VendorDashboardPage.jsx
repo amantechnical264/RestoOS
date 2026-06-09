@@ -331,15 +331,35 @@ export default function VendorDashboardPage() {
   }, []);
 
   const uploadGlbFile = async (file) => {
-    setScanState('uploading'); setScanStageLabel('Uploading .glb model...'); setProgress(30);
+    setScanState('uploading'); setScanStageLabel('Uploading .glb model...'); 
+    setProgress(0);
+    
+    let currentProgress = 0;
+    const progressInterval = setInterval(() => {
+      currentProgress += (90 - currentProgress) * 0.15;
+      setProgress(Math.round(currentProgress));
+    }, 300);
+
     try {
       const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
       const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
+      
+      clearInterval(progressInterval);
+      
       if (error) throw error;
       const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
+      
+      setProgress(100);
       finalizeGlbResult(pub.publicUrl);
+      
+      // Auto dismiss the success message after 2 seconds
+      setTimeout(() => {
+        setScanState('idle');
+      }, 2000);
+      
       return pub.publicUrl;
     } catch (err) {
+      clearInterval(progressInterval);
       console.error(err); setScanState('error'); setScanStageLabel('Upload failed. Check your Supabase storage bucket.');
       return null;
     }
