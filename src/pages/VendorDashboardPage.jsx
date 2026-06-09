@@ -145,7 +145,22 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
   const [items, setItems] = React.useState(initialDishes);
 
   React.useEffect(() => {
-    setItems(initialDishes);
+    const initialIds = initialDishes.map(d => d.id).join(',');
+    const currentIds = items.map(d => d.id).join(',');
+
+    const metaChanged = initialDishes.some(d => {
+      const match = items.find(item => item.id === d.id);
+      return !match || match.name !== d.name || match.price !== d.price;
+    });
+
+    const initialIdSet = new Set(initialDishes.map(d => d.id));
+    const currentIdSet = new Set(items.map(d => d.id));
+    const hasDifferentItems = initialDishes.length !== items.length || 
+      [...initialIdSet].some(id => !currentIdSet.has(id));
+
+    if (hasDifferentItems || metaChanged) {
+      setItems(initialDishes);
+    }
   }, [initialDishes]);
 
   const saveOrder = async (newOrder) => {
