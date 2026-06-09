@@ -463,6 +463,8 @@ export const AppProvider = ({ children }) => {
         price: parseFloat(dishData.price) || 0,
         description: dishData.description || '',
         model_url: dishData.modelUrl || '',
+        cover: dishData.cover || '',
+        images: dishData.images || [],
         macros: dishData.macros || {},
         tags: dishData.tags || [],
         rest_id: dishData.restId
@@ -494,6 +496,8 @@ export const AppProvider = ({ children }) => {
       if (updates.description !== undefined) dbUpdate.description = updates.description;
       if (updates.modelUrl !== undefined) dbUpdate.model_url = updates.modelUrl;
       if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
+      if (updates.cover !== undefined) dbUpdate.cover = updates.cover;
+      if (updates.images !== undefined) dbUpdate.images = updates.images;
       if (updates.macros !== undefined) dbUpdate.macros = updates.macros;
       if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
       if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;

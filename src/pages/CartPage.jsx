@@ -48,8 +48,6 @@ export default function CartPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showArCombo, setShowArCombo] = useState(false);
-  const [groupSession, setGroupSession] = useState(null);
-  const [splitWays, setSplitWays] = useState(1);
 
   const hasSoldOutItem = cart.some(item => {
     const dbDish = dishes.find(d => d.id === item.id);
@@ -220,17 +218,6 @@ export default function CartPage() {
             <motion.div key="cart" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-display font-bold text-neutral-900 dark:text-white">Your Order</h2>
-                {!groupSession ? (
-                  <button onClick={() => setGroupSession(Math.random().toString(36).substring(2, 8).toUpperCase())} 
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 transition-colors">
-                    <Users size={14}/> Group Order
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800/50">
-                    <Users size={14}/> Code: {groupSession}
-                    <button className="ml-1 hover:text-emerald-500"><Share2 size={12}/></button>
-                  </div>
-                )}
               </div>
               
               {groupedCart.map((item) => (
@@ -479,24 +466,6 @@ export default function CartPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Split Bill */}
-              <div className="pt-6 border-t border-neutral-200 dark:border-white/5">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2"><SplitSquareHorizontal size={16}/> Split the Bill?</h3>
-                  <div className="flex items-center gap-3 bg-neutral-100 dark:bg-[#0a0a0a] rounded-full px-3 py-1 border border-neutral-200 dark:border-white/10">
-                    <button onClick={() => setSplitWays(Math.max(1, splitWays - 1))} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-black text-lg">-</button>
-                    <span className="font-bold text-sm w-4 text-center">{splitWays}</span>
-                    <button onClick={() => setSplitWays(splitWays + 1)} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-black text-lg">+</button>
-                  </div>
-                </div>
-                {splitWays > 1 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/30 rounded-xl p-3 flex justify-between items-center text-sm font-bold text-emerald-700 dark:text-emerald-400">
-                    <span>Amount per person:</span>
-                    <span>${(finalTotal / splitWays).toFixed(2)}</span>
-                  </div>
-                )}
               </div>
 
             </motion.div>
