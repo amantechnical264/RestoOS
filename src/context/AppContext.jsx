@@ -244,20 +244,21 @@ export const AppProvider = ({ children }) => {
     };
 
     const fetchRestaurants = async () => {
-      const { data } = await supabase.from('restaurants').select('id, vendor_id, name, tax_rate, accept_cash, created_at');
+      const { data } = await supabase.from('restaurants').select('id, vendor_id, name, cover, tax_rate, accept_cash, created_at');
       if (data) {
         setRestaurants(prev => {
           const mapped = data.map(r => {
-            const existing = prev.find(ex => ex.id === r.id);
             return {
               ...r,
               vendorId: r.vendor_id || r.vendorId,
-              cover: existing?.cover || ''
+              cover: r.cover || ''
             };
           });
           const finalData = deepCompareEquals(prev, mapped) ? prev : mapped;
           if (finalData !== prev) {
-            localStorage.setItem('3dish_cached_restaurants', JSON.stringify(finalData));
+            // Store without cover to keep cache small; cover comes fresh from DB
+            const cacheData = finalData.map(({ cover, ...rest }) => rest);
+            localStorage.setItem('3dish_cached_restaurants', JSON.stringify(cacheData));
           }
           return finalData;
         });
@@ -312,11 +313,10 @@ export const AppProvider = ({ children }) => {
           };
           setRestaurants(prev => {
             const exists = prev.some(item => item.id === mapped.id);
-            if (exists) {
-              return prev.map(item => item.id === mapped.id ? { ...item, ...mapped, cover: item.cover || mapped.cover } : item);
-            } else {
-              return [...prev, mapped];
-            }
+            const next = exists
+              ? prev.map(item => item.id === mapped.id ? { ...item, ...mapped } : item)
+              : [...prev, mapped];
+            return next;
           });
         } else if (payload.eventType === 'DELETE') {
           setRestaurants(prev => prev.filter(r => r.id !== payload.old.id));
@@ -377,32 +377,6 @@ export const AppProvider = ({ children }) => {
       }
     }
   }, [restaurants, supabaseUser, activeRestId]);
-
-  // Fetch cover image dynamically for the active restaurant to prevent huge base64 query timeouts on select('*')
-  useEffect(() => {
-    if (!activeRestId) return;
-    
-    const fetchActiveCover = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('restaurants')
-          .select('cover')
-          .eq('id', activeRestId)
-          .single();
-          
-        if (error) throw error;
-        if (data && data.cover) {
-          setRestaurants(prev =>
-            prev.map(r => r.id === activeRestId ? { ...r, cover: data.cover } : r)
-          );
-        }
-      } catch (err) {
-        console.error('Failed to fetch active restaurant cover:', err);
-      }
-    };
-    
-    fetchActiveCover();
-  }, [activeRestId]);
 
   // Audio Notification for Vendors
   const [prevOrdersCount, setPrevOrdersCount] = useState(0);
