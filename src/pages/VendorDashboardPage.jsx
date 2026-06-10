@@ -194,19 +194,70 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
   );
 };
 
+// ─── Subscription Gating Lock Component ──────────────────────────────
+const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNotification }) => {
+  const PLANS = ['Starter', 'Pro', 'Enterprise'];
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+      className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-neutral-50 dark:bg-black"
+    >
+      <div className="max-w-md text-center">
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.35)' }}>
+          <Crown size={36} style={{ color: GOLD }} />
+        </div>
+        <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white mb-2">{feature} is a {requiredPlan} Feature</h2>
+        <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
+          Upgrade your plan to unlock {feature}, deeper analytics, customer CRM, AI concierge, and more premium capabilities.
+        </p>
+        <div className="grid grid-cols-1 gap-3">
+          {PLANS.filter(p => PLANS.indexOf(p) >= PLANS.indexOf(requiredPlan)).map(p => (
+            <button key={p} type="button"
+              onClick={() => { if (activeRestId) { upgradePlan(activeRestId, p); showNotification(`🌟 Upgraded to ${p}!`); } }}
+              className="w-full py-3.5 rounded-2xl font-black text-sm transition-all"
+              style={p === requiredPlan
+                ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }
+                : { background: 'transparent', border: `1px solid ${GOLD}`, color: GOLD }
+              }
+            >
+              {p === 'Pro' ? 'Upgrade to Pro — $49/mo' : 'Upgrade to Enterprise — $99/mo'}
+            </button>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-neutral-500">Cancel anytime. Instant access upon upgrade.</p>
+      </div>
+    </motion.div>
+  );
+};
+
 // ─── Google Play-Style Reviews Analytics ──────────────────────────────
 const ReviewsAnalytics = ({ restId }) => {
   const [reviews, setReviews] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    if (!restId) return;
-    const fetchReviews = async () => {
-      const { data } = await reviewService.getReviewsForRestaurant(restId);
-      if (data) setReviews(data);
+    if (!restId) {
       setLoading(false);
+      return;
+    }
+    let isMounted = true;
+    const fetchReviews = async () => {
+      try {
+        const { data } = await reviewService.getReviewsForRestaurant(restId);
+        if (isMounted) {
+          if (data) setReviews(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchReviews();
+    return () => { isMounted = false; };
   }, [restId]);
 
   if (loading) return <div className="text-center py-8 text-neutral-500">Loading reviews...</div>;
@@ -299,39 +350,7 @@ export default function VendorDashboardPage() {
   const hasPro        = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Pro');
   const hasEnterprise = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Enterprise');
 
-  // Lock screen component for gated tabs
-  const UpgradeLock = ({ requiredPlan, feature }) => (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-      className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-neutral-50 dark:bg-black"
-    >
-      <div className="max-w-md text-center">
-        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6"
-          style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.35)' }}>
-          <Crown size={36} style={{ color: GOLD }} />
-        </div>
-        <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white mb-2">{feature} is a {requiredPlan} Feature</h2>
-        <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
-          Upgrade your plan to unlock {feature}, deeper analytics, customer CRM, AI concierge, and more premium capabilities.
-        </p>
-        <div className="grid grid-cols-1 gap-3">
-          {PLANS.filter(p => PLANS.indexOf(p) >= PLANS.indexOf(requiredPlan)).map(p => (
-            <button key={p} type="button"
-              onClick={() => { if (activeRestId) { upgradePlan(activeRestId, p); showNotification(`🌟 Upgraded to ${p}!`); } }}
-              className="w-full py-3.5 rounded-2xl font-black text-sm transition-all"
-              style={p === requiredPlan
-                ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }
-                : { background: 'transparent', border: `1px solid ${GOLD}`, color: GOLD }
-              }
-            >
-              {p === 'Pro' ? 'Upgrade to Pro — $49/mo' : 'Upgrade to Enterprise — $99/mo'}
-            </button>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-neutral-500">Cancel anytime. Instant access upon upgrade.</p>
-      </div>
-    </motion.div>
-  );
+
 
   // ── Guards ────────────────────────────────────────────────────────
   React.useEffect(() => {
@@ -916,7 +935,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'analytics' && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Analytics Hub" /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Analytics Hub" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
               <div className="max-w-5xl mx-auto space-y-6">
 
                 {/* Header */}
@@ -1507,7 +1526,7 @@ export default function VendorDashboardPage() {
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
             <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Events & Promos" /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Events & Promos" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
                 editingEvent ? (
                   <div className="max-w-2xl mx-auto bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl p-6 relative">
                     <div className="flex justify-between items-center mb-6">
@@ -2044,7 +2063,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'growth' && (
             <motion.div key="growth" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Growth Tools" /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Growth Tools" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
               <div className="max-w-3xl mx-auto space-y-6">
                 <div>
                   <h2 className="font-display font-black text-2xl">Growth Tools</h2>
@@ -2164,7 +2183,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'customers' && (
             <motion.div key="customers" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Customer Insights" /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Customer Insights" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div>
                   <h2 className="font-display font-black text-2xl">Customer Insights</h2>

@@ -7,6 +7,10 @@ class ReviewService {
   }
 
   async init() {
+    if (!supabase) {
+      this.useLocalStorage = true;
+      return;
+    }
     try {
       const { error } = await supabase.from('reviews').select('id').limit(1);
       if (error && error.code === '42P01') {
@@ -19,7 +23,7 @@ class ReviewService {
   }
 
   async submitReview(reviewData) {
-    if (this.useLocalStorage) {
+    if (this.useLocalStorage || !supabase) {
       const reviews = JSON.parse(localStorage.getItem('3dish_reviews') || '[]');
       reviews.push({
         ...reviewData,
@@ -44,7 +48,7 @@ class ReviewService {
   }
 
   async getReviewsForRestaurant(restId) {
-    if (this.useLocalStorage) {
+    if (this.useLocalStorage || !supabase) {
       const reviews = JSON.parse(localStorage.getItem('3dish_reviews') || '[]');
       return { data: reviews.filter(r => r.restId === restId || r.rest_id === restId), error: null };
     } else {
@@ -59,3 +63,4 @@ class ReviewService {
 }
 
 export const reviewService = new ReviewService();
+

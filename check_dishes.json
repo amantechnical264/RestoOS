@@ -1,0 +1,471 @@
+[
+  {
+    "id": "87b795dd-8151-4793-9e69-c79a0ddfbeca",
+    "rest_id": "b27f42b0-86f2-4ff4-8005-94118f7c3ffc",
+    "name": "wdw",
+    "price": 484,
+    "description": "84848",
+    "model_url": "",
+    "tags": [],
+    "allergens": null,
+    "macros": {
+      "fat": "878g",
+      "carbs": "88g",
+      "protein": "8g",
+      "calories": "7"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-02T06:48:12.491446+00:00"
+  },
+  {
+    "id": "01dc939f-37b0-4359-ba9a-0095c4d94907",
+    "rest_id": null,
+    "name": "rggrq",
+    "price": 588,
+    "description": "848",
+    "model_url": "",
+    "tags": [],
+    "allergens": null,
+    "macros": {
+      "fat": "88g",
+      "carbs": "84g",
+      "protein": "84g",
+      "calories": "48"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-02T07:13:15.564549+00:00"
+  },
+  {
+    "id": "b867f30c-2b5c-413f-9b19-bed9ddbdf0aa",
+    "rest_id": null,
+    "name": "Alu",
+    "price": 8,
+    "description": "bharta",
+    "model_url": "",
+    "tags": [],
+    "allergens": null,
+    "macros": {
+      "fat": "09g",
+      "carbs": "08g",
+      "protein": "08g",
+      "calories": "6"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-02T17:56:09.593008+00:00"
+  },
+  {
+    "id": "bfa90779-bc02-4de6-a0ce-9c33d0a3de47",
+    "rest_id": "724365d9-05bf-47cc-a622-87497325a5eb",
+    "name": "Gobhi",
+    "price": 3,
+    "description": "indian ",
+    "model_url": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/724365d9-05bf-47cc-a622-87497325a5eb/1780533322506_pixellabs-robot-3332.glb",
+    "tags": [],
+    "allergens": null,
+    "macros": {
+      "fat": "",
+      "carbs": "",
+      "protein": "",
+      "calories": ""
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-04T00:37:29.848068+00:00"
+  },
+  {
+    "id": "8d7bfdbb-4966-4a5d-bf77-3256428e0531",
+    "rest_id": "724365d9-05bf-47cc-a622-87497325a5eb",
+    "name": "aaloo",
+    "price": 8585,
+    "description": "A visually stunning dish, ready to view in AR.",
+    "model_url": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/724365d9-05bf-47cc-a622-87497325a5eb/1780495319157_gal-b-lantern-4120.glb",
+    "tags": [
+      "Bestseller",
+      "New"
+    ],
+    "allergens": null,
+    "macros": {
+      "fat": "85g",
+      "carbs": "58g",
+      "protein": "858g",
+      "calories": "85"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-03T14:02:18.882967+00:00"
+  },
+  {
+    "id": "dc59b1c4-f705-41ab-97da-26eac3957acb",
+    "rest_id": "a9b31db6-21ab-434f-9a33-cd7069361b9c",
+    "name": "gyugu",
+    "price": 564,
+    "description": "khbhbhjbhbhbhjbhbbbbyubbyu",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Chef's Pick"
+    ],
+    "allergens": null,
+    "macros": {
+      "fat": "545g",
+      "carbs": "454g",
+      "protein": "5454g",
+      "calories": "08978"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-08T13:56:12.266887+00:00"
+  },
+  {
+    "id": "86aa094d-3064-457b-b180-88ef3dacd080",
+    "rest_id": null,
+    "name": "sdcs",
+    "price": 85,
+    "description": "1651ss",
+    "model_url": "",
+    "tags": [],
+    "allergens": null,
+    "macros": {
+      "fat": "848g",
+      "carbs": "884g",
+      "protein": "484g",
+      "calories": "648"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-02T06:06:33.660618+00:00"
+  },
+  {
+    "id": "941bd167-c212-4632-ab21-8e4e0e297bad",
+    "rest_id": "c7a35882-5d44-4b38-8bed-dc76aa25bea7",
+    "name": "neela",
+    "price": 784,
+    "description": "smfkf",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Starters"
+    ],
+    "allergens": null,
+    "macros": {
+      "fat": "98g",
+      "carbs": "989g",
+      "protein": "989g",
+      "calories": "0889"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-09T02:45:40.241979+00:00"
+  },
+  {
+    "id": "2fe328e6-80e8-4c07-9737-2b49a465d4b3",
+    "rest_id": null,
+    "name": "fee",
+    "price": 85,
+    "description": "njnjk",
+    "model_url": "",
+    "tags": [],
+    "allergens": null,
+    "macros": {
+      "fat": "84g",
+      "carbs": "848g",
+      "protein": "88g",
+      "calories": "48",
+      "sort_order": 5
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-02T06:39:16.862295+00:00"
+  },
+  {
+    "id": "53343328-9ed5-476d-ac4c-c7117ba558aa",
+    "rest_id": "c7a35882-5d44-4b38-8bed-dc76aa25bea7",
+    "name": "peela",
+    "price": 500,
+    "description": "kuch bhi",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Chef's Pick",
+      "Starters"
+    ],
+    "allergens": [
+      "Shellfish"
+    ],
+    "macros": {
+      "fat": "844g",
+      "carbs": "84g",
+      "protein": "878g",
+      "calories": "078"
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-08T15:54:00.940183+00:00"
+  },
+  {
+    "id": "3a7ff9e5-6a2d-4acb-8db6-6564aa61e95b",
+    "rest_id": "a31207d3-d1be-4602-8da5-443e1d93afe1",
+    "name": "Hello",
+    "price": 2566,
+    "description": "Sunn",
+    "model_url": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a31207d3-d1be-4602-8da5-443e1d93afe1/1780996324870_tiny_planet_friends_3d-mouse-4188.glb",
+    "tags": [
+      "Mains"
+    ],
+    "allergens": [
+      "Gluten"
+    ],
+    "macros": {
+      "fat": "336g",
+      "carbs": "36g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a31207d3-d1be-4602-8da5-443e1d93afe1/1780996259224_1000029712.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a31207d3-d1be-4602-8da5-443e1d93afe1/1780996259224_1000029712.jpg"
+      ],
+      "protein": "36g",
+      "calories": "0256"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T09:15:23.396458+00:00"
+  },
+  {
+    "id": "ded3063e-9f12-49a7-9c01-9253f3477f31",
+    "rest_id": "36e64004-63a8-4fc0-af13-06dfc4371b70",
+    "name": "Mocktail ",
+    "price": 10,
+    "description": "Drinks funn cm",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Drinks"
+    ],
+    "allergens": null,
+    "macros": {
+      "fat": "",
+      "carbs": "",
+      "protein": "",
+      "calories": ""
+    },
+    "micros": null,
+    "ingredients": null,
+    "created_at": "2026-06-09T04:47:44.43341+00:00"
+  },
+  {
+    "id": "9df0b710-b6da-46fc-8495-4c3c56a41c43",
+    "rest_id": "52c8a7d1-ea73-41d8-8abc-90ea4baa19fe",
+    "name": "Hrx",
+    "price": 25,
+    "description": "Bta",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Mains"
+    ],
+    "allergens": [
+      "Nuts"
+    ],
+    "macros": {
+      "fat": "25g",
+      "carbs": "38g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/52c8a7d1-ea73-41d8-8abc-90ea4baa19fe/1781000242893_IMG-20260531-WA0004.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/52c8a7d1-ea73-41d8-8abc-90ea4baa19fe/1781000242893_IMG-20260531-WA0004.jpg"
+      ],
+      "protein": "25g",
+      "calories": "035"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T10:17:40.589233+00:00"
+  },
+  {
+    "id": "e9348022-287d-4538-95af-8b46af116c60",
+    "rest_id": "52c8a7d1-ea73-41d8-8abc-90ea4baa19fe",
+    "name": "Hrx",
+    "price": 25,
+    "description": "Bta",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Mains"
+    ],
+    "allergens": [
+      "Nuts"
+    ],
+    "macros": {
+      "fat": "25g",
+      "carbs": "38g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/52c8a7d1-ea73-41d8-8abc-90ea4baa19fe/1781000242893_IMG-20260531-WA0004.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/52c8a7d1-ea73-41d8-8abc-90ea4baa19fe/1781000242893_IMG-20260531-WA0004.jpg"
+      ],
+      "protein": "25g",
+      "calories": "035",
+      "sort_order": 2
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T10:17:41.818499+00:00"
+  },
+  {
+    "id": "e65f4922-bc1d-4805-a604-a8ab9ff24f5e",
+    "rest_id": "52c8a7d1-ea73-41d8-8abc-90ea4baa19fe",
+    "name": "Hrx",
+    "price": 25,
+    "description": "Bta",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Mains"
+    ],
+    "allergens": [
+      "Nuts"
+    ],
+    "macros": {
+      "fat": "25g",
+      "carbs": "38g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/52c8a7d1-ea73-41d8-8abc-90ea4baa19fe/1781000242893_IMG-20260531-WA0004.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/52c8a7d1-ea73-41d8-8abc-90ea4baa19fe/1781000242893_IMG-20260531-WA0004.jpg"
+      ],
+      "protein": "25g",
+      "calories": "035",
+      "sort_order": 1
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T10:17:44.498317+00:00"
+  },
+  {
+    "id": "d0b8cd5e-be10-4c12-89db-8ce8038f6f29",
+    "rest_id": "8edd6ae5-b974-414d-9e78-7312b29832af",
+    "name": "Tum",
+    "price": 36,
+    "description": "Full",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Desserts"
+    ],
+    "allergens": [
+      "Gluten"
+    ],
+    "macros": {
+      "fat": "39g",
+      "carbs": "36g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/8edd6ae5-b974-414d-9e78-7312b29832af/1781000790043_IMG-20260531-WA0004.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/8edd6ae5-b974-414d-9e78-7312b29832af/1781000790043_IMG-20260531-WA0004.jpg"
+      ],
+      "protein": "86g",
+      "calories": "039"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T10:27:04.838147+00:00"
+  },
+  {
+    "id": "e9285289-f1a3-4c8f-b0c7-506b94a8fd3b",
+    "rest_id": "a9b31db6-21ab-434f-9a33-cd7069361b9c",
+    "name": "gtft",
+    "price": 4849,
+    "description": "vvh",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Vegan"
+    ],
+    "allergens": [
+      "Nuts"
+    ],
+    "macros": {
+      "fat": "48g",
+      "carbs": "454g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003052683_XrGHM.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003052683_XrGHM.jpg"
+      ],
+      "protein": "7g",
+      "calories": "059"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T11:04:54.748996+00:00"
+  },
+  {
+    "id": "7c82da9d-3517-4feb-87ea-6bca15404ad6",
+    "rest_id": "a9b31db6-21ab-434f-9a33-cd7069361b9c",
+    "name": "gtft",
+    "price": 4849,
+    "description": "vvh",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Vegan"
+    ],
+    "allergens": [
+      "Nuts"
+    ],
+    "macros": {
+      "fat": "48g",
+      "carbs": "454g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003052683_XrGHM.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003052683_XrGHM.jpg"
+      ],
+      "protein": "7g",
+      "calories": "059"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T11:05:04.349621+00:00"
+  },
+  {
+    "id": "43c51f22-ac9b-4bce-971f-af72d406c8b3",
+    "rest_id": "a9b31db6-21ab-434f-9a33-cd7069361b9c",
+    "name": "iuiui",
+    "price": 489,
+    "description": "hbhjb",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Mains"
+    ],
+    "allergens": [
+      "Shellfish"
+    ],
+    "macros": {
+      "fat": "84g",
+      "carbs": "8489g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003129809_XrGHM.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003129809_XrGHM.jpg"
+      ],
+      "protein": "848g",
+      "calories": "0489"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T11:05:58.172396+00:00"
+  },
+  {
+    "id": "d77a4172-004d-43b7-ac15-5d1d363e667b",
+    "rest_id": "a9b31db6-21ab-434f-9a33-cd7069361b9c",
+    "name": "iuiui",
+    "price": 489,
+    "description": "hbhjb",
+    "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "tags": [
+      "Mains"
+    ],
+    "allergens": [
+      "Shellfish"
+    ],
+    "macros": {
+      "fat": "84g",
+      "carbs": "8489g",
+      "cover": "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003129809_XrGHM.jpg",
+      "images": [
+        "https://hjgnikbzvdljrmmoobre.supabase.co/storage/v1/object/public/models/a9b31db6-21ab-434f-9a33-cd7069361b9c/1781003129809_XrGHM.jpg"
+      ],
+      "protein": "848g",
+      "calories": "0489"
+    },
+    "micros": null,
+    "ingredients": [],
+    "created_at": "2026-06-09T11:06:03.172494+00:00"
+  }
+]

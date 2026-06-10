@@ -1,0 +1,87 @@
+[
+  {
+    "id": "b27f42b0-86f2-4ff4-8005-94118f7c3ffc",
+    "name": "naya",
+    "vendor_id": "8766f2b3-120c-408d-9d26-6453e21f3242"
+  },
+  {
+    "id": "a31207d3-d1be-4602-8da5-443e1d93afe1",
+    "name": "work",
+    "vendor_id": "bd0e0974-2836-4a99-b02e-2d29c4d8a43d"
+  },
+  {
+    "id": "c7a35882-5d44-4b38-8bed-dc76aa25bea7",
+    "name": "hazrat",
+    "vendor_id": "733e74f6-f62c-4a67-8819-9daf620b0a6b"
+  },
+  {
+    "id": "4595162c-06d7-44f3-8e2d-da858f205733",
+    "name": "misfit",
+    "vendor_id": "0dbe3d4f-157a-4b45-acaf-1cc09bf15d70"
+  },
+  {
+    "id": "724365d9-05bf-47cc-a622-87497325a5eb",
+    "name": "verma",
+    "vendor_id": "204cbe0f-f3c3-4586-92cb-02566e52342e"
+  },
+  {
+    "id": "725cc14c-0bae-4341-8d1d-4874e18a22f6",
+    "name": "Quantum Plaza",
+    "vendor_id": "d41bea82-192a-401f-b561-0380dd038ef5"
+  },
+  {
+    "id": "7746b7a9-ad47-43c1-837c-cd915ae4a4c0",
+    "name": "Cafe 69",
+    "vendor_id": "825a9659-21d4-44e7-a393-af1b44fd4084"
+  },
+  {
+    "id": "0a509e96-19f4-41b9-af9b-5770898954e0",
+    "name": "Cafe 88",
+    "vendor_id": "aab1e775-bc01-4cf1-a032-c02d297ccec5"
+  },
+  {
+    "id": "286b1be9-f326-47bd-983a-c0387a85a326",
+    "name": "QUANTS",
+    "vendor_id": "26112d3a-29ee-483d-a259-d82179a45e30"
+  },
+  {
+    "id": "ea0257ed-9da1-4dc1-90eb-7627246bdac2",
+    "name": "LULLAN",
+    "vendor_id": "837a6a18-04a0-4f12-8488-2ef31300d9e0"
+  },
+  {
+    "id": "36e64004-63a8-4fc0-af13-06dfc4371b70",
+    "name": "RFC",
+    "vendor_id": "d17ecfa6-2132-459c-a828-4890cb71e956"
+  },
+  {
+    "id": "df8a022f-bf70-4c7e-80a7-ff4785173b0b",
+    "name": "45",
+    "vendor_id": "87a94a5c-dcea-40ae-831d-42b204aab330"
+  },
+  {
+    "id": "a9b31db6-21ab-434f-9a33-cd7069361b9c",
+    "name": "Quantum",
+    "vendor_id": "e10b40eb-3d89-4c71-9a95-44323c5d0e53"
+  },
+  {
+    "id": "c3ac79df-5cf5-4afe-a6a1-0e1ab808a98a",
+    "name": "Pizza 99",
+    "vendor_id": "34079f26-1a96-4228-9c26-add43463dab5"
+  },
+  {
+    "id": "52c8a7d1-ea73-41d8-8abc-90ea4baa19fe",
+    "name": "Hello",
+    "vendor_id": "bd0e0974-2836-4a99-b02e-2d29c4d8a43d"
+  },
+  {
+    "id": "8edd6ae5-b974-414d-9e78-7312b29832af",
+    "name": "Hello",
+    "vendor_id": "837a6a18-04a0-4f12-8488-2ef31300d9e0"
+  },
+  {
+    "id": "710fa03c-8cdb-4b1c-904f-365bbd9e1a99",
+    "name": "dil",
+    "vendor_id": "bd0e0974-2836-4a99-b02e-2d29c4d8a43d"
+  }
+]
