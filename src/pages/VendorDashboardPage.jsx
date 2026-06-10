@@ -13,6 +13,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
+import { reviewService } from '../services/ReviewService';
 import ModelViewer from '../components/ModelViewer';
 
 // ── Design Tokens ─────────────────────────────────────────────────────
@@ -190,6 +191,93 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
         </Reorder.Item>
       ))}
     </Reorder.Group>
+  );
+};
+
+// ─── Google Play-Style Reviews Analytics ──────────────────────────────
+const ReviewsAnalytics = ({ restId }) => {
+  const [reviews, setReviews] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!restId) return;
+    const fetchReviews = async () => {
+      const { data } = await reviewService.getReviewsForRestaurant(restId);
+      if (data) setReviews(data);
+      setLoading(false);
+    };
+    fetchReviews();
+  }, [restId]);
+
+  if (loading) return <div className="text-center py-8 text-neutral-500">Loading reviews...</div>;
+
+  const totalReviews = reviews.length;
+  const averageRating = totalReviews > 0 ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews).toFixed(1) : 0;
+  
+  const distribution = [5, 4, 3, 2, 1].map(star => {
+    const count = reviews.filter(r => r.rating === star).length;
+    return { star, count, pct: totalReviews > 0 ? (count / totalReviews) * 100 : 0 };
+  });
+
+  return (
+    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm mt-6">
+      <h3 className="font-display font-black text-base mb-6">Customer Reviews</h3>
+      
+      {totalReviews === 0 ? (
+        <div className="text-center py-10 text-neutral-400">
+          <Star size={32} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No reviews yet. Your reviews will appear here.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col md:flex-row gap-8 mb-8 items-center md:items-start">
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <span className="font-display font-black text-6xl text-neutral-900 dark:text-white">{averageRating}</span>
+              <div className="flex gap-1 my-2">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <Star key={star} size={16} className={star <= Math.round(averageRating) ? "fill-amber-400 text-amber-400" : "fill-neutral-200 text-neutral-200 dark:fill-white/10 dark:text-white/10"} />
+                ))}
+              </div>
+              <span className="text-xs font-bold text-neutral-500">{totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}</span>
+            </div>
+            
+            <div className="flex-1 w-full space-y-2 max-w-sm">
+              {distribution.map(d => (
+                <div key={d.star} className="flex items-center gap-3 text-xs font-bold text-neutral-600 dark:text-neutral-400">
+                  <span className="w-2">{d.star}</span>
+                  <div className="flex-1 h-2.5 rounded-full bg-neutral-100 dark:bg-white/5 overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${d.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {reviews.map(review => (
+              <div key={review.id} className="pb-4 border-b border-neutral-100 dark:border-white/5 last:border-0 last:pb-0">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-neutral-700 dark:text-neutral-300">
+                      {review.diner_name ? review.diner_name.charAt(0).toUpperCase() : 'A'}
+                    </div>
+                    <span className="font-bold text-sm text-neutral-900 dark:text-white">{review.diner_name || 'Anonymous Diner'}</span>
+                  </div>
+                  <span className="text-[11px] text-neutral-500 font-medium">
+                    {new Date(review.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex gap-0.5 mb-1.5 pl-10">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star key={star} size={12} className={star <= review.rating ? "fill-amber-400 text-amber-400" : "fill-neutral-200 text-neutral-200 dark:fill-white/10 dark:text-white/10"} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
@@ -953,6 +1041,10 @@ export default function VendorDashboardPage() {
                     <p className="text-xs font-bold text-neutral-500 mt-1">Active Dishes</p>
                   </div>
                 </div>
+                
+                {/* Reviews Analytics */}
+                <ReviewsAnalytics restId={activeRestId} />
+
               </div>
               )}
             </motion.div>

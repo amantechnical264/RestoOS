@@ -2,8 +2,10 @@ import React from 'react';
 import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar, MoreVertical, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
+import { reviewService } from '../services/ReviewService';
 
 const GOLD = '#D4AF37';
 const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
@@ -55,8 +57,18 @@ function OrderTimeline({ currentStatus }) {
 }
 
 // Zomato style Historical Order Card
-function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime }) {
+function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview }) {
   const isCancelled = order.status === 'Cancelled';
+  const [rating, setRating] = React.useState(0);
+  const [hoverRating, setHoverRating] = React.useState(0);
+  const [isSubmitted, setIsSubmitted] = React.useState(false);
+
+  const handleSubmitReview = async () => {
+    if (rating > 0 && !isSubmitted) {
+      await onSubmitReview(order.id, restaurant?.id, rating);
+      setIsSubmitted(true);
+    }
+  };
   
   return (
     <motion.div
@@ -67,27 +79,19 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime 
       <div className="p-4 flex items-start gap-4">
         {/* Restaurant Icon */}
         <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center">
-          {restaurant?.coverUrl || restaurant?.logoUrl ? (
-            <img src={restaurant.coverUrl || restaurant.logoUrl} alt={restaurant.name} className="w-full h-full object-cover" />
+          {restaurant?.cover ? (
+            <img src={restaurant.cover} alt={restaurant.name} className="w-full h-full object-cover" />
           ) : (
             <Store size={20} className="text-neutral-400" />
           )}
         </div>
         
         {/* Restaurant Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <h3 className="text-[15px] font-bold text-neutral-900 dark:text-white truncate pr-2">
-              {restaurant?.name || 'Restaurant'}
-            </h3>
-            <button className="p-1 shrink-0 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
-              <MoreVertical size={18} />
-            </button>
-          </div>
-          <p className="text-[13px] text-neutral-500 dark:text-neutral-400 truncate mb-1">
-            {restaurant?.address || 'Location Details'}
-          </p>
-          <button className="text-[13px] font-semibold" style={{ color: '#E23744' }}>
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <h3 className="text-[15px] font-bold text-neutral-900 dark:text-white truncate mb-1">
+            {restaurant?.name || 'Restaurant'}
+          </h3>
+          <button onClick={() => onViewMenu(restaurant?.id)} className="text-[13px] font-semibold text-left w-fit" style={{ color: '#E23744' }}>
             View menu &rsaquo;
           </button>
         </div>
@@ -136,18 +140,59 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime 
       <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
 
       {/* Footer / Rating */}
-      <div className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-[14px] font-bold text-neutral-900 dark:text-white mr-1">Rate</span>
-          <div className="flex gap-1.5">
-            {[1,2,3,4,5].map(star => (
-              <Star key={star} size={18} className="text-neutral-300 dark:text-neutral-600" />
-            ))}
+      <div className="p-4 flex justify-between items-center bg-neutral-50/50 dark:bg-white/[0.02]">
+        {!isSubmitted ? (
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-bold text-neutral-900 dark:text-white mr-1">Rate Order</span>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(star => (
+                    <button 
+                      key={star} 
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="p-0.5"
+                    >
+                      <Star 
+                        size={20} 
+                        className={`transition-colors ${(hoverRating || rating) >= star ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-600'}`} 
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors">
+                Reorder
+              </button>
+            </div>
+            
+            <AnimatePresence>
+              {rating > 0 && (
+                <motion.button 
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  onClick={handleSubmitReview}
+                  className="w-full py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors"
+                >
+                  Submit {rating}-Star Review
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-        <button className="px-3 py-2 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors">
-          Reorder
-        </button>
+        ) : (
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
+              <CheckCircle2 size={18} className="fill-green-100 dark:fill-green-900" />
+              <span className="text-[14px] font-bold">Review submitted successfully</span>
+            </div>
+            <button className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors">
+              Reorder
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -272,8 +317,26 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
 }
 
 export default function DinerOrdersPage() {
-  const { orders, user, restaurants, tableNumber } = useAppContext();
+  const { orders, user, restaurants, tableNumber, setActiveRestId } = useAppContext();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleViewMenu = (restId) => {
+    if (restId) {
+      setActiveRestId(restId);
+      navigate('/menu');
+    }
+  };
+
+  const handleSubmitReview = async (orderId, restId, rating) => {
+    const dinerName = user?.name || 'Anonymous Diner';
+    await reviewService.submitReview({
+      orderId,
+      restId,
+      dinerName,
+      rating
+    });
+  };
 
   const getOrderNumber = (order) => {
     const vendorOrders = orders
@@ -351,6 +414,8 @@ export default function DinerOrdersPage() {
                     restaurant={rest}
                     formattedDate={formattedDate}
                     formattedTime={formattedTime}
+                    onViewMenu={handleViewMenu}
+                    onSubmitReview={handleSubmitReview}
                   />
                 </div>
               );
