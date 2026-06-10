@@ -232,105 +232,179 @@ const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNot
 };
 
 // ─── Google Play-Style Reviews Analytics ──────────────────────────────
+const STAR_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e']; // 1→5 star colors
+
 const ReviewsAnalytics = ({ restId }) => {
   const [reviews, setReviews] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
   React.useEffect(() => {
-    if (!restId) {
-      setLoading(false);
-      return;
-    }
+    if (!restId) { setLoading(false); return; }
     let isMounted = true;
+    setLoading(true);
     const fetchReviews = async () => {
       try {
         const { data } = await reviewService.getReviewsForRestaurant(restId);
         if (isMounted) {
-          if (data) setReviews(data);
+          setReviews(data || []);
           setLoading(false);
         }
       } catch (err) {
-        console.error("Error fetching reviews:", err);
-        if (isMounted) {
-          setLoading(false);
-        }
+        console.error('Error fetching reviews:', err);
+        if (isMounted) setLoading(false);
       }
     };
     fetchReviews();
     return () => { isMounted = false; };
-  }, [restId]);
-
-  if (loading) return <div className="text-center py-8 text-neutral-500">Loading reviews...</div>;
+  }, [restId, refreshKey]);
 
   const totalReviews = reviews.length;
-  const averageRating = totalReviews > 0 ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews).toFixed(1) : 0;
-  
+  const averageRating = totalReviews > 0
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews)
+    : 0;
+  const displayAvg = averageRating.toFixed(1);
+
   const distribution = [5, 4, 3, 2, 1].map(star => {
     const count = reviews.filter(r => r.rating === star).length;
     return { star, count, pct: totalReviews > 0 ? (count / totalReviews) * 100 : 0 };
   });
 
+  // Sentiment label
+  const sentiment = averageRating >= 4.5 ? 'Excellent' : averageRating >= 4 ? 'Very Good' : averageRating >= 3 ? 'Good' : averageRating >= 2 ? 'Fair' : 'Poor';
+  const sentimentColor = averageRating >= 4.5 ? 'text-emerald-500' : averageRating >= 4 ? 'text-green-500' : averageRating >= 3 ? 'text-amber-500' : 'text-red-500';
+
   return (
     <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm mt-6">
-      <h3 className="font-display font-black text-base mb-6">Customer Reviews</h3>
-      
-      {totalReviews === 0 ? (
-        <div className="text-center py-10 text-neutral-400">
-          <Star size={32} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No reviews yet. Your reviews will appear here.</p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="font-display font-black text-lg">Customer Reviews</h3>
+          {totalReviews > 0 && (
+            <p className="text-xs text-neutral-500 mt-0.5">Based on {totalReviews} verified {totalReviews === 1 ? 'order' : 'orders'}</p>
+          )}
+        </div>
+        <button
+          onClick={() => setRefreshKey(k => k + 1)}
+          disabled={loading}
+          className="p-2 rounded-xl bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+          title="Refresh reviews"
+        >
+          <RefreshCw size={14} className={`text-neutral-500 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12 gap-3">
+          <RefreshCw size={18} className="text-neutral-400 animate-spin" />
+          <span className="text-sm text-neutral-500">Loading reviews…</span>
+        </div>
+      ) : totalReviews === 0 ? (
+        <div className="text-center py-12 text-neutral-400">
+          <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-4">
+            <Star size={28} className="opacity-30" />
+          </div>
+          <p className="font-bold text-neutral-600 dark:text-neutral-400 mb-1">No reviews yet</p>
+          <p className="text-sm text-neutral-400">Reviews submitted by customers after completing orders will appear here.</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-col md:flex-row gap-8 mb-8 items-center md:items-start">
-            <div className="flex flex-col items-center justify-center shrink-0">
-              <span className="font-display font-black text-6xl text-neutral-900 dark:text-white">{averageRating}</span>
-              <div className="flex gap-1 my-2">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <Star key={star} size={16} className={star <= Math.round(averageRating) ? "fill-amber-400 text-amber-400" : "fill-neutral-200 text-neutral-200 dark:fill-white/10 dark:text-white/10"} />
+          {/* Score + Distribution */}
+          <div className="flex flex-col sm:flex-row gap-8 mb-8 p-5 bg-neutral-50 dark:bg-white/[0.03] rounded-2xl border border-neutral-100 dark:border-white/5">
+            {/* Big Score */}
+            <div className="flex flex-col items-center justify-center shrink-0 min-w-[110px]">
+              <span className="font-display font-black text-7xl leading-none text-neutral-900 dark:text-white">{displayAvg}</span>
+              <div className="flex gap-0.5 my-2">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <Star key={s} size={14}
+                    className={s <= Math.round(averageRating) ? 'fill-amber-400 text-amber-400' : 'fill-neutral-200 text-neutral-200 dark:fill-white/10 dark:text-white/10'}
+                  />
                 ))}
               </div>
-              <span className="text-xs font-bold text-neutral-500">{totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}</span>
+              <span className={`text-xs font-black uppercase tracking-wide ${sentimentColor}`}>{sentiment}</span>
             </div>
-            
-            <div className="flex-1 w-full space-y-2 max-w-sm">
+
+            {/* Bar Distribution */}
+            <div className="flex-1 w-full space-y-2.5">
               {distribution.map(d => (
-                <div key={d.star} className="flex items-center gap-3 text-xs font-bold text-neutral-600 dark:text-neutral-400">
-                  <span className="w-2">{d.star}</span>
-                  <div className="flex-1 h-2.5 rounded-full bg-neutral-100 dark:bg-white/5 overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${d.pct}%` }} />
+                <div key={d.star} className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 shrink-0 w-8 justify-end">
+                    <span className="text-xs font-bold text-neutral-500">{d.star}</span>
+                    <Star size={10} className="fill-amber-400 text-amber-400" />
                   </div>
+                  <div className="flex-1 h-2 rounded-full bg-neutral-200 dark:bg-white/8 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${d.pct}%` }}
+                      transition={{ duration: 0.6, delay: (5 - d.star) * 0.05, ease: 'easeOut' }}
+                      className="h-full rounded-full"
+                      style={{ background: STAR_COLORS[d.star - 1] }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-bold text-neutral-400 shrink-0 w-6 text-right">{d.count}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {reviews.map(review => (
-              <div key={review.id} className="pb-4 border-b border-neutral-100 dark:border-white/5 last:border-0 last:pb-0">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-neutral-700 dark:text-neutral-300">
-                      {review.diner_name ? review.diner_name.charAt(0).toUpperCase() : 'A'}
+          {/* Individual Review Cards */}
+          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+            {reviews.map((review, idx) => {
+              const initial = (review.diner_name || 'A').charAt(0).toUpperCase();
+              const avatarColors = ['bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-blue-500', 'bg-emerald-500', 'bg-orange-500'];
+              const avatarColor = avatarColors[initial.charCodeAt(0) % avatarColors.length];
+              const date = review.created_at
+                ? new Date(review.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                : '';
+
+              return (
+                <motion.div
+                  key={review.id || idx}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.04 }}
+                  className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-100 dark:border-white/5"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className={`w-9 h-9 rounded-full ${avatarColor} flex items-center justify-center shrink-0 text-white font-black text-sm`}>
+                      {initial}
                     </div>
-                    <span className="font-bold text-sm text-neutral-900 dark:text-white">{review.diner_name || 'Anonymous Diner'}</span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-sm text-neutral-900 dark:text-white truncate">
+                          {review.diner_name || 'Anonymous Diner'}
+                        </span>
+                        {date && (
+                          <span className="text-[11px] text-neutral-400 shrink-0 ml-2">{date}</span>
+                        )}
+                      </div>
+
+                      {/* Stars row */}
+                      <div className="flex items-center gap-0.5 mb-1">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} size={12}
+                            style={s <= review.rating ? { fill: STAR_COLORS[review.rating - 1], color: STAR_COLORS[review.rating - 1] } : {}}
+                            className={s <= review.rating ? '' : 'fill-neutral-200 text-neutral-200 dark:fill-white/10 dark:text-white/10'}
+                          />
+                        ))}
+                        <span className="ml-1.5 text-[11px] font-bold" style={{ color: STAR_COLORS[review.rating - 1] }}>
+                          {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][review.rating]}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[11px] text-neutral-500 font-medium">
-                    {new Date(review.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </div>
-                <div className="flex gap-0.5 mb-1.5 pl-10">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star key={star} size={12} className={star <= review.rating ? "fill-amber-400 text-amber-400" : "fill-neutral-200 text-neutral-200 dark:fill-white/10 dark:text-white/10"} />
-                  ))}
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </>
       )}
     </div>
   );
 };
+
 
 // ══════════════════════════════════════════════════════════════════════
 export default function VendorDashboardPage() {
