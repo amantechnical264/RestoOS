@@ -37,7 +37,7 @@ function RootRedirect() {
 
 function AnimatedRoutes() {
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <Routes>
         <Route path="/" element={<RootRedirect />} />
 

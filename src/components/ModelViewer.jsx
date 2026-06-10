@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * A proper React wrapper around <model-viewer>.
@@ -17,20 +17,35 @@ export default function ModelViewer({
 }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
+  const [scriptLoaded, setScriptLoaded] = useState(!!customElements.get('model-viewer'));
 
+  // Step 1: Ensure the model-viewer script is loaded
   useEffect(() => {
-    // Ensure the model-viewer script is loaded
-    if (!customElements.get('model-viewer')) {
-      const s = document.createElement('script');
-      s.type = 'module';
-      s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
-      document.head.appendChild(s);
+    if (customElements.get('model-viewer')) {
+      setScriptLoaded(true);
+      return;
     }
+
+    // Check if script is already appended but not yet loaded
+    const existing = document.querySelector('script[src*="model-viewer"]');
+    if (existing) {
+      existing.addEventListener('load', () => setScriptLoaded(true));
+      // In case it already loaded between checks
+      if (customElements.get('model-viewer')) setScriptLoaded(true);
+      return;
+    }
+
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
+    s.addEventListener('load', () => setScriptLoaded(true));
+    document.head.appendChild(s);
   }, []);
 
+  // Step 2: Create the model-viewer element once script and src are ready
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !src) return;
+    if (!container || !src || !scriptLoaded) return;
 
     // Remove previous viewer if any
     if (viewerRef.current) {
@@ -60,6 +75,8 @@ export default function ModelViewer({
       mv.setAttribute('ar', '');
       mv.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
       mv.setAttribute('ar-scale', 'auto');
+      // Use 'floor' placement for all surfaces — model-viewer handles
+      // table surfaces under 'floor' mode in scene-viewer
       mv.setAttribute('ar-placement', 'floor');
     }
 
@@ -77,7 +94,7 @@ export default function ModelViewer({
       mv.remove();
       viewerRef.current = null;
     };
-  }, [src, ar, autoRotate, onLoad]);
+  }, [src, ar, autoRotate, scriptLoaded, onLoad]);
 
   return (
     <div ref={containerRef} className={className} style={style} />

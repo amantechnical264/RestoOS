@@ -12,6 +12,7 @@ export default function Dish3DPage() {
   const { id } = useParams();
   const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const arContainerRef = useRef(null);
 
   useEffect(() => {
     if (!activeRestId) navigate('/scanner', { replace: true });
@@ -20,10 +21,13 @@ export default function Dish3DPage() {
   // Eagerly load model-viewer script for the hidden AR activator
   useEffect(() => {
     if (!customElements.get('model-viewer')) {
-      const s = document.createElement('script');
-      s.type = 'module';
-      s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
-      document.head.appendChild(s);
+      const existing = document.querySelector('script[src*="model-viewer"]');
+      if (!existing) {
+        const s = document.createElement('script');
+        s.type = 'module';
+        s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
+        document.head.appendChild(s);
+      }
     }
   }, []);
 
@@ -37,16 +41,28 @@ export default function Dish3DPage() {
   const macroPercent = (val, max) => Math.min(100, Math.round((parseInt(val) || 0) / max * 100));
 
   const activateAR = () => {
-    const mv = document.querySelector('model-viewer');
+    // Find model-viewer inside our own AR container ref
+    const container = arContainerRef.current;
+    if (!container) return;
+    const mv = container.querySelector('model-viewer');
     if (mv?.activateAR) {
       mv.activateAR();
     } else {
-      console.warn('AR viewer not ready yet.');
+      // Retry after a short delay — script or model may still be loading
+      setTimeout(() => {
+        const mvRetry = container.querySelector('model-viewer');
+        if (mvRetry?.activateAR) {
+          mvRetry.activateAR();
+        } else {
+          console.warn('AR viewer not ready. Model may still be loading.');
+        }
+      }, 1000);
     }
   };
 
   const displayImages = dish.images?.length > 0 ? dish.images : (dish.cover ? [dish.cover] : []);
   const recommendedDishes = dishes.filter(d => d.id !== id).slice(0, 3);
+
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -304,7 +320,8 @@ export default function Dish3DPage() {
         {/* AR Button — uses hidden ModelViewer activated imperatively */}
         {modelUrl && (
           <>
-            <div className="absolute w-[1px] h-[1px] opacity-0 pointer-events-none overflow-hidden">
+            {/* Hidden but properly sized AR model-viewer — must have real dimensions to initialise */}
+            <div ref={arContainerRef} className="fixed -left-[9999px] -top-[9999px] w-[300px] h-[300px] pointer-events-none" aria-hidden="true">
               <ModelViewer src={modelUrl} ar />
             </div>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}

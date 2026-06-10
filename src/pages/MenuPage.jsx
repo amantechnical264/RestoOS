@@ -122,6 +122,8 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
           <img
             src={dish.cover || dish.images[0]}
             alt={dish.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         ) : (
@@ -295,6 +297,8 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
             <img
               src={dish.cover || dish.images[0]}
               alt={dish.name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
