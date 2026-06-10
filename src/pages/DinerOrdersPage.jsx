@@ -113,7 +113,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: iconColor }} />
               </div>
               <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
-                {item.quantity} x {item.name}
+                {item.quantity || item.qty} x {item.name}
               </span>
             </div>
           );
@@ -264,7 +264,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
         <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
           {order.items.map((item, i) => (
             <li key={i} className="flex justify-between">
-              <span className="text-sm font-bold text-neutral-900 dark:text-white">{item.quantity}x {item.name}</span>
+              <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty)}x {item.name}</span>
               <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
             </li>
           ))}
