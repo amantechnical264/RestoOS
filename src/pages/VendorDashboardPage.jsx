@@ -378,55 +378,64 @@ export default function VendorDashboardPage() {
   };
 
   // ── Order helpers ─────────────────────────────────────────────────
-  const restOrders = orders.filter(o => o.restId === activeRestId || o.rest_id === activeRestId);
-  const pendingVerification = restOrders.filter(o => o.status === 'Pending Verification');
-  const pending   = restOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled');
-  const prep      = restOrders.filter(o => o.status === 'Preparing');
-  const ready     = restOrders.filter(o => o.status === 'Ready');
-  const completed = restOrders.filter(o => o.status === 'Completed');
-  const cancelled = restOrders.filter(o => o.status === 'Cancelled');
+  const restOrders = React.useMemo(() => orders.filter(o => o.restId === activeRestId || o.rest_id === activeRestId), [orders, activeRestId]);
+  const pendingVerification = React.useMemo(() => restOrders.filter(o => o.status === 'Pending Verification'), [restOrders]);
+  const pending   = React.useMemo(() => restOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled'), [restOrders]);
+  const prep      = React.useMemo(() => restOrders.filter(o => o.status === 'Preparing'), [restOrders]);
+  const ready     = React.useMemo(() => restOrders.filter(o => o.status === 'Ready'), [restOrders]);
+  const completed = React.useMemo(() => restOrders.filter(o => o.status === 'Completed'), [restOrders]);
+  const cancelled = React.useMemo(() => restOrders.filter(o => o.status === 'Cancelled'), [restOrders]);
 
-  const getOrderNumber = (order) => {
-    const idx = restOrders.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)).findIndex(o => o.id === order.id);
+  const getOrderNumber = React.useCallback((order) => {
+    const sorted = [...restOrders].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const idx = sorted.findIndex(o => o.id === order.id);
     return `#${String(idx + 1).padStart(3, '0')}`;
-  };
+  }, [restOrders]);
 
   // ── Analytics computations ────────────────────────────────────────
-  const todayRevenue = completed.reduce((s, o) => s + (o.total || 0), 0);
-  const avgOrderValue = completed.length > 0 ? todayRevenue / completed.length : 0;
-  const cancelRate = restOrders.length > 0 ? Math.round((cancelled.length / restOrders.length) * 100) : 0;
+  const todayRevenue = React.useMemo(() => completed.reduce((s, o) => s + (o.total || 0), 0), [completed]);
+  const avgOrderValue = React.useMemo(() => completed.length > 0 ? todayRevenue / completed.length : 0, [completed, todayRevenue]);
+  const cancelRate = React.useMemo(() => restOrders.length > 0 ? Math.round((cancelled.length / restOrders.length) * 100) : 0, [restOrders, cancelled]);
 
   // Dish order counts
-  const dishCounts = {};
-  const dishRevenue = {};
-  completed.forEach(order => {
-    (order.items || []).forEach(item => {
-      dishCounts[item.name] = (dishCounts[item.name] || 0) + 1;
-      dishRevenue[item.name] = (dishRevenue[item.name] || 0) + Number(item.price || 0);
+  const dishRanking = React.useMemo(() => {
+    const dishCounts = {};
+    const dishRevenue = {};
+    completed.forEach(order => {
+      (order.items || []).forEach(item => {
+        dishCounts[item.name] = (dishCounts[item.name] || 0) + 1;
+        dishRevenue[item.name] = (dishRevenue[item.name] || 0) + Number(item.price || 0);
+      });
     });
-  });
-  const dishRanking = Object.entries(dishCounts)
-    .map(([name, count]) => ({ name, count, revenue: dishRevenue[name] || 0 }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
-  const totalOrderedItems = dishRanking.reduce((s, d) => s + d.count, 0);
+    return Object.entries(dishCounts)
+      .map(([name, count]) => ({ name, count, revenue: dishRevenue[name] || 0 }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [completed]);
+
+  const totalOrderedItems = React.useMemo(() => dishRanking.reduce((s, d) => s + d.count, 0), [dishRanking]);
 
   // 7-day revenue (real data)
-  const weekData = [...Array(7)].map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    const dayStr = d.toISOString().split('T')[0];
-    const dayRev = completed.filter(o => o.timestamp?.startsWith(dayStr)).reduce((s, o) => s + (o.total || 0), 0);
-    return { label: d.toLocaleDateString('en-US', { weekday: 'short' })[0], value: dayRev };
-  });
+  const weekData = React.useMemo(() => {
+    return [...Array(7)].map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dayStr = d.toISOString().split('T')[0];
+      const dayRev = completed.filter(o => o.timestamp?.startsWith(dayStr)).reduce((s, o) => s + (o.total || 0), 0);
+      return { label: d.toLocaleDateString('en-US', { weekday: 'short' })[0], value: dayRev };
+    });
+  }, [completed]);
 
   // Peak hours (real heatmap data)
-  const HOURS = ['10','11','12','13','14','15','16','17','18','19','20','21'];
-  const peakData = HOURS.map(h => ({
-    hour: h,
-    value: restOrders.filter(o => o.timestamp && new Date(o.timestamp).getHours() === parseInt(h)).length
-  }));
-  const peakMax = Math.max(...peakData.map(d => d.value), 1);
+  const peakData = React.useMemo(() => {
+    const HOURS = ['10','11','12','13','14','15','16','17','18','19','20','21'];
+    return HOURS.map(h => ({
+      hour: h,
+      value: restOrders.filter(o => o.timestamp && new Date(o.timestamp).getHours() === parseInt(h)).length
+    }));
+  }, [restOrders]);
+
+  const peakMax = React.useMemo(() => Math.max(...peakData.map(d => d.value), 1), [peakData]);
 
   // Aggregate and calculate dynamic customer list from real-time orders
   const customerList = React.useMemo(() => {
@@ -609,7 +618,7 @@ export default function VendorDashboardPage() {
 
       {/* ── MAIN CONTENT ── */}
       <div className="flex-1 overflow-hidden relative bg-neutral-50 dark:bg-black">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
 
           {/* ════════════════════ KITCHEN DISPLAY ════════════════════ */}
           {vendorTab === 'orders' && (
@@ -627,8 +636,15 @@ export default function VendorDashboardPage() {
                     {pendingVerification.map(o => (
                       <motion.div layout key={o.id} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                         className="bg-white dark:bg-[#1a1a1f] border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 shadow-sm">
-                        <div className="flex justify-between mb-3">
-                          <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
+                        <div className="flex justify-between items-center mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
+                            {(o.table_number || o.tableNumber) && (
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/25">
+                                T{o.table_number || o.tableNumber}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
                             {o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}
                           </span>
@@ -707,9 +723,17 @@ export default function VendorDashboardPage() {
                       {lane.data.map(o => (
                         <motion.div layout key={o.id} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                           className="bg-white dark:bg-[#1a1a1f] border border-neutral-100 dark:border-white/5 rounded-xl p-4 shadow-sm">
-                          <div className="flex justify-between mb-2">
-                            <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono font-black text-sm">{getOrderNumber(o)}</span>
+                              {(o.table_number || o.tableNumber) && (
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/25">
+                                  T{o.table_number || o.tableNumber}
+                                </span>
+                              )}
+                            </div>
                             {o.orderType === 'prepaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">DUE {o.scheduledTime}</span>}
+                            {o.orderType === 'dine_in' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">DINE-IN</span>}
                           </div>
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
                             {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}

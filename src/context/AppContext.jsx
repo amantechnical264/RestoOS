@@ -199,6 +199,7 @@ export const AppProvider = ({ children }) => {
           paymentMethod: o.payment_method || o.paymentMethod,
           scheduledTime: o.scheduled_time || o.scheduledTime,
           tipAmount: o.tip_amount || o.tipAmount,
+          tableNumber: o.table_number || o.tableNumber,
         }));
         setOrders(mappedOrders);
       }
@@ -249,12 +250,13 @@ export const AppProvider = ({ children }) => {
     const restSub = supabase.channel('custom-restaurants')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, fetchRestaurants).subscribe();
     
-    // Polling fallback every 4 seconds to guarantee updates propagate instantly across devices/tabs
+    // Polling fallback every 15 seconds (only when page is active) to guarantee updates propagate without layout freeze
     const pollInterval = setInterval(() => {
+      if (document.hidden) return;
       fetchOrders();
       fetchDishes();
       fetchRestaurants();
-    }, 4000);
+    }, 15000);
 
     // Broadcast channel for real-time service requests (Customer -> Vendor)
     const serviceChannel = supabase.channel('service-requests')
@@ -592,13 +594,36 @@ export const AppProvider = ({ children }) => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     if (!supabase) return;
+    
+    // Optimistic UI update: instantly move the order to the new lane
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
       if (error) throw error;
       showNotification(`Order moved to: ${newStatus}`);
     } catch (error) { 
       console.error(error);
-      showNotification('Failed to update status.'); 
+      showNotification('Failed to update status.');
+      
+      // Revert change in case of failure
+      const { data } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
+      if (data) {
+        const mapped = data.map(o => ({
+          ...o,
+          restId: o.rest_id || o.restId,
+          orderType: o.order_type || o.orderType,
+          verificationCode: o.verification_code || o.verificationCode,
+          contactName: o.contact_name || o.contactName,
+          contactPhone: o.contact_phone || o.contactPhone,
+          paymentStatus: o.payment_status || o.paymentStatus,
+          paymentMethod: o.payment_method || o.paymentMethod,
+          scheduledTime: o.scheduled_time || o.scheduledTime,
+          tipAmount: o.tip_amount || o.tipAmount,
+          tableNumber: o.table_number || o.tableNumber,
+        }));
+        setOrders(mapped);
+      }
     }
   };
 
