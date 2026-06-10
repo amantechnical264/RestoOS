@@ -234,31 +234,11 @@ const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNot
 // ─── Google Play-Style Reviews Analytics ──────────────────────────────
 const STAR_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e']; // 1→5 star colors
 
-const ReviewsAnalytics = ({ restId }) => {
-  const [reviews, setReviews] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [refreshKey, setRefreshKey] = React.useState(0);
+const ReviewsAnalytics = ({ reviews }) => {
+  const [loading, setLoading] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!restId) { setLoading(false); return; }
-    let isMounted = true;
-    setLoading(true);
-    const fetchReviews = async () => {
-      try {
-        const { data } = await reviewService.getReviewsForRestaurant(restId);
-        if (isMounted) {
-          setReviews(data || []);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Error fetching reviews:', err);
-        if (isMounted) setLoading(false);
-      }
-    };
-    fetchReviews();
-    return () => { isMounted = false; };
-  }, [restId, refreshKey]);
-
+  // loading state isn't strictly necessary since it receives data synchronously,
+  // but kept for compatibility with the rest of the component's UI states if needed.
   const totalReviews = reviews.length;
   const averageRating = totalReviews > 0
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews)
@@ -276,7 +256,6 @@ const ReviewsAnalytics = ({ restId }) => {
 
   return (
     <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm mt-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="font-display font-black text-lg">Customer Reviews</h3>
@@ -284,14 +263,6 @@ const ReviewsAnalytics = ({ restId }) => {
             <p className="text-xs text-neutral-500 mt-0.5">Based on {totalReviews} verified {totalReviews === 1 ? 'order' : 'orders'}</p>
           )}
         </div>
-        <button
-          onClick={() => setRefreshKey(k => k + 1)}
-          disabled={loading}
-          className="p-2 rounded-xl bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-          title="Refresh reviews"
-        >
-          <RefreshCw size={14} className={`text-neutral-500 ${loading ? 'animate-spin' : ''}`} />
-        </button>
       </div>
 
       {loading ? (
@@ -660,16 +631,23 @@ export default function VendorDashboardPage() {
   const repeatCustomers = customerList.filter(c => c.orderCount > 1).length;
   const avgLifetimeValue = uniqueCustomers > 0 ? (completed.reduce((s, o) => s + (o.total || 0), 0) / uniqueCustomers) : 0;
 
+  const reviewOrders = React.useMemo(() => {
+    return restOrders
+      .filter(o => o.review_rating)
+      .map(o => ({
+        id: o.id,
+        rating: o.review_rating,
+        diner_name: o.review_name || o.contactName || 'Anonymous Diner',
+        created_at: o.reviewed_at || o.timestamp
+      }))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [restOrders]);
+
   const satisfactionScore = React.useMemo(() => {
-    if (restOrders.length === 0) return '5.0';
-    const completedCount = completed.length;
-    const cancelledCount = cancelled.length;
-    const totalProcessed = completedCount + cancelledCount;
-    if (totalProcessed === 0) return '4.9';
-    const ratio = completedCount / totalProcessed;
-    const score = 3.5 + (ratio * 1.5);
-    return score.toFixed(1);
-  }, [completed.length, cancelled.length, restOrders.length]);
+    if (reviewOrders.length === 0) return '0.0';
+    const totalRating = reviewOrders.reduce((sum, r) => sum + r.rating, 0);
+    return (totalRating / reviewOrders.length).toFixed(1);
+  }, [reviewOrders]);
 
   const vendDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata'));
   const vendEvents = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event'));
@@ -1136,7 +1114,7 @@ export default function VendorDashboardPage() {
                 </div>
                 
                 {/* Reviews Analytics */}
-                <ReviewsAnalytics restId={activeRestId} />
+                <ReviewsAnalytics reviews={reviewOrders} />
 
               </div>
               )}
@@ -2268,7 +2246,7 @@ export default function VendorDashboardPage() {
                   <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" />
                   <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" />
                   <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`$${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
-                  <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    color="bg-amber-500" />
+                  <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
                 </div>
 
                 {/* Customer list from orders */}
