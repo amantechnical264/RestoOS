@@ -33,7 +33,15 @@ export const useAppContext = () => useContext(AppContext);
 export const AppProvider = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(() => {
+    try {
+      const cachedRestaurants = JSON.parse(localStorage.getItem('3dish_cached_restaurants') || '[]');
+      const cachedDishes = JSON.parse(localStorage.getItem('3dish_cached_dishes') || '[]');
+      return cachedRestaurants.length > 0 && cachedDishes.length > 0;
+    } catch {
+      return false;
+    }
+  });
 
   // Theme State
   const [theme, setTheme] = useState(() => {
@@ -99,10 +107,14 @@ export const AppProvider = ({ children }) => {
   }, [user]);
   
   // Data State
-  const [restaurants, setRestaurants] = useState([]);
+  const [restaurants, setRestaurants] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('3dish_cached_restaurants') || '[]'); } catch { return []; }
+  });
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]); 
-  const [dishes, setDishes] = useState([]); 
+  const [dishes, setDishes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('3dish_cached_dishes') || '[]'); } catch { return []; }
+  }); 
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
 
@@ -223,7 +235,11 @@ export const AppProvider = ({ children }) => {
       const { data } = await supabase.from('dishes').select('*');
       if (data) {
         const mapped = data.map(mapDish);
-        setDishes(prev => deepCompareEquals(prev, mapped) ? prev : mapped);
+        setDishes(prev => {
+          if (deepCompareEquals(prev, mapped)) return prev;
+          localStorage.setItem('3dish_cached_dishes', JSON.stringify(mapped));
+          return mapped;
+        });
       }
     };
 
@@ -239,12 +255,17 @@ export const AppProvider = ({ children }) => {
               cover: existing?.cover || ''
             };
           });
-          return deepCompareEquals(prev, mapped) ? prev : mapped;
+          const finalData = deepCompareEquals(prev, mapped) ? prev : mapped;
+          if (finalData !== prev) {
+            localStorage.setItem('3dish_cached_restaurants', JSON.stringify(finalData));
+          }
+          return finalData;
         });
       }
     };
 
-    Promise.all([fetchOrders(), fetchDishes(), fetchRestaurants()]).then(() => {
+    fetchOrders(); // Load orders in background, don't block the UI
+    Promise.all([fetchDishes(), fetchRestaurants()]).then(() => {
       setIsDataLoaded(true);
     });
 
