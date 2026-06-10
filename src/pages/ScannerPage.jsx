@@ -9,7 +9,7 @@ import { QrCode, Zap, Sparkles, ChevronRight, CheckCircle2, ScanLine } from 'luc
 export default function ScannerPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setActiveRestId, setTableNumber, showNotification, restaurants } = useAppContext();
+  const { setActiveRestId, setTableNumber, showNotification, restaurants, isDataLoaded } = useAppContext();
   const { t } = useTranslation();
   const videoRef = React.useRef(null);
   const controlsRef = React.useRef(null);
@@ -21,14 +21,14 @@ export default function ScannerPage() {
   React.useEffect(() => {
     const restId = searchParams.get('restId');
     const tableNum = searchParams.get('table');
-    if (restId) {
+    if (restId && isDataLoaded) {
       setActiveRestId(restId);
       if (tableNum) setTableNumber(tableNum);
       const rest = restaurants.find(r => r.id === restId);
       if (rest) setScannedRest(rest);
       setScanned(true);
     }
-  }, [searchParams, setActiveRestId, setTableNumber, restaurants]);
+  }, [searchParams, setActiveRestId, setTableNumber, restaurants, isDataLoaded]);
 
   React.useEffect(() => {
     if (scanned) return;

@@ -33,6 +33,7 @@ export const useAppContext = () => useContext(AppContext);
 export const AppProvider = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   // Theme State
   const [theme, setTheme] = useState(() => {
@@ -243,9 +244,9 @@ export const AppProvider = ({ children }) => {
       }
     };
 
-    fetchOrders();
-    fetchDishes();
-    fetchRestaurants();
+    Promise.all([fetchOrders(), fetchDishes(), fetchRestaurants()]).then(() => {
+      setIsDataLoaded(true);
+    });
 
     const ordersSub = supabase.channel('custom-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
@@ -724,6 +725,7 @@ export const AppProvider = ({ children }) => {
     nutritionHistory, saveNutritionRecord,
     userPreferences, updatePreferences,
     theme, toggleTheme,
+    isDataLoaded,
   };
 
   return (

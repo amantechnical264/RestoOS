@@ -327,7 +327,7 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification } = useAppContext();
+  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(false);
@@ -505,6 +505,15 @@ export default function MenuPage() {
 
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
   const cartCount = cart.length;
+
+  if (!isDataLoaded) {
+    return (
+      <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col items-center justify-center gap-4 z-50">
+        <div className="w-10 h-10 border-2 border-neutral-200 dark:border-white/10 border-t-[#D4AF37] dark:border-t-[#D4AF37] rounded-full animate-spin" />
+        <p className="text-xs text-neutral-400 dark:text-neutral-500 font-bold tracking-widest uppercase">Loading Menu</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-white dark:bg-[#0d0d10] text-neutral-900 dark:text-white font-sans">
