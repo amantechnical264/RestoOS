@@ -383,10 +383,15 @@ export default function MenuPage() {
     setServiceHubOpen(false);
     if (!supabase) return;
     try {
+      // Normalize service type to avoid any ambiguity
+      let resolvedType = type;
+      if (type === 'Waiter') resolvedType = 'Call Waiter';
+      if (type === 'Bill') resolvedType = 'Request Bill';
+      
       await supabase.channel('service-requests').send({
         type: 'broadcast',
         event: 'waiter_call',
-        payload: { tableNumber: tableNumber || '12', type, time: new Date().toISOString() }
+        payload: { tableNumber: tableNumber || '12', type: resolvedType, time: new Date().toISOString() }
       });
     } catch (e) {
       console.error('Failed to request service:', e);
@@ -797,15 +802,15 @@ export default function MenuPage() {
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
               className="flex flex-col gap-3 mb-4 items-end"
             >
-              <button onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
+              <button id="service-btn-water" onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
                 <span className="text-sm font-bold">Water</span>
                 <Droplets size={16} className="text-blue-400" />
               </button>
-              <button onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
+              <button id="service-btn-bill" onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
                 <span className="text-sm font-bold">Bill</span>
                 <Receipt size={16} className="text-emerald-400" />
               </button>
-              <button onClick={() => requestService('Waiter')} className="flex items-center gap-3 bg-[#D4AF37]/90 backdrop-blur-xl border border-[#D4AF37]/50 px-4 py-2.5 rounded-2xl text-black shadow-xl hover:bg-[#D4AF37]">
+              <button id="service-btn-waiter" onClick={() => requestService('Waiter')} className="flex items-center gap-3 bg-[#D4AF37]/90 backdrop-blur-xl border border-[#D4AF37]/50 px-4 py-2.5 rounded-2xl text-black shadow-xl hover:bg-[#D4AF37]">
                 <span className="text-sm font-bold">Call Waiter</span>
                 <BellRing size={16} className="text-black" />
               </button>
@@ -813,6 +818,7 @@ export default function MenuPage() {
           )}
         </AnimatePresence>
         <button
+          id="service-fab"
           onClick={() => setServiceHubOpen(!serviceHubOpen)}
           className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border ${
             serviceHubOpen 

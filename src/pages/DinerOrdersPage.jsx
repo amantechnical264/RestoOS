@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar } from 'lucide-react';
+import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar, MoreVertical, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -54,6 +54,223 @@ function OrderTimeline({ currentStatus }) {
   );
 }
 
+// Zomato style Historical Order Card
+function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime }) {
+  const isCancelled = order.status === 'Cancelled';
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      className="bg-white dark:bg-[#121212] border border-neutral-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden mb-4"
+    >
+      {/* Top Header */}
+      <div className="p-4 flex items-start gap-4">
+        {/* Restaurant Icon */}
+        <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center">
+          {restaurant?.coverUrl || restaurant?.logoUrl ? (
+            <img src={restaurant.coverUrl || restaurant.logoUrl} alt={restaurant.name} className="w-full h-full object-cover" />
+          ) : (
+            <Store size={20} className="text-neutral-400" />
+          )}
+        </div>
+        
+        {/* Restaurant Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <h3 className="text-[15px] font-bold text-neutral-900 dark:text-white truncate pr-2">
+              {restaurant?.name || 'Restaurant'}
+            </h3>
+            <button className="p-1 shrink-0 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
+              <MoreVertical size={18} />
+            </button>
+          </div>
+          <p className="text-[13px] text-neutral-500 dark:text-neutral-400 truncate mb-1">
+            {restaurant?.address || 'Location Details'}
+          </p>
+          <button className="text-[13px] font-semibold" style={{ color: '#E23744' }}>
+            View menu &rsaquo;
+          </button>
+        </div>
+      </div>
+
+      <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
+
+      {/* Items List */}
+      <div className="p-4 space-y-3">
+        {order.items.map((item, i) => {
+          // Assume veg (green) if tags includes 'veg' or not 'non-veg'. Zomato shows green square with dot inside.
+          const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
+          const iconColor = isNonVeg ? '#E23744' : '#22c55e'; // Red or Green
+          
+          return (
+            <div key={i} className="flex items-start gap-3">
+              {/* Veg/Non-veg icon indicator */}
+              <div className="shrink-0 mt-1 flex items-center justify-center w-3 h-3 rounded-sm border" style={{ borderColor: iconColor }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: iconColor }} />
+              </div>
+              <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
+                {item.quantity} x {item.name}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
+
+      {/* Order Details & Status */}
+      <div className="p-4 space-y-2">
+        <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
+          Order placed on {formattedDate}, {formattedTime}
+        </p>
+        <div className="flex justify-between items-center">
+          <span className={`text-[14px] font-semibold ${isCancelled ? 'text-red-500' : 'text-neutral-700 dark:text-neutral-300'}`}>
+            {isCancelled ? 'Cancelled' : 'Delivered'}
+          </span>
+          <span className="text-[14px] font-bold text-neutral-900 dark:text-white">
+            ${Number(order.total).toFixed(2)} &rsaquo;
+          </span>
+        </div>
+      </div>
+
+      <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
+
+      {/* Footer / Rating */}
+      <div className="p-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-[14px] font-bold text-neutral-900 dark:text-white mr-1">Rate</span>
+          <div className="flex gap-1.5">
+            {[1,2,3,4,5].map(star => (
+              <Star key={star} size={18} className="text-neutral-300 dark:text-neutral-600" />
+            ))}
+          </div>
+        </div>
+        <button className="px-3 py-2 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors">
+          Reorder
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Active Order Card (Legacy UI)
+function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate, formattedTime, tableNumber, cardStyleClass, t }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      className={`rounded-3xl p-6 shadow-lg mb-4 ${cardStyleClass}`}
+    >
+      <div className="pb-4 mb-3 border-b border-neutral-100 dark:border-white/5 flex justify-between items-start">
+        <div className="space-y-1">
+          <span className="font-display font-black text-lg text-neutral-900 dark:text-white block">
+            {t('orders.orderNo', 'Order')} #{getOrderNumber(order)}
+          </span>
+          
+          {/* Restaurant Name */}
+          <div className="flex items-center gap-1.5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
+            <Store size={14} style={{ color: GOLD }} />
+            <span>{restaurantName}</span>
+          </div>
+
+          {/* Date and Time */}
+          {formattedDate && (
+            <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 dark:text-neutral-500 font-sans">
+              <Clock size={11} />
+              <span>Ordered on {formattedDate} at {formattedTime}</span>
+            </div>
+          )}
+        </div>
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-100 dark:bg-white/5 px-2.5 py-1 rounded-full">{order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}</span>
+      </div>
+
+      {/* Pending Verification */}
+      {order.status === 'Pending Verification' && (
+        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className={`mt-4 rounded-3xl p-5 ${cardStyleClass}`}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(212,175,55,0.1)' }}>
+              <ShieldCheck size={24} style={{ color: GOLD }} />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
+            {order.verificationCode && (
+              <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
+            )}
+            <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
+        </motion.div>
+      )}
+
+      {/* Cancelled */}
+      {order.status === 'Cancelled' && (
+        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
+          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+              <XCircle size={20} className="text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-red-400">Order Rejected</p>
+              <p className="text-xs text-neutral-500">This order was not verified by the restaurant staff.</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      <OrderTimeline currentStatus={order.status} />
+
+      {/* Items list */}
+      <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
+        <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
+          {order.items.map((item, i) => (
+            <li key={i} className="flex justify-between">
+              <span className="text-sm font-bold text-neutral-900 dark:text-white">{item.quantity}x {item.name}</span>
+              <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Call Waiter button */}
+      {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
+        <button
+          onClick={async () => {
+            try {
+              await import('../services/supabase').then(({ supabase }) => {
+                if (supabase) {
+                  supabase.channel('service-requests').send({
+                    type: 'broadcast', event: 'waiter_call',
+                    payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
+                  });
+                }
+              });
+              const btn = document.getElementById(`call-waiter-${order.id}`);
+              if (btn) {
+                btn.textContent = '✔ Waiter Notified!';
+                setTimeout(() => { btn.textContent = '🔔 Call Waiter'; }, 3000);
+              }
+            } catch(e) { console.error(e); }
+          }}
+          id={`call-waiter-${order.id}`}
+          className="w-full mb-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+          style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
+        >
+          <Bell size={15}/> Call Waiter
+        </button>
+      )}
+
+      {/* Total */}
+      <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}>
+        <span className="text-lg font-black text-neutral-900 dark:text-white">
+          Total: <span style={{ color: GOLD }}>${Number(order.total).toFixed(2)}</span>
+        </span>
+        <span className={`px-3 py-1 rounded-lg text-xs font-bold`}
+          style={order.paymentStatus === 'Paid'
+            ? { background: 'rgba(16,185,129,0.1)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }
+            : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }
+          }>
+          {order.paymentStatus} · {order.paymentMethod}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function DinerOrdersPage() {
   const { orders, user, restaurants, tableNumber } = useAppContext();
   const { t } = useTranslation();
@@ -85,7 +302,7 @@ export default function DinerOrdersPage() {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col min-h-screen bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white pb-24"
+      className="flex flex-col min-h-screen bg-neutral-50 dark:bg-[#000000] text-neutral-900 dark:text-white pb-24"
     >
       {/* Header */}
       <div
@@ -96,13 +313,13 @@ export default function DinerOrdersPage() {
             <Crown size={16} style={{ color: GOLD }} />
           </div>
           <div>
-            <h1 className="text-xl font-display font-black text-neutral-900 dark:text-white">{t('orders.liveTracking', 'Live Order Tracking')}</h1>
-            <p className="text-xs text-neutral-500">{myOrders.length} {t('orders.activeOrders', 'Active Orders')}</p>
+            <h1 className="text-xl font-display font-black text-neutral-900 dark:text-white">{t('orders.liveTracking', 'Your Orders')}</h1>
+            <p className="text-xs text-neutral-500">{myOrders.length} {t('orders.activeOrders', 'Total Orders')}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50 dark:bg-black">
+      <div className="flex-1 overflow-y-auto p-4 bg-neutral-50 dark:bg-black">
         {myOrders.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="flex flex-col items-center justify-center py-24 text-center">
@@ -126,120 +343,32 @@ export default function DinerOrdersPage() {
               ? orderDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
               : '';
 
+            if (order.status === 'Completed' || order.status === 'Cancelled') {
+              return (
+                <div key={order.id}>
+                  <ZomatoStyleOrderCard
+                    order={order}
+                    restaurant={rest}
+                    formattedDate={formattedDate}
+                    formattedTime={formattedTime}
+                  />
+                </div>
+              );
+            }
+
             return (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
-                className={`rounded-3xl p-6 shadow-lg ${cardStyleClass}`}
-              >
-                <div className="pb-4 mb-3 border-b border-neutral-100 dark:border-white/5 flex justify-between items-start">
-                  <div className="space-y-1">
-                    <span className="font-display font-black text-lg text-neutral-900 dark:text-white block">
-                      {t('orders.orderNo', 'Order')} #{getOrderNumber(order)}
-                    </span>
-                    
-                    {/* Restaurant Name */}
-                    <div className="flex items-center gap-1.5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
-                      <Store size={14} style={{ color: GOLD }} />
-                      <span>{restaurantName}</span>
-                    </div>
-
-                    {/* Date and Time */}
-                    {orderDate && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 dark:text-neutral-500 font-sans">
-                        <Clock size={11} />
-                        <span>Ordered on {formattedDate} at {formattedTime}</span>
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-100 dark:bg-white/5 px-2.5 py-1 rounded-full">{order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}</span>
-                </div>
-
-                {/* Pending Verification */}
-                {order.status === 'Pending Verification' && (
-                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className={`mt-4 rounded-3xl p-5 ${cardStyleClass}`}>
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(212,175,55,0.1)' }}>
-                        <ShieldCheck size={24} style={{ color: GOLD }} />
-                      </div>
-                      <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
-                      {order.verificationCode && (
-                        <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
-                      )}
-                      <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
-                  </motion.div>
-                )}
-
-                {/* Cancelled */}
-                {order.status === 'Cancelled' && (
-                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
-                    <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-                        <XCircle size={20} className="text-red-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-red-400">Order Rejected</p>
-                        <p className="text-xs text-neutral-500">This order was not verified by the restaurant staff.</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                <OrderTimeline currentStatus={order.status} />
-
-                {/* Items list */}
-                <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
-                  <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
-                    {order.items.map((item, i) => (
-                      <li key={i} className="flex justify-between">
-                        <span className="text-sm font-bold text-neutral-900 dark:text-white">{item.quantity}x {item.name}</span>
-                        <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Call Waiter button */}
-                {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        await import('../services/supabase').then(({ supabase }) => {
-                          if (supabase) {
-                            supabase.channel('service-requests').send({
-                              type: 'broadcast', event: 'waiter_call',
-                              payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
-                            });
-                          }
-                        });
-                        const btn = document.getElementById(`call-waiter-${order.id}`);
-                        if (btn) {
-                          btn.textContent = '✔ Waiter Notified!';
-                          setTimeout(() => { btn.textContent = '🔔 Call Waiter'; }, 3000);
-                        }
-                      } catch(e) { console.error(e); }
-                    }}
-                    id={`call-waiter-${order.id}`}
-                    className="w-full mb-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                    style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
-                  >
-                    <Bell size={15}/> Call Waiter
-                  </button>
-                )}
-
-                {/* Total */}
-                <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}>
-                  <span className="text-lg font-black text-neutral-900 dark:text-white">
-                    Total: <span style={{ color: GOLD }}>${Number(order.total).toFixed(2)}</span>
-                  </span>
-                  <span className={`px-3 py-1 rounded-lg text-xs font-bold`}
-                    style={order.paymentStatus === 'Paid'
-                      ? { background: 'rgba(16,185,129,0.1)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }
-                      : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }
-                    }>
-                    {order.paymentStatus} · {order.paymentMethod}
-                  </span>
-                </div>
-              </motion.div>
+              <div key={order.id}>
+                <ActiveOrderCard
+                  order={order}
+                  restaurantName={restaurantName}
+                  getOrderNumber={getOrderNumber}
+                  formattedDate={formattedDate}
+                  formattedTime={formattedTime}
+                  tableNumber={tableNumber}
+                  cardStyleClass={cardStyleClass}
+                  t={t}
+                />
+              </div>
             );
           })}
         </AnimatePresence>

@@ -196,9 +196,10 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
 // ══════════════════════════════════════════════════════════════════════
 export default function VendorDashboardPage() {
   const navigate = useNavigate();
+  const [vendorTab, setVendorTab] = React.useState('orders');
   const {
-    orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus,
-    dishes, restaurants, addDish, updateDish, user, setUser,
+    orders, activeRestId, updateOrderStatus,
+    dishes, setDishes, restaurants, addDish, updateDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
     planFor, upgradePlan,

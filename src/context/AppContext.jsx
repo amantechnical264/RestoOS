@@ -4,6 +4,30 @@ import { supabase } from '../services/supabase';
 
 const AppContext = createContext();
 
+const mapOrder = (o) => ({
+  ...o,
+  restId: o.rest_id || o.restId,
+  orderType: o.order_type || o.orderType,
+  verificationCode: o.verification_code || o.verificationCode,
+  contactName: o.contact_name || o.contactName,
+  contactPhone: o.contact_phone || o.contactPhone,
+  paymentStatus: o.payment_status || o.paymentStatus,
+  paymentMethod: o.payment_method || o.paymentMethod,
+  scheduledTime: o.scheduled_time || o.scheduledTime,
+  tipAmount: o.tip_amount || o.tipAmount,
+  tableNumber: o.table_number || o.tableNumber,
+});
+
+const mapDish = (d) => ({
+  ...d,
+  cover: d.macros?.cover || d.cover || '',
+  images: d.macros?.images || d.images || [],
+  modelUrl: d.model_url || d.modelUrl,
+  restId: d.rest_id || d.restId
+});
+
+const deepCompareEquals = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
 export const useAppContext = () => useContext(AppContext);
 
 export const AppProvider = ({ children }) => {
@@ -80,7 +104,6 @@ export const AppProvider = ({ children }) => {
   const [dishes, setDishes] = useState([]); 
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
-  const [vendorTab, setVendorTab] = useState('orders');
 
   const ordersChannelRef = useRef(null);
 
@@ -190,44 +213,24 @@ export const AppProvider = ({ children }) => {
     const fetchOrders = async () => {
       const { data } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
       if (data) {
-        const mappedOrders = data.map(o => ({
-          ...o,
-          restId: o.rest_id || o.restId,
-          orderType: o.order_type || o.orderType,
-          verificationCode: o.verification_code || o.verificationCode,
-          contactName: o.contact_name || o.contactName,
-          contactPhone: o.contact_phone || o.contactPhone,
-          paymentStatus: o.payment_status || o.paymentStatus,
-          paymentMethod: o.payment_method || o.paymentMethod,
-          scheduledTime: o.scheduled_time || o.scheduledTime,
-          tipAmount: o.tip_amount || o.tipAmount,
-          tableNumber: o.table_number || o.tableNumber,
-        }));
-        setOrders(mappedOrders);
+        const mappedOrders = data.map(mapOrder);
+        setOrders(prev => deepCompareEquals(prev, mappedOrders) ? prev : mappedOrders);
       }
     };
     
     const fetchDishes = async () => {
       const { data } = await supabase.from('dishes').select('*');
       if (data) {
-        // Map snake_case from DB to camelCase for frontend
-        const mapped = data.map(d => ({
-          ...d,
-          cover: d.macros?.cover || d.cover || '',
-          images: d.macros?.images || d.images || [],
-          modelUrl: d.model_url || d.modelUrl,
-          restId: d.rest_id || d.restId
-        }));
-        setDishes(mapped);
+        const mapped = data.map(mapDish);
+        setDishes(prev => deepCompareEquals(prev, mapped) ? prev : mapped);
       }
     };
 
     const fetchRestaurants = async () => {
       const { data } = await supabase.from('restaurants').select('id, vendor_id, name, tax_rate, accept_cash, created_at');
       if (data) {
-        // Map snake_case from DB to camelCase for frontend, preserving already fetched cover images
         setRestaurants(prev => {
-          return data.map(r => {
+          const mapped = data.map(r => {
             const existing = prev.find(ex => ex.id === r.id);
             return {
               ...r,
@@ -235,6 +238,7 @@ export const AppProvider = ({ children }) => {
               cover: existing?.cover || ''
             };
           });
+          return deepCompareEquals(prev, mapped) ? prev : mapped;
         });
       }
     };
@@ -244,15 +248,60 @@ export const AppProvider = ({ children }) => {
     fetchRestaurants();
 
     const ordersSub = supabase.channel('custom-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const mapped = mapOrder(payload.new);
+          setOrders(prev => {
+            if (prev.some(o => o.id === mapped.id)) return prev;
+            return [mapped, ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const mapped = mapOrder(payload.new);
+          setOrders(prev => prev.map(o => o.id === mapped.id ? mapped : o));
+        } else if (payload.eventType === 'DELETE') {
+          setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+        }
+      }).subscribe();
       
     const dishesSub = supabase.channel('custom-dishes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dishes' }, fetchDishes).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dishes' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const mapped = mapDish(payload.new);
+          setDishes(prev => {
+            if (prev.some(d => d.id === mapped.id)) return prev;
+            return [...prev, mapped];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const mapped = mapDish(payload.new);
+          setDishes(prev => prev.map(d => d.id === mapped.id ? mapped : d));
+        } else if (payload.eventType === 'DELETE') {
+          setDishes(prev => prev.filter(d => d.id !== payload.old.id));
+        }
+      }).subscribe();
 
     const restSub = supabase.channel('custom-restaurants')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, fetchRestaurants).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          const r = payload.new;
+          const mapped = {
+            ...r,
+            vendorId: r.vendor_id || r.vendorId,
+            cover: r.cover || ''
+          };
+          setRestaurants(prev => {
+            const exists = prev.some(item => item.id === mapped.id);
+            if (exists) {
+              return prev.map(item => item.id === mapped.id ? { ...item, ...mapped, cover: item.cover || mapped.cover } : item);
+            } else {
+              return [...prev, mapped];
+            }
+          });
+        } else if (payload.eventType === 'DELETE') {
+          setRestaurants(prev => prev.filter(r => r.id !== payload.old.id));
+        }
+      }).subscribe();
     
-    // Polling fallback every 15 seconds (only when page is active) to guarantee updates propagate without layout freeze
+    // Polling fallback every 15 seconds (only when page is active)
     const pollInterval = setInterval(() => {
       if (document.hidden) return;
       fetchOrders();
@@ -277,7 +326,6 @@ export const AppProvider = ({ children }) => {
     // Broadcast channel for real-time service requests (Customer -> Vendor)
     const serviceChannel = supabase.channel('service-requests')
       .on('broadcast', { event: 'waiter_call' }, (payload) => {
-        // payload.payload will contain { tableNumber, type, time }
         if (payload.payload) {
           setServiceAlerts(prev => [payload.payload, ...prev]);
           if (user?.role === 'vendor') {
@@ -667,7 +715,6 @@ export const AppProvider = ({ children }) => {
     orders, setOrders,
     dishes, setDishes, addDish, updateDish,
     notification, showNotification,
-    vendorTab, setVendorTab,
     plans, planFor, upgradePlan,
     serviceAlerts, setServiceAlerts,
     addToCart, removeOneFromCart,
