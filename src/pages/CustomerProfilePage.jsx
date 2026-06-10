@@ -32,8 +32,20 @@ export default function CustomerProfilePage() {
 
   // Filter orders placed by this customer (by matching user_id)
   const myOrders = React.useMemo(() => {
-    return orders.filter(o => o.user_id === userId || o.contactPhone === user?.phone);
-  }, [orders, userId, user]);
+    return orders.filter(o => {
+      const userId = o.user_id || o.userId;
+      const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+      const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId;
+      const phone = user?.phone || dinerProfile.phone;
+      const email = user?.email || dinerProfile.email;
+      
+      return (guestId && userId === guestId) || 
+             (phone && userId === phone) || 
+             (email && userId === email) || 
+             (phone && o.contactPhone === phone) ||
+             (!guestId && !phone && userId === 'anonymous');
+    });
+  }, [orders, user]);
 
   const orderCount = myOrders.length;
 

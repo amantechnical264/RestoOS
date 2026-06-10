@@ -76,7 +76,16 @@ export default function HealthDashboardPage() {
 
   const myOrders = orders.filter(o => {
     const userId = o.user_id || o.userId;
-    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous';
+    const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+    const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId;
+    const phone = user?.phone || dinerProfile.phone;
+    const email = user?.email || dinerProfile.email;
+    
+    return (guestId && userId === guestId) || 
+           (phone && userId === phone) || 
+           (email && userId === email) || 
+           (phone && o.contactPhone === phone) ||
+           (!guestId && !phone && userId === 'anonymous');
   });
 
   const validOrders = myOrders.filter(o => o.status !== 'Cancelled' && o.status !== 'Rejected');
