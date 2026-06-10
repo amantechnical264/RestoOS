@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import i18n from '../locales/i18n';
 import { supabase } from '../services/supabase';
 
@@ -81,6 +81,8 @@ export const AppProvider = ({ children }) => {
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
   const [vendorTab, setVendorTab] = useState('orders');
+
+  const ordersChannelRef = useRef(null);
 
   // ── Subscription Plan State ────────────────────────────────────────
   // Stored per restaurant: { [restId]: 'Starter' | 'Pro' | 'Enterprise' }
@@ -258,6 +260,20 @@ export const AppProvider = ({ children }) => {
       fetchRestaurants();
     }, 15000);
 
+    // Broadcast channel for real-time order status updates (Vendor -> Customer)
+    const ordersChannel = supabase.channel('orders-realtime', {
+      config: { broadcast: { ack: false } }
+    });
+
+    ordersChannel
+      .on('broadcast', { event: 'status-update' }, (payload) => {
+        if (payload?.payload?.orderId && payload?.payload?.newStatus) {
+          setOrders(prev => prev.map(o => o.id === payload.payload.orderId ? { ...o, status: payload.payload.newStatus } : o));
+        }
+      }).subscribe();
+    
+    ordersChannelRef.current = ordersChannel;
+
     // Broadcast channel for real-time service requests (Customer -> Vendor)
     const serviceChannel = supabase.channel('service-requests')
       .on('broadcast', { event: 'waiter_call' }, (payload) => {
@@ -275,6 +291,9 @@ export const AppProvider = ({ children }) => {
       supabase.removeChannel(dishesSub);
       supabase.removeChannel(restSub);
       supabase.removeChannel(serviceChannel);
+      if (ordersChannelRef.current) {
+        supabase.removeChannel(ordersChannelRef.current);
+      }
       clearInterval(pollInterval);
     };
   }, [supabaseUser, user?.role]);
@@ -597,6 +616,15 @@ export const AppProvider = ({ children }) => {
     
     // Optimistic UI update: instantly move the order to the new lane
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    
+    // Broadcast status change immediately to all clients (including diner)
+    if (ordersChannelRef.current) {
+      ordersChannelRef.current.send({
+        type: 'broadcast',
+        event: 'status-update',
+        payload: { orderId, newStatus },
+      });
+    }
     
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
