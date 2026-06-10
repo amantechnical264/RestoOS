@@ -27,6 +27,7 @@ export default function ScannerPage() {
       const rest = restaurants.find(r => r.id === restId);
       if (rest) setScannedRest(rest);
       setScanned(true);
+      navigate('/menu', { replace: true });
     }
   }, [searchParams, setActiveRestId, setTableNumber, restaurants, isDataLoaded]);
 
@@ -71,6 +72,7 @@ export default function ScannerPage() {
                 const rest = restaurants.find(r => r.id === restId);
                 if (rest) setScannedRest(rest);
                 setScanned(true);
+                navigate('/menu', { replace: true });
               } else {
                 showNotification('Invalid Table QR Code');
               }
@@ -82,6 +84,7 @@ export default function ScannerPage() {
                 const rest = restaurants.find(r => r.id === text);
                 if (rest) setScannedRest(rest);
                 setScanned(true);
+                navigate('/menu', { replace: true });
               }
             }
           }
@@ -110,6 +113,7 @@ export default function ScannerPage() {
       setActiveRestId(rest.id);
       setScannedRest(rest);
       setScanned(true);
+      navigate('/menu', { replace: true });
     }
   };
 
