@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen, Minus, Plus, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -6,6 +6,51 @@ import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
 import AIWaiter from '../components/AIWaiter';
+
+// ─── Optimized Image with shimmer → fade-in ──────────────────────────────────
+const OptimizedImage = ({ src, alt, className = '', eager = false, sizes }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef(null);
+
+  // Check if image is already cached (complete before onload fires)
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [src]);
+
+  if (error || !src) {
+    return (
+      <div className={`flex items-center justify-center text-neutral-400 dark:text-neutral-600 ${className}`}>
+        <ChefHat size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative overflow-hidden ${className}`}>
+      {/* Shimmer skeleton — visible until image loads */}
+      {!loaded && (
+        <div className="absolute inset-0 bg-neutral-200 dark:bg-neutral-800 animate-shimmer">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent shimmer-wave" />
+        </div>
+      )}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
+        decoding={eager ? 'sync' : 'async'}
+        fetchpriority={eager ? 'high' : 'auto'}
+        sizes={sizes}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${className.includes('group-hover') ? 'group-hover:scale-105 transition-transform duration-700' : ''}`}
+      />
+    </div>
+  );
+};
 
 const CATEGORY_TABS = [
   { key: 'All',      emoji: '🍽',  label: 'All' },
@@ -117,20 +162,13 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
       onClick={() => onDishClick(dish.id)}
     >
       {/* Food Photo */}
-      <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#111115]">
-        {(dish.cover || dish.images?.[0]) ? (
-          <img
-            src={dish.cover || dish.images[0]}
-            alt={dish.name}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-700">
-            <ChefHat size={40} />
-          </div>
-        )}
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-[#111115]">
+        <OptimizedImage
+          src={dish.cover || dish.images?.[0]}
+          alt={dish.name}
+          eager={index < 4}
+          className="w-full h-full group-hover:scale-105"
+        />
         {dish.tags?.includes('sold_out') && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
             <span className="font-display font-black text-white text-sm tracking-wider">SOLD OUT</span>
@@ -293,19 +331,12 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
       {/* Right Image / Add Button Panel */}
       <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
         <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#111115] border border-neutral-200 dark:border-white/10 shadow-sm">
-          {(dish.cover || dish.images?.[0]) ? (
-            <img
-              src={dish.cover || dish.images[0]}
-              alt={dish.name}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-neutral-400 dark:text-neutral-600">
-              <ChefHat size={32} />
-            </div>
-          )}
+          <OptimizedImage
+            src={dish.cover || dish.images?.[0]}
+            alt={dish.name}
+            eager={true}
+            className="w-full h-full"
+          />
           
           {dish.tags?.includes('sold_out') && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl z-10">

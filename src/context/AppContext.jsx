@@ -26,7 +26,44 @@ const mapDish = (d) => ({
   restId: d.rest_id || d.restId
 });
 
-const deepCompareEquals = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Fast comparison using IDs + count instead of full JSON serialization
+const fastArrayEquals = (prev, next) => {
+  if (prev.length !== next.length) return false;
+  if (prev.length === 0 && next.length === 0) return true;
+  // Compare by IDs and a few key fields rather than full JSON
+  for (let i = 0; i < next.length; i++) {
+    if (prev[i]?.id !== next[i]?.id) return false;
+  }
+  // Quick hash: check first, last, and middle item for field changes
+  const checkIdx = [0, Math.floor(next.length / 2), next.length - 1];
+  for (const idx of checkIdx) {
+    const p = prev[idx];
+    const n = next[idx];
+    if (!p || !n) return false;
+    if (p.status !== n.status || p.name !== n.name || p.price !== n.price || p.total !== n.total) return false;
+    // Check cover/model_url for dish image changes
+    if (p.cover !== n.cover || p.model_url !== n.model_url) return false;
+  }
+  return true;
+};
+
+// Preload images into browser cache for instant rendering
+const preloadImages = (urls) => {
+  urls.forEach(url => {
+    if (url && typeof url === 'string' && url.startsWith('http')) {
+      const img = new Image();
+      img.src = url;
+    }
+  });
+};
+
+// Timeout wrapper for fetch calls — never hang forever
+const withTimeout = (promise, ms = 8000) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), ms))
+  ]);
+};
 
 export const useAppContext = () => useContext(AppContext);
 
@@ -219,59 +256,95 @@ export const AppProvider = ({ children }) => {
     setTimeout(() => setNotification(null), 3500);
   }, []);
 
-  // 2. Real-time Sync
+  // 2. Real-time Sync — Robust data loading with timeout + error handling
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setIsDataLoaded(true); // Don't block UI if supabase is unavailable
+      return;
+    }
     
+    let realtimeConnected = false;
+
     const fetchOrders = async () => {
-      const { data } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
-      if (data) {
-        const mappedOrders = data.map(mapOrder);
-        setOrders(prev => deepCompareEquals(prev, mappedOrders) ? prev : mappedOrders);
+      try {
+        const { data, error } = await withTimeout(
+          supabase.from('orders').select('*').order('timestamp', { ascending: false })
+        );
+        if (error) { console.warn('Orders fetch error:', error.message); return; }
+        if (data) {
+          const mappedOrders = data.map(mapOrder);
+          setOrders(prev => fastArrayEquals(prev, mappedOrders) ? prev : mappedOrders);
+        }
+      } catch (err) {
+        console.warn('Orders fetch timeout/error:', err.message);
       }
     };
     
     const fetchDishes = async () => {
-      const { data } = await supabase.from('dishes').select('*');
-      if (data) {
-        const mapped = data.map(mapDish);
-        setDishes(prev => {
-          if (deepCompareEquals(prev, mapped)) return prev;
-          localStorage.setItem('3dish_cached_dishes', JSON.stringify(mapped));
-          return mapped;
-        });
+      try {
+        const { data, error } = await withTimeout(
+          supabase.from('dishes').select('*')
+        );
+        if (error) { console.warn('Dishes fetch error:', error.message); return; }
+        if (data) {
+          const mapped = data.map(mapDish);
+          setDishes(prev => {
+            if (fastArrayEquals(prev, mapped)) return prev;
+            // Cache to localStorage for instant next load
+            try { localStorage.setItem('3dish_cached_dishes', JSON.stringify(mapped)); } catch {}
+            return mapped;
+          });
+          // Preload first 10 dish images into browser cache
+          const imageUrls = mapped.slice(0, 10).map(d => d.cover || d.images?.[0]).filter(Boolean);
+          preloadImages(imageUrls);
+        }
+      } catch (err) {
+        console.warn('Dishes fetch timeout/error:', err.message);
       }
     };
 
     const fetchRestaurants = async () => {
-      const { data } = await supabase.from('restaurants').select('id, vendor_id, name, cover, tax_rate, accept_cash, created_at');
-      if (data) {
-        setRestaurants(prev => {
-          const mapped = data.map(r => {
-            return {
+      try {
+        const { data, error } = await withTimeout(
+          supabase.from('restaurants').select('id, vendor_id, name, cover, tax_rate, accept_cash, created_at')
+        );
+        if (error) { console.warn('Restaurants fetch error:', error.message); return; }
+        if (data) {
+          setRestaurants(prev => {
+            const mapped = data.map(r => ({
               ...r,
               vendorId: r.vendor_id || r.vendorId,
               cover: r.cover || ''
-            };
-          });
-          const finalData = deepCompareEquals(prev, mapped) ? prev : mapped;
-          if (finalData !== prev) {
+            }));
+            if (fastArrayEquals(prev, mapped)) return prev;
             // Store without cover to keep cache small; cover comes fresh from DB
-            const cacheData = finalData.map(({ cover, ...rest }) => rest);
-            localStorage.setItem('3dish_cached_restaurants', JSON.stringify(cacheData));
-          }
-          return finalData;
-        });
+            try {
+              const cacheData = mapped.map(({ cover, ...rest }) => rest);
+              localStorage.setItem('3dish_cached_restaurants', JSON.stringify(cacheData));
+            } catch {}
+            return mapped;
+          });
+        }
+      } catch (err) {
+        console.warn('Restaurants fetch timeout/error:', err.message);
       }
     };
 
-    fetchOrders(); // Load orders in background, don't block the UI
-    Promise.all([fetchDishes(), fetchRestaurants()]).then(() => {
-      setIsDataLoaded(true);
-    });
+    // Load data with guaranteed isDataLoaded=true (even on failure, show cached or empty)
+    const loadAllData = async () => {
+      try {
+        await Promise.allSettled([fetchDishes(), fetchRestaurants()]);
+      } catch {}
+      setIsDataLoaded(true); // ALWAYS unblock the UI
+      // Orders load in background, don't block UI
+      fetchOrders();
+    };
+    loadAllData();
 
+    // Real-time subscriptions
     const ordersSub = supabase.channel('custom-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        realtimeConnected = true;
         if (payload.eventType === 'INSERT') {
           const mapped = mapOrder(payload.new);
           setOrders(prev => {
@@ -284,19 +357,23 @@ export const AppProvider = ({ children }) => {
         } else if (payload.eventType === 'DELETE') {
           setOrders(prev => prev.filter(o => o.id !== payload.old.id));
         }
-      }).subscribe();
+      }).subscribe((status) => { if (status === 'SUBSCRIBED') realtimeConnected = true; });
       
     const dishesSub = supabase.channel('custom-dishes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dishes' }, (payload) => {
+        realtimeConnected = true;
         if (payload.eventType === 'INSERT') {
           const mapped = mapDish(payload.new);
           setDishes(prev => {
             if (prev.some(d => d.id === mapped.id)) return prev;
             return [...prev, mapped];
           });
+          // Preload new dish image
+          if (mapped.cover) preloadImages([mapped.cover]);
         } else if (payload.eventType === 'UPDATE') {
           const mapped = mapDish(payload.new);
           setDishes(prev => prev.map(d => d.id === mapped.id ? mapped : d));
+          if (mapped.cover) preloadImages([mapped.cover]);
         } else if (payload.eventType === 'DELETE') {
           setDishes(prev => prev.filter(d => d.id !== payload.old.id));
         }
@@ -304,6 +381,7 @@ export const AppProvider = ({ children }) => {
 
     const restSub = supabase.channel('custom-restaurants')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, (payload) => {
+        realtimeConnected = true;
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
           const r = payload.new;
           const mapped = {
@@ -323,13 +401,27 @@ export const AppProvider = ({ children }) => {
         }
       }).subscribe();
     
-    // Polling fallback every 15 seconds (only when page is active)
+    // Smart polling: 30s fallback, only runs when page visible AND realtime is disconnected
     const pollInterval = setInterval(() => {
       if (document.hidden) return;
+      // Always do a light refresh, but less frequently than before
       fetchOrders();
-      fetchDishes();
-      fetchRestaurants();
-    }, 15000);
+      // Only re-fetch dishes/restaurants if realtime seems disconnected
+      if (!realtimeConnected) {
+        fetchDishes();
+        fetchRestaurants();
+      }
+    }, 30000);
+
+    // Immediate re-fetch when user comes back to the tab (instant freshness)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchOrders();
+        fetchDishes();
+        fetchRestaurants();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Broadcast channel for real-time order status updates (Vendor -> Customer)
     const ordersChannel = supabase.channel('orders-realtime', {
@@ -365,8 +457,9 @@ export const AppProvider = ({ children }) => {
         supabase.removeChannel(ordersChannelRef.current);
       }
       clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [supabaseUser, user?.role]);
+  }, [supabaseUser]);
 
   // Auto-set activeRestId for logged-in vendor on mount or when restaurants list updates
   useEffect(() => {

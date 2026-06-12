@@ -128,3 +128,18 @@
   border: 1px solid rgba(212, 175, 55, 0.2) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(212, 175, 55, 0.1) !important;
 }
+
+/* ── Image shimmer skeleton for OptimizedImage ── */
+@keyframes shimmerWave {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-wave {
+  animation: shimmerWave 1.5s ease-in-out infinite;
+}
