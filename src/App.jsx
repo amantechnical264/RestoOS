@@ -16,6 +16,7 @@ const VendorDashboardPage = React.lazy(() => import('./pages/VendorDashboardPage
 const HealthDashboardPage = React.lazy(() => import('./pages/HealthDashboardPage'));
 const SettingsPage        = React.lazy(() => import('./pages/SettingsPage'));
 const CustomerProfilePage = React.lazy(() => import('./pages/CustomerProfilePage'));
+const LandingPage         = React.lazy(() => import('./pages/LandingPage'));
 
 // Full-screen loading shimmer shown while a lazy chunk loads
 function PageLoader() {
@@ -39,7 +40,7 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence>
       <Routes>
-        <Route path="/" element={<RootRedirect />} />
+        <Route path="/" element={<LandingPage />} />
 
         {/* Diner Routes */}
         <Route path="/scanner"     element={<ScannerPage />} />
