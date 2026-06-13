@@ -20,9 +20,9 @@ const CustomerProfilePage = React.lazy(() => import('./pages/CustomerProfilePage
 // Full-screen loading shimmer shown while a lazy chunk loads
 function PageLoader() {
   return (
-    <div className="fixed inset-0 bg-neutral-950 flex flex-col items-center justify-center gap-4 z-50">
-      <div className="w-10 h-10 border-2 border-neutral-800 border-t-blue-500 rounded-full animate-spin" />
-      <p className="text-xs text-neutral-600 font-bold tracking-widest uppercase">Loading</p>
+    <div className="fixed inset-0 bg-neutral-50 dark:bg-neutral-950 flex flex-col items-center justify-center gap-4 z-50">
+      <div className="w-10 h-10 border-2 border-neutral-200 dark:border-neutral-800 border-t-[#D4AF37] rounded-full animate-spin" />
+      <p className="text-xs text-neutral-400 dark:text-neutral-600 font-bold tracking-widest uppercase">Loading</p>
     </div>
   );
 }

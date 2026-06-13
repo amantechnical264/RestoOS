@@ -31,21 +31,27 @@ export default function CustomerProfilePage() {
   const initial = dinerName.charAt(0).toUpperCase();
 
   // Filter orders placed by this customer (by matching user_id)
+  // Identity extracted once, not per-order (avoids N * JSON.parse per render)
+  const myIdentity = React.useMemo(() => {
+    const dp = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+    return {
+      guestId: user?.uid || user?.id || user?.guestId || dp.guestId,
+      phone: user?.phone || dp.phone,
+      email: user?.email || dp.email,
+    };
+  }, [user]);
+
   const myOrders = React.useMemo(() => {
+    const { guestId, phone, email } = myIdentity;
     return orders.filter(o => {
-      const userId = o.user_id || o.userId;
-      const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
-      const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId;
-      const phone = user?.phone || dinerProfile.phone;
-      const email = user?.email || dinerProfile.email;
-      
-      return (guestId && userId === guestId) || 
-             (phone && userId === phone) || 
-             (email && userId === email) || 
+      const orderUserId = o.user_id || o.userId;
+      return (guestId && orderUserId === guestId) || 
+             (phone && orderUserId === phone) || 
+             (email && orderUserId === email) || 
              (phone && o.contactPhone === phone) ||
-             (!guestId && !phone && userId === 'anonymous');
+             (!guestId && !phone && orderUserId === 'anonymous');
     });
-  }, [orders, user]);
+  }, [orders, myIdentity]);
 
   const orderCount = myOrders.length;
 

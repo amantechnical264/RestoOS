@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar, MoreVertical, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -346,19 +346,27 @@ export default function DinerOrdersPage() {
     return index !== -1 ? `${String(index + 1).padStart(3, '0')}` : `${order.id.slice(-3)}`;
   };
 
-  const myOrders = orders.filter(o => {
-    const userId = o.user_id || o.userId;
-    const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
-    const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId;
-    const phone = user?.phone || dinerProfile.phone;
-    const email = user?.email || dinerProfile.email;
-    
-    return (guestId && userId === guestId) || 
-           (phone && userId === phone) || 
-           (email && userId === email) || 
-           (phone && o.contactPhone === phone) ||
-           (!guestId && !phone && userId === 'anonymous');
-  });
+  // Identity extracted once, not per-order (avoids N * JSON.parse per render)
+  const myIdentity = useMemo(() => {
+    const dp = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+    return {
+      guestId: user?.uid || user?.id || user?.guestId || dp.guestId,
+      phone: user?.phone || dp.phone,
+      email: user?.email || dp.email,
+    };
+  }, [user]);
+
+  const myOrders = useMemo(() => {
+    const { guestId, phone, email } = myIdentity;
+    return orders.filter(o => {
+      const orderUserId = o.user_id || o.userId;
+      return (guestId && orderUserId === guestId) || 
+             (phone && orderUserId === phone) || 
+             (email && orderUserId === email) || 
+             (phone && o.contactPhone === phone) ||
+             (!guestId && !phone && orderUserId === 'anonymous');
+    });
+  }, [orders, myIdentity]);
 
   const cardStyleClass = "bg-white dark:bg-gradient-to-br dark:from-[#111111] dark:to-[#080808] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)] shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.8)]";
 

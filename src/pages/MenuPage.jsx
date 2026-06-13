@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen, Minus, Plus, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -146,7 +146,7 @@ const BlinkitAddButton = ({ qty, onAdd, onRemove, isSoldOut, variant = 'overlay'
   );
 };
 
-const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, onARClick, qty, onAdd, onRemove }) => {
+const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, onARClick, qty, onAdd, onRemove }) => {
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
   const hasModel = !!(dish.modelUrl || dish.model_url);
@@ -249,9 +249,9 @@ const DishCard = ({ dish, index, onDishClick, onAddToCart, isFav, onToggleFav, o
       </div>
     </motion.div>
   );
-};
+});
 
-const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove }) => {
+const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove }) => {
   const hasModel = !!(dish.modelUrl || dish.model_url);
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
@@ -358,7 +358,7 @@ const ZomatoDishRow = ({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onA
       </div>
     </div>
   );
-};
+});
 
 export default function MenuPage() {
   const navigate = useNavigate();
@@ -470,82 +470,105 @@ export default function MenuPage() {
     ? customCategories
     : customCategories.filter(cat => cat === activeCategory);
 
-  const categoriesWithDishes = categoriesToRender.map(cat => {
-    const catDishes = allDishes.filter(d => {
-      const matchSearch = !search
-        || d.name.toLowerCase().includes(search.toLowerCase())
-        || d.description?.toLowerCase().includes(search.toLowerCase());
-      
-      const matchCat = cat === 'Vegan'
-        ? d.tags?.includes('Vegan') || d.dietaryPreference === 'Vegan'
-        : d.category === cat || d.tags?.includes(cat);
+  // Memoized: only recomputes when filters/data actually change (not on unrelated re-renders)
+  const categoriesWithDishes = useMemo(() => {
+    const result = categoriesToRender.map(cat => {
+      const catDishes = allDishes.filter(d => {
+        const matchSearch = !search
+          || d.name.toLowerCase().includes(search.toLowerCase())
+          || d.description?.toLowerCase().includes(search.toLowerCase());
         
-      const isVeg = d.dietaryPreference === 'Vegetarian' 
-        || d.dietaryPreference === 'Vegan' 
-        || d.tags?.includes('Vegetarian') 
-        || d.tags?.includes('Vegan') 
-        || d.tags?.includes('vegan')
-        || d.tags?.includes('vegetarian');
-        
-      const matchVeg = vegOnly ? isVeg : true;
-      return matchSearch && matchCat && matchVeg;
-    });
-
-    const orderArray = metadataRecord?.macros?.categoryOrders?.[cat] || [];
-    if (orderArray.length > 0) {
-      catDishes.sort((a, b) => {
-        const idxA = orderArray.indexOf(a.id);
-        const idxB = orderArray.indexOf(b.id);
-        if (idxA === -1 && idxB === -1) return 0;
-        if (idxA === -1) return 1;
-        if (idxB === -1) return -1;
-        return idxA - idxB;
+        const matchCat = cat === 'Vegan'
+          ? d.tags?.includes('Vegan') || d.dietaryPreference === 'Vegan'
+          : d.category === cat || d.tags?.includes(cat);
+          
+        const isVeg = d.dietaryPreference === 'Vegetarian' 
+          || d.dietaryPreference === 'Vegan' 
+          || d.tags?.includes('Vegetarian') 
+          || d.tags?.includes('Vegan') 
+          || d.tags?.includes('vegan')
+          || d.tags?.includes('vegetarian');
+          
+        const matchVeg = vegOnly ? isVeg : true;
+        return matchSearch && matchCat && matchVeg;
       });
-    }
 
-    return {
-      category: cat,
-      dishes: catDishes
-    };
-  }).filter(c => c.dishes.length > 0);
+      const orderArray = metadataRecord?.macros?.categoryOrders?.[cat] || [];
+      if (orderArray.length > 0) {
+        catDishes.sort((a, b) => {
+          const idxA = orderArray.indexOf(a.id);
+          const idxB = orderArray.indexOf(b.id);
+          if (idxA === -1 && idxB === -1) return 0;
+          if (idxA === -1) return 1;
+          if (idxB === -1) return -1;
+          return idxA - idxB;
+        });
+      }
 
-  // Add uncategorized if activeCategory is 'All'
-  if (activeCategory === 'All') {
-    const uncategorizedDishes = allDishes.filter(d => {
-      const hasCategory = customCategories.some(cat => d.category === cat || d.tags?.includes(cat));
-      if (hasCategory) return false;
-      
-      const matchSearch = !search
-        || d.name.toLowerCase().includes(search.toLowerCase())
-        || d.description?.toLowerCase().includes(search.toLowerCase());
-      
-      const isVeg = d.dietaryPreference === 'Vegetarian' 
-        || d.dietaryPreference === 'Vegan' 
-        || d.tags?.includes('Vegetarian') 
-        || d.tags?.includes('Vegan') 
-        || d.tags?.includes('vegan')
-        || d.tags?.includes('vegetarian');
+      return {
+        category: cat,
+        dishes: catDishes
+      };
+    }).filter(c => c.dishes.length > 0);
+
+    // Add uncategorized if activeCategory is 'All'
+    if (activeCategory === 'All') {
+      const uncategorizedDishes = allDishes.filter(d => {
+        const hasCategory = customCategories.some(cat => d.category === cat || d.tags?.includes(cat));
+        if (hasCategory) return false;
         
-      const matchVeg = vegOnly ? isVeg : true;
-      return matchSearch && matchVeg;
-    });
-
-    if (uncategorizedDishes.length > 0) {
-      categoriesWithDishes.push({
-        category: 'Others',
-        dishes: uncategorizedDishes
+        const matchSearch = !search
+          || d.name.toLowerCase().includes(search.toLowerCase())
+          || d.description?.toLowerCase().includes(search.toLowerCase());
+        
+        const isVeg = d.dietaryPreference === 'Vegetarian' 
+          || d.dietaryPreference === 'Vegan' 
+          || d.tags?.includes('Vegetarian') 
+          || d.tags?.includes('Vegan') 
+          || d.tags?.includes('vegan')
+          || d.tags?.includes('vegetarian');
+          
+        const matchVeg = vegOnly ? isVeg : true;
+        return matchSearch && matchVeg;
       });
+
+      if (uncategorizedDishes.length > 0) {
+        result.push({
+          category: 'Others',
+          dishes: uncategorizedDishes
+        });
+      }
     }
-  }
+    return result;
+  }, [allDishes, activeCategory, search, vegOnly, customCategories, categoriesToRender, metadataRecord]);
 
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
   const cartCount = cart.length;
 
   if (!isDataLoaded) {
     return (
-      <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col items-center justify-center gap-4 z-50">
-        <div className="w-10 h-10 border-2 border-neutral-200 dark:border-white/10 border-t-[#D4AF37] dark:border-t-[#D4AF37] rounded-full animate-spin" />
-        <p className="text-xs text-neutral-400 dark:text-neutral-500 font-bold tracking-widest uppercase">Loading Menu</p>
+      <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col z-50">
+        {/* Skeleton Hero */}
+        <div className="h-52 bg-neutral-200 dark:bg-neutral-900 shimmer-wave" />
+        {/* Skeleton Category Pills */}
+        <div className="flex gap-2 px-5 py-4">
+          {[80, 60, 70, 55].map((w, i) => (
+            <div key={i} className="h-9 rounded-2xl bg-neutral-200 dark:bg-neutral-800 shimmer-wave" style={{ width: w }} />
+          ))}
+        </div>
+        {/* Skeleton Dish Cards */}
+        <div className="grid grid-cols-2 gap-3 px-5 pb-8">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-[1.75rem] overflow-hidden bg-neutral-100 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5">
+              <div className="aspect-[4/3] bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
+              <div className="p-3 space-y-2">
+                <div className="h-4 w-3/4 rounded bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
+                <div className="h-3 w-1/2 rounded bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
+                <div className="h-8 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

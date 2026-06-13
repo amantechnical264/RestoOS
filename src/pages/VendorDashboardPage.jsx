@@ -32,7 +32,7 @@ const cardStyleLight = {
 };
 
 // ─── Mini Bar Chart (pure SVG, no library) ────────────────────────────
-const MiniBarChart = ({ data, color = '#D4AF37', height = 80 }) => {
+const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
   const max = Math.max(...data.map(d => d.value), 1);
   const barW = 100 / (data.length * 2 - 1);
   return (
@@ -51,10 +51,10 @@ const MiniBarChart = ({ data, color = '#D4AF37', height = 80 }) => {
       })}
     </svg>
   );
-};
+});
 
 // ─── KPI Card ─────────────────────────────────────────────────────────
-const KpiCard = ({ icon: Icon, label, value, sub, color, trend }) => (
+const KpiCard = React.memo(({ icon: Icon, label, value, sub, color, trend }) => (
   <div
     className="rounded-3xl p-5 flex flex-col gap-3 hover:scale-[1.02] transition-transform cursor-default bg-white dark:bg-transparent"
     style={{ ...( document.documentElement.classList.contains('dark') ? cardStyle : cardStyleLight ) }}
@@ -83,10 +83,10 @@ const KpiCard = ({ icon: Icon, label, value, sub, color, trend }) => (
       {sub && <p className="text-[11px] text-neutral-400 mt-1">{sub}</p>}
     </div>
   </div>
-);
+));
 
 // ─── Dish Popularity Row ───────────────────────────────────────────────
-const PopularityRow = ({ rank, name, count, revenue, total, badge }) => {
+const PopularityRow = React.memo(({ rank, name, count, revenue, total, badge }) => {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div className="flex items-center gap-4 py-3 border-b border-neutral-100 dark:border-white/5 last:border-0">
@@ -111,7 +111,7 @@ const PopularityRow = ({ rank, name, count, revenue, total, badge }) => {
       </div>
     </div>
   );
-};
+});
 
 // ─── Promotion / Feature Card ──────────────────────────────────────────
 const PromoCard = ({ title, desc, icon: Icon, badge, onClick }) => (

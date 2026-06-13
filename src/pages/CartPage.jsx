@@ -304,8 +304,8 @@ export default function CartPage() {
 
               {/* Receipt Summary */}
               <div className="mt-4 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-6 backdrop-blur-md">
-                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>${(total / 1.08).toFixed(2)}</span></div>
-                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-5 border-b border-neutral-200 dark:border-white/10 pb-5"><span>Tax (8%)</span><span>${(total - (total / 1.08)).toFixed(2)}</span></div>
+                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-5 border-b border-neutral-200 dark:border-white/10 pb-5"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>${(subtotal * taxRate).toFixed(2)}</span></div>
                 <div className="text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
                   <span>Total</span>
                   <span className="text-[#D4AF37] text-3xl">${total.toFixed(2)}</span>

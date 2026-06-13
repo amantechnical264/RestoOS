@@ -121,6 +121,9 @@ export const AppProvider = ({ children }) => {
   const [activeRestId, setActiveRestIdState] = useState(() => sessionStorage.getItem('3dish_active_rest') || null);
   const [tableNumber, setTableNumberState] = useState(() => sessionStorage.getItem('3dish_table_number') || null);
   const [activeDishId, setActiveDishId] = useState(null);
+  
+  // Ref to track current user for use in subscription callbacks (avoids stale closures)
+  const userRef = useRef(user);
 
   const setActiveRestId = (id) => {
     if (id) sessionStorage.setItem('3dish_active_rest', id);
@@ -141,6 +144,7 @@ export const AppProvider = ({ children }) => {
     } else {
       localStorage.removeItem('3dish_user');
     }
+    userRef.current = user; // Keep ref in sync for subscription callbacks
   }, [user]);
   
   // Data State
@@ -442,7 +446,7 @@ export const AppProvider = ({ children }) => {
       .on('broadcast', { event: 'waiter_call' }, (payload) => {
         if (payload.payload) {
           setServiceAlerts(prev => [payload.payload, ...prev]);
-          if (user?.role === 'vendor') {
+          if (userRef.current?.role === 'vendor') {
             showNotification(`Table ${payload.payload.tableNumber} requested: ${payload.payload.type}`);
           }
         }
