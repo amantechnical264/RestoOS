@@ -4,7 +4,8 @@ import {
   ChevronRight, Play, TrendingUp, Users, MapPin, 
   Star, Award, Zap, Camera, BarChart3, Menu, X, 
   MessageSquare, Utensils, Sparkles, ChefHat, 
-  ShieldCheck, Smartphone, MousePointer2 
+  ShieldCheck, Smartphone, MousePointer2,
+  Heart, CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
