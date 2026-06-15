@@ -108,29 +108,15 @@ export default function LandingPage() {
           </motion.div>
         </motion.div>
 
-        {/* Hero Dashboard Abstract Preview */}
+        {/* Hero Dashboard Preview */}
         <motion.div 
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-24 relative w-full max-w-5xl aspect-[16/9] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden bg-noir-900/50 backdrop-blur-3xl group"
+          className="mt-24 relative w-full max-w-5xl aspect-[16/9] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden bg-noir-900 group"
         >
-           <div className="absolute inset-0 bg-gradient-to-t from-noir-950 via-transparent to-transparent z-10" />
-           <div className="absolute top-4 left-4 right-4 flex gap-2 z-20">
-              <div className="w-3 h-3 rounded-full bg-red-500/50" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-              <div className="w-3 h-3 rounded-full bg-green-500/50" />
-           </div>
-           
-           {/* Abstract Dashboard UI */}
-           <div className="absolute inset-x-8 top-16 bottom-8 flex gap-6 z-0">
-             <div className="w-1/4 bg-white/5 rounded-2xl border border-white/5 animate-pulse" style={{ animationDuration: '3s' }} />
-             <div className="w-2/4 flex flex-col gap-6">
-               <div className="h-1/3 bg-gold-500/10 rounded-2xl border border-gold-500/20" />
-               <div className="h-2/3 bg-white/5 rounded-2xl border border-white/5" />
-             </div>
-             <div className="w-1/4 bg-white/5 rounded-2xl border border-white/5" />
-           </div>
+           <img src="/hero_dashboard.png" alt="Dashboard Preview" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
+           <div className="absolute inset-0 bg-gradient-to-t from-noir-950/80 via-transparent to-transparent pointer-events-none" />
         </motion.div>
       </section>
 
@@ -208,31 +194,7 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* 3. AI UPSELLING (Span 1 col, 1 row) */}
-            <motion.div 
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="rounded-[2rem] bg-card-gradient border border-gold-500/30 overflow-hidden relative group shadow-gold-glow"
-            >
-              <div className="p-6 h-full flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp size={20} className="text-gold-400" />
-                    <h3 className="text-lg font-bold text-gold-400">Smart Upsell</h3>
-                  </div>
-                  <p className="text-neutral-300 text-sm leading-tight">Increase cart value automatically.</p>
-                </div>
-                
-                <div className="bg-noir-950/50 rounded-xl border border-gold-500/20 p-4 text-center">
-                   <p className="text-xs text-neutral-400 mb-1">Avg Order Value</p>
-                   <p className="text-3xl font-display font-bold text-white">+28%</p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* 4. ANALYTICS (Span 1 col, 1 row) */}
+            {/* 3. ANALYTICS (Span 1 col, 1 row) */}
             <motion.div 
               variants={scaleIn}
               initial="hidden"
@@ -244,9 +206,9 @@ export default function LandingPage() {
                 <div>
                    <div className="flex items-center gap-2 mb-2">
                     <BarChart3 size={20} className="text-purple-400" />
-                    <h3 className="text-lg font-bold">Heatmaps</h3>
+                    <h3 className="text-lg font-bold">Analytics</h3>
                   </div>
-                  <p className="text-neutral-400 text-sm leading-tight">See exactly what guests crave.</p>
+                  <p className="text-neutral-400 text-sm leading-tight">Live metrics tracking.</p>
                 </div>
                 
                 {/* Snippet Grid */}
@@ -261,87 +223,26 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* 5. RESTAURANT MEMORY (Span 2 cols, 1 row) */}
+            {/* 4. DIGITAL CART (Span 1 col, 1 row) */}
             <motion.div 
               variants={scaleIn}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              className="md:col-span-2 rounded-[2rem] bg-noir-900 border border-white/5 overflow-hidden relative group"
-            >
-              <div className="p-8 h-full flex flex-col justify-between">
-                <div>
-                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center"><Heart size={20} /></div>
-                    <h3 className="text-xl font-bold">Restaurant Memory</h3>
-                  </div>
-                  <p className="text-neutral-400 text-sm">Remember every guest's preference.</p>
-                </div>
-
-                {/* Snippet */}
-                <div className="bg-noir-950 rounded-xl border border-white/10 p-4 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">A</div>
-                  <div className="flex-1">
-                    <p className="font-bold text-white text-sm">Welcome back, Anurag!</p>
-                    <p className="text-xs text-neutral-400">We saved your usual: Cappuccino (No Sugar)</p>
-                  </div>
-                  <div className="hidden sm:block px-3 py-1 bg-pink-500/10 text-pink-400 text-xs font-bold rounded-full">4th Visit</div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* 6. GROUP ORDERING (Span 1 col, 1 row) */}
-            <motion.div 
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="rounded-[2rem] bg-noir-900 border border-white/5 overflow-hidden relative group"
+              className="rounded-[2rem] bg-card-gradient border border-gold-500/30 overflow-hidden relative group shadow-gold-glow"
             >
               <div className="p-6 h-full flex flex-col justify-between">
                 <div>
-                   <div className="flex items-center gap-2 mb-2">
-                    <Users size={20} className="text-green-400" />
-                    <h3 className="text-lg font-bold">Group Orders</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap size={20} className="text-gold-400" />
+                    <h3 className="text-lg font-bold text-gold-400">Digital Cart</h3>
                   </div>
-                  <p className="text-neutral-400 text-sm leading-tight">No more split-bill headaches.</p>
+                  <p className="text-neutral-300 text-sm leading-tight">Quick and easy ordering.</p>
                 </div>
-
-                <div className="bg-noir-950 rounded-xl border border-white/10 p-3 flex items-center justify-between">
-                   <div className="flex -space-x-2">
-                     <div className="w-8 h-8 rounded-full bg-blue-500 border border-noir-950 z-30"></div>
-                     <div className="w-8 h-8 rounded-full bg-pink-500 border border-noir-950 z-20"></div>
-                     <div className="w-8 h-8 rounded-full bg-green-500 border border-noir-950 z-10"></div>
-                   </div>
-                   <div className="text-right">
-                     <p className="text-[10px] text-neutral-500">Your Share</p>
-                     <p className="text-sm font-bold text-green-400">$24.50</p>
-                   </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* 7. EVENT LAYER (Span 1 col, 1 row) */}
-             <motion.div 
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="rounded-[2rem] bg-noir-900 border border-white/5 overflow-hidden relative group"
-            >
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-              <div className="p-6 h-full flex flex-col justify-between relative z-10">
-                <div>
-                   <div className="flex items-center gap-2 mb-2">
-                    <MapPin size={20} className="text-orange-400" />
-                    <h3 className="text-lg font-bold">Event Layer</h3>
-                  </div>
-                  <p className="text-neutral-400 text-sm leading-tight">Turn your space into a community.</p>
-                </div>
-
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
-                   <p className="text-xs font-bold text-orange-400 mb-1">Live Jazz Night</p>
-                   <p className="text-[10px] text-neutral-400">Tonight, 8 PM • 24 Attending</p>
+                
+                <div className="bg-noir-950/50 rounded-xl border border-gold-500/20 p-4 flex items-center justify-between">
+                   <p className="text-xs text-neutral-400 mb-1">Total</p>
+                   <p className="text-xl font-display font-bold text-white">$42.50</p>
                 </div>
               </div>
             </motion.div>
