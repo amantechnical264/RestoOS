@@ -141,12 +141,9 @@ export default function CartPage() {
   const handleNext = async () => {
     if (step === 'cart') setStep('type');
     else if (step === 'type') {
-      if (orderConf.type === 'dine_in') setStep('pay');
-      else {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) setStep('details');
-        else setStep('auth');
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session || orderConf.type === 'dine_in') setStep('details');
+      else setStep('auth');
     } else if (step === 'details') {
       if (!contactDetails.name || !contactDetails.phone) { alert('Please fill in your contact details.'); return; }
       setStep('pay');
@@ -160,7 +157,7 @@ export default function CartPage() {
     else if (step === 'type') setStep('cart');
     else if (step === 'auth') setStep('type');
     else if (step === 'details') setStep('type');
-    else if (step === 'pay') setStep(orderConf.type === 'dine_in' ? 'type' : 'details');
+    else if (step === 'pay') setStep('details');
     else if (step === 'success') navigate('/orders');
   };
 

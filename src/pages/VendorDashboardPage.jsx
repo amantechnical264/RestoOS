@@ -602,14 +602,18 @@ export default function VendorDashboardPage() {
   const customerList = React.useMemo(() => {
     const map = {};
     restOrders.forEach(o => {
+      const cName = o.contactName || o.contact_name;
+      const cPhone = o.contactPhone || o.contact_phone;
+      const oType = o.orderType || o.order_type;
+
       // Create a unique key for grouping. Prefer phone or user_id, fallback to name or generic ID.
-      const key = o.contactPhone || (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || o.contactName || 'anonymous_' + o.id;
+      const key = cPhone || (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || cName || 'anonymous_' + o.id;
       if (!map[key]) {
         let displayName = 'Guest Diner';
-        if (o.contactName) {
-          displayName = o.contactName;
-        } else if (o.contactPhone) {
-          displayName = `Guest (${o.contactPhone})`;
+        if (cName) {
+          displayName = cName;
+        } else if (cPhone) {
+          displayName = `Guest (${cPhone})`;
         } else if (o.user_id && o.user_id !== 'anonymous') {
           displayName = `Member (${o.user_id.substring(0, 6)})`;
         }
@@ -617,12 +621,12 @@ export default function VendorDashboardPage() {
         map[key] = {
           id: key,
           name: displayName,
-          phone: o.contactPhone || 'Dine-In Guest',
+          phone: cPhone || 'Dine-In Guest',
           userId: o.user_id || 'anonymous',
           totalSpend: 0,
           orderCount: 0,
           lastOrder: o.timestamp,
-          orderType: o.orderType || 'dine_in'
+          orderType: oType || 'dine_in'
         };
       }
       map[key].totalSpend += Number(o.total || 0);
@@ -645,7 +649,7 @@ export default function VendorDashboardPage() {
       .map(o => ({
         id: o.id,
         rating: o.review_rating,
-        diner_name: o.review_name || o.contactName || 'Anonymous Diner',
+        diner_name: o.review_name || o.contactName || o.contact_name || 'Anonymous Diner',
         created_at: o.reviewed_at || o.timestamp
       }))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
