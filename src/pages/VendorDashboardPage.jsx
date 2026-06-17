@@ -2469,9 +2469,6 @@ export default function VendorDashboardPage() {
                   <div className="divide-y divide-neutral-50 dark:divide-white/4">
                     {(customerFilter === 'repeat' ? customerList.filter(c => c.orderCount > 1) : customerFilter === 'all' ? customerList : customerList.slice(0, 15)).map(c => (
                       <div key={c.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-[#AA8C2C] flex items-center justify-center text-white font-black text-sm shrink-0">
-                          {c.name[0].toUpperCase()}
-                        </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{c.name}</p>
                           <p className="text-xs text-neutral-400">
