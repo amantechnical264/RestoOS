@@ -1587,7 +1587,7 @@ export default function VendorDashboardPage() {
                 <button
                   onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
                   className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
-                  style={{ background: goldGradient, color: '#000' }}
+                  style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
                 >
                   <Gift size={13} /> Make Combos
                 </button>
@@ -1724,7 +1724,7 @@ export default function VendorDashboardPage() {
                             setComboRecs([]);
                           }}
                           className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          style={comboParent && comboRecs.length > 0 ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
+                          style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
                         >
                           <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Combo</span>
                         </button>
