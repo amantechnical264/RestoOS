@@ -61,12 +61,11 @@ export default function Dish3DPage() {
   };
 
   const displayImages = dish.images?.length > 0 ? dish.images : (dish.cover ? [dish.cover] : []);
-  // Prefer vendor-curated combos; fall back to same-restaurant dishes
   const sameRestDishes = dishes.filter(d => d.id !== id && (d.restId === activeRestId || d.rest_id === activeRestId));
   const comboIds = dish.macros?.comboRecommendations || [];
   const recommendedDishes = comboIds.length > 0
     ? comboIds.map(cid => sameRestDishes.find(d => d.id === cid)).filter(Boolean)
-    : sameRestDishes.slice(0, 3);
+    : [];
 
 
   return (

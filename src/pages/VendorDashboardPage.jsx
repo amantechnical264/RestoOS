@@ -1605,17 +1605,30 @@ export default function VendorDashboardPage() {
                     return (
                       <div key={parentDish.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-100 dark:border-white/5">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-black text-neutral-900 dark:text-white truncate flex-1">{parentDish.name}</span>
-                          <button
-                            onClick={async () => {
-                              await updateDish(parentDish.id, { macros: { ...(parentDish.macros || {}), comboRecommendations: undefined } });
-                              showNotification('Combo deleted.');
-                            }}
-                            className="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
-                            title="Delete combo"
-                          >
-                            <Trash2 size={11} />
-                          </button>
+                          <span className="text-[11px] font-black text-neutral-900 dark:text-white truncate flex-1 mr-2">{parentDish.name}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                setComboParent(parentDish);
+                                setComboRecs(recDishes);
+                                setShowComboDialog(true);
+                              }}
+                              className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                              title="Edit combo"
+                            >
+                              <Edit2 size={11} />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                await updateDish(parentDish.id, { macros: { ...(parentDish.macros || {}), comboRecommendations: undefined } });
+                                showNotification('Combo deleted.');
+                              }}
+                              className="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                              title="Delete combo"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {recDishes.map(r => (
@@ -1737,17 +1750,34 @@ export default function VendorDashboardPage() {
                           {vendDishes.map(d => {
                             const isParent = comboParent?.id === d.id;
                             const isRec = comboRecs.some(r => r.id === d.id);
+                            const isAlreadyParentElsewhere = d.macros?.comboRecommendations?.length > 0 && comboParent?.id !== d.id;
                             const isUsed = isParent || isRec;
                             return (
                               <button
                                 key={d.id}
+                                disabled={isAlreadyParentElsewhere && !comboParent}
                                 onClick={() => {
                                   if (isParent) { setComboParent(null); return; }
                                   if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
-                                  if (!comboParent) { setComboParent(d); }
-                                  else { setComboRecs(prev => [...prev, d]); }
+                                  if (!comboParent) {
+                                    if (d.macros?.comboRecommendations?.length > 0) {
+                                      showNotification(`${d.name} is already a parent of another combo.`);
+                                      return;
+                                    }
+                                    setComboParent(d);
+                                  } else {
+                                    setComboRecs(prev => [...prev, d]);
+                                  }
                                 }}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${isParent ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700' : isRec ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'} border`}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                                  isParent
+                                    ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700'
+                                    : isRec
+                                      ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700'
+                                      : isAlreadyParentElsewhere && !comboParent
+                                        ? 'opacity-40 cursor-not-allowed bg-neutral-100 dark:bg-white/[0.01] border-neutral-200 dark:border-white/5'
+                                        : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                } border`}
                               >
                                 <div className="w-9 h-9 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
                                   {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={14} className="text-neutral-400" /></div>}
@@ -1758,7 +1788,15 @@ export default function VendorDashboardPage() {
                                 </div>
                                 {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
                                 {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
-                                {!isUsed && <span className="text-[10px] text-neutral-400">{!comboParent ? 'Set as parent' : '+ Add rec'}</span>}
+                                {!isUsed && (
+                                  <span className="text-[10px] text-neutral-400">
+                                    {isAlreadyParentElsewhere && !comboParent
+                                      ? 'Already Parent'
+                                      : !comboParent
+                                        ? 'Set as parent'
+                                        : '+ Add rec'}
+                                  </span>
+                                )}
                               </button>
                             );
                           })}
