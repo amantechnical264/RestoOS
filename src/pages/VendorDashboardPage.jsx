@@ -431,6 +431,11 @@ export default function VendorDashboardPage() {
   const [isGenerating3D, setIsGenerating3D] = React.useState(false);
   const [enteredCodes, setEnteredCodes] = React.useState({});
 
+  // ── Combo Builder State ────────────────────────────────────────
+  const [showComboDialog, setShowComboDialog] = React.useState(false);
+  const [comboParent, setComboParent] = React.useState(null);
+  const [comboRecs, setComboRecs] = React.useState([]);
+
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1572,8 +1577,199 @@ export default function VendorDashboardPage() {
                   )}
                 </div>
               </div>
+
+              {/* ── RIGHT: Combo Panel ── */}
+              <div className="w-56 shrink-0 border-l border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
+                <div className="p-4 border-b border-neutral-100 dark:border-white/5">
+                  <h2 className="font-display font-black text-sm">Combos</h2>
+                  <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
+                </div>
+                <button
+                  onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
+                  className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+                  style={{ background: goldGradient, color: '#000' }}
+                >
+                  <Gift size={13} /> Make Combos
+                </button>
+                <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+                  {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).length === 0 && (
+                    <div className="text-center py-8 text-neutral-400">
+                      <Gift size={28} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-[11px] font-semibold">No combos yet</p>
+                      <p className="text-[10px] mt-0.5">Click "Make Combos" to pair dishes</p>
+                    </div>
+                  )}
+                  {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).map(parentDish => {
+                    const recIds = parentDish.macros.comboRecommendations;
+                    const recDishes = recIds.map(rid => vendDishes.find(d => d.id === rid)).filter(Boolean);
+                    return (
+                      <div key={parentDish.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-100 dark:border-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-black text-neutral-900 dark:text-white truncate flex-1">{parentDish.name}</span>
+                          <button
+                            onClick={async () => {
+                              await updateDish(parentDish.id, { macros: { ...(parentDish.macros || {}), comboRecommendations: undefined } });
+                              showNotification('Combo deleted.');
+                            }}
+                            className="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
+                            title="Delete combo"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {recDishes.map(r => (
+                            <span key={r.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30">{r.name}</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </motion.div>
           )}
+
+          {/* ── COMBO BUILDER DIALOG ── */}
+          <AnimatePresence>
+            {showComboDialog && (
+              <motion.div
+                key="combo-dialog-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setShowComboDialog(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  onClick={e => e.stopPropagation()}
+                  className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+                >
+                  {/* Dialog Header */}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/5">
+                    <div>
+                      <h2 className="font-display font-black text-xl">Combo Builder</h2>
+                      <p className="text-xs text-neutral-500 mt-0.5">Click a dish to assign it as parent or recommendation</p>
+                    </div>
+                    <button onClick={() => setShowComboDialog(false)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {/* Dialog Body */}
+                  <div className="flex-1 overflow-y-auto p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                      {/* Left: Drop Zones */}
+                      <div className="space-y-4">
+                        {/* Parent Dish Zone */}
+                        <div>
+                          <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Parent Dish (1)</p>
+                          <div className={`min-h-[70px] rounded-2xl border-2 border-dashed p-3 transition-colors ${comboParent ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10' : 'border-neutral-300 dark:border-white/15 bg-neutral-50 dark:bg-white/[0.02]'}`}>
+                            {comboParent ? (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                    {(comboParent.cover || comboParent.images?.[0]) ? <img src={comboParent.cover || comboParent.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={16} className="text-neutral-400" /></div>}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-sm">{comboParent.name}</p>
+                                    <p className="text-xs text-neutral-500">${Number(comboParent.price).toFixed(2)}</p>
+                                  </div>
+                                </div>
+                                <button onClick={() => setComboParent(null)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><X size={14} /></button>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-neutral-400 text-center py-3">Click a dish below to set as parent</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Recommendations Zone */}
+                        <div>
+                          <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Recommendations ({comboRecs.length})</p>
+                          <div className={`min-h-[100px] rounded-2xl border-2 border-dashed p-3 space-y-2 transition-colors ${comboRecs.length > 0 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/10' : 'border-neutral-300 dark:border-white/15 bg-neutral-50 dark:bg-white/[0.02]'}`}>
+                            {comboRecs.length === 0 ? (
+                              <p className="text-xs text-neutral-400 text-center py-5">Click dishes below to add recommendations</p>
+                            ) : (
+                              comboRecs.map(rec => (
+                                <div key={rec.id} className="flex items-center justify-between bg-white dark:bg-white/5 rounded-xl px-3 py-2 border border-neutral-100 dark:border-white/5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                      {(rec.cover || rec.images?.[0]) ? <img src={rec.cover || rec.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={12} className="text-neutral-400" /></div>}
+                                    </div>
+                                    <span className="font-bold text-xs truncate">{rec.name}</span>
+                                  </div>
+                                  <button onClick={() => setComboRecs(prev => prev.filter(r => r.id !== rec.id))} className="p-1 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><X size={12} /></button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Save Combo Button */}
+                        <button
+                          disabled={!comboParent || comboRecs.length === 0}
+                          onClick={async () => {
+                            if (!comboParent || comboRecs.length === 0) return;
+                            await updateDish(comboParent.id, {
+                              macros: { ...(comboParent.macros || {}), comboRecommendations: comboRecs.map(r => r.id) }
+                            });
+                            showNotification(`Combo saved for "${comboParent.name}" with ${comboRecs.length} recommendations!`);
+                            setShowComboDialog(false);
+                            setComboParent(null);
+                            setComboRecs([]);
+                          }}
+                          className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          style={comboParent && comboRecs.length > 0 ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
+                        >
+                          <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Combo</span>
+                        </button>
+                      </div>
+
+                      {/* Right: Available Dishes Grid */}
+                      <div>
+                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
+                        <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                          {vendDishes.map(d => {
+                            const isParent = comboParent?.id === d.id;
+                            const isRec = comboRecs.some(r => r.id === d.id);
+                            const isUsed = isParent || isRec;
+                            return (
+                              <button
+                                key={d.id}
+                                onClick={() => {
+                                  if (isParent) { setComboParent(null); return; }
+                                  if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
+                                  if (!comboParent) { setComboParent(d); }
+                                  else { setComboRecs(prev => [...prev, d]); }
+                                }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${isParent ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700' : isRec ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'} border`}
+                              >
+                                <div className="w-9 h-9 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                  {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={14} className="text-neutral-400" /></div>}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-xs truncate">{d.name}</p>
+                                  <p className="text-[10px] text-neutral-500">${Number(d.price).toFixed(2)}</p>
+                                </div>
+                                {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
+                                {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
+                                {!isUsed && <span className="text-[10px] text-neutral-400">{!comboParent ? 'Set as parent' : '+ Add rec'}</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
