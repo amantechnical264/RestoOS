@@ -2034,7 +2034,7 @@ export default function VendorDashboardPage() {
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
                     <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Basic Info</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="col-span-2">
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Name *</label>
                         <input required type="text" value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
@@ -2042,12 +2042,6 @@ export default function VendorDashboardPage() {
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Price ($) *</label>
                         <input required type="number" step="0.01" value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})}
-                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Chef Name</label>
-                        <input type="text" value={editingDish.chef || ''} onChange={e => setEditingDish({...editingDish, chef: e.target.value})}
-                          placeholder="Chef of the House"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
                       <div>
