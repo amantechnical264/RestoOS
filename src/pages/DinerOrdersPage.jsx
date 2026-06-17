@@ -132,7 +132,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
             {isCancelled ? 'Cancelled' : 'Delivered'}
           </span>
           <span className="text-[14px] font-bold text-neutral-900 dark:text-white">
-            ${Number(order.total).toFixed(2)} &rsaquo;
+            ₹{Number(order.total).toFixed(2)} &rsaquo;
           </span>
         </div>
       </div>
@@ -265,7 +265,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
           {order.items.map((item, i) => (
             <li key={i} className="flex justify-between">
               <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty)}x {item.name}</span>
-              <span className="font-bold" style={{ color: GOLD }}>${Number(item.price).toFixed(2)}</span>
+              <span className="font-bold" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>
             </li>
           ))}
         </ul>
@@ -302,7 +302,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
       {/* Total */}
       <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}>
         <span className="text-lg font-black text-neutral-900 dark:text-white">
-          Total: <span style={{ color: GOLD }}>${Number(order.total).toFixed(2)}</span>
+          Total: <span style={{ color: GOLD }}>₹{Number(order.total).toFixed(2)}</span>
         </span>
         <span className={`px-3 py-1 rounded-lg text-xs font-bold`}
           style={order.paymentStatus === 'Paid'

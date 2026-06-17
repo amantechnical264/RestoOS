@@ -157,7 +157,7 @@ export default function Dish3DPage() {
             </div>
             <div className="shrink-0 mt-1">
               <span className="inline-block px-4 py-2 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 font-display font-black text-xl text-[#D4AF37]">
-                ${Number(dish.price).toFixed(2)}
+                ₹{Number(dish.price).toFixed(2)}
               </span>
             </div>
           </div>
@@ -307,7 +307,7 @@ export default function Dish3DPage() {
                       )}
                     </div>
                     <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{rec.name}</h4>
-                    <p className="text-accent-blue font-black text-sm">${Number(rec.price).toFixed(2)}</p>
+                    <p className="text-accent-blue font-black text-sm">₹{Number(rec.price).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -350,7 +350,7 @@ export default function Dish3DPage() {
           }`}
           style={dish.tags?.includes('sold_out') ? {} : { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 10px 40px rgba(212,175,55,0.35)' }}>
           <ShoppingCart size={19} />
-          {dish.tags?.includes('sold_out') ? 'Sold Out' : `Add to Order — $${Number(dish.price).toFixed(2)}`}
+          {dish.tags?.includes('sold_out') ? 'Sold Out' : `Add to Order — ₹${Number(dish.price).toFixed(2)}`}
         </motion.button>
       </div>
     </motion.div>

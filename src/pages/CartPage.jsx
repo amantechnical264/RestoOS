@@ -251,7 +251,7 @@ export default function CartPage() {
                         </div>
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
-                        <span className="font-black text-lg text-[#D4AF37]">${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                        <span className="font-black text-lg text-[#D4AF37]">₹{(Number(item.price) * item.quantity).toFixed(2)}</span>
                         
                         {/* Stepper */}
                         <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg overflow-hidden">
@@ -304,11 +304,11 @@ export default function CartPage() {
 
               {/* Receipt Summary */}
               <div className="mt-4 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-6 backdrop-blur-md">
-                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-5 border-b border-neutral-200 dark:border-white/10 pb-5"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>${(subtotal * taxRate).toFixed(2)}</span></div>
+                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-5 border-b border-neutral-200 dark:border-white/10 pb-5"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>₹{(subtotal * taxRate).toFixed(2)}</span></div>
                 <div className="text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
                   <span>Total</span>
-                  <span className="text-[#D4AF37] text-3xl">${total.toFixed(2)}</span>
+                  <span className="text-[#D4AF37] text-3xl">₹{total.toFixed(2)}</span>
                 </div>
               </div>
             </motion.div>
@@ -573,7 +573,7 @@ export default function CartPage() {
                 {isProcessing ? (
                   <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }} className="w-5 h-5 border-2 rounded-full border-white/30 border-t-white" /> Processing...</>
                 ) : (
-                  <>Authorize ${finalTotal.toFixed(2)}</>
+                  <>Authorize ₹{finalTotal.toFixed(2)}</>
                 )}
               </motion.button>
             )}

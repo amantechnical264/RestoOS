@@ -107,7 +107,7 @@ const PopularityRow = React.memo(({ rank, name, count, revenue, total, badge }) 
       </div>
       <div className="text-right shrink-0">
         <p className="text-sm font-black text-neutral-900 dark:text-white">{count}x</p>
-        <p className="text-[10px] font-semibold text-emerald-500">${revenue.toFixed(0)}</p>
+        <p className="text-[10px] font-semibold text-emerald-500">₹{revenue.toFixed(0)}</p>
       </div>
     </div>
   );
@@ -183,7 +183,7 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
         >
           <span className="font-semibold truncate pr-2 flex-1">{dish.name}</span>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-neutral-500 font-sans mr-2">${Number(dish.price).toFixed(2)}</span>
+            <span className="text-neutral-500 font-sans mr-2">₹{Number(dish.price).toFixed(2)}</span>
             <div className="p-1 text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 transition-colors">
                <GripVertical size={16} />
             </div>
@@ -435,6 +435,7 @@ export default function VendorDashboardPage() {
   const [showComboDialog, setShowComboDialog] = React.useState(false);
   const [comboParent, setComboParent] = React.useState(null);
   const [comboRecs, setComboRecs] = React.useState([]);
+  const [categoryToDelete, setCategoryToDelete] = React.useState(null);
 
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
@@ -910,7 +911,7 @@ export default function VendorDashboardPage() {
                             </div>
                           )}
                           <div className="flex justify-between items-center mb-3">
-                            <span className="text-xs font-black text-emerald-600">${(o.total || 0).toFixed(2)}</span>
+                            <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
                             {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                           </div>
                           <button onClick={() => updateOrderStatus(o.id, lane.action)}
@@ -929,12 +930,12 @@ export default function VendorDashboardPage() {
               <div className="w-56 shrink-0 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 p-4 flex flex-col gap-3">
                 <p className="font-display font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><CheckCircle size={14} /> Completed Today</p>
                 <p className="font-display font-black text-4xl text-emerald-600 dark:text-emerald-400">{completed.length}</p>
-                <p className="text-xs font-bold text-emerald-700/60 dark:text-emerald-500">Revenue: <span className="text-emerald-600 dark:text-emerald-400">${todayRevenue.toFixed(2)}</span></p>
+                <p className="text-xs font-bold text-emerald-700/60 dark:text-emerald-500">Revenue: <span className="text-emerald-600 dark:text-emerald-400">₹{todayRevenue.toFixed(2)}</span></p>
                 <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 space-y-1.5 max-h-48 overflow-y-auto">
                   {completed.slice(-5).reverse().map(o => (
                     <div key={o.id} className="flex justify-between text-xs text-emerald-700/70 dark:text-emerald-500">
                       <span>{getOrderNumber(o)}</span>
-                      <span className="font-bold">${(o.total||0).toFixed(2)}</span>
+                      <span className="font-bold">₹{(o.total||0).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -1013,9 +1014,9 @@ export default function VendorDashboardPage() {
 
                 {/* KPI Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <KpiCard icon={DollarSign}   label="Today's Revenue"  value={`$${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
+                  <KpiCard icon={DollarSign}   label="Today's Revenue"  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
                   <KpiCard icon={ShoppingBag}  label="Orders Completed" value={completed.length}                  color="bg-blue-500"    trend={5} />
-                  <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`$${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={-3} />
+                  <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={-3} />
                   <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={cancelRate > 10 ? 8 : -2} />
                 </div>
 
@@ -1027,7 +1028,7 @@ export default function VendorDashboardPage() {
                       <span className="text-xs font-semibold text-neutral-400">vs prev. week <span className="text-emerald-500">↑ 12%</span></span>
                     </div>
                     <MiniBarChart data={weekData} color="#3B82F6" height={100} />
-                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Today: ${todayRevenue.toFixed(2)}</div>
+                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Today: ₹{todayRevenue.toFixed(2)}</div>
                   </div>
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <h3 className="font-display font-black text-base mb-6">Order Types</h3>
@@ -1221,33 +1222,11 @@ export default function VendorDashboardPage() {
                                 <p className="text-xs text-neutral-500">{catDishes.length} dishes in this category</p>
                               </div>
                               <button
-                                onClick={async () => {
-                                  if (!confirm(`Are you sure you want to delete the category "${cat}"? This will untag all dishes currently in this category.`)) return;
-                                  
-                                  const updated = customCategories.filter(c => c !== cat);
-                                  const newCategoryOrders = { ...(metadataRecord?.macros?.categoryOrders || {}) };
-                                  delete newCategoryOrders[cat];
-
-                                  const payload = {
-                                    name: "_categories_metadata",
-                                    price: 0,
-                                    description: "Metadata for custom categories",
-                                    tags: ["_categories_metadata"],
-                                    macros: { categories: updated, categoryOrders: newCategoryOrders }
-                                  };
-
-                                  let success = false;
-                                  if (metadataRecord?.id) {
-                                    const res = await updateDish(metadataRecord.id, payload);
-                                    success = res !== null;
-                                  }
-
-                                  if (success) {
-                                    for (const dish of catDishes) {
-                                      const newTags = dish.tags.filter(t => t !== cat);
-                                      await updateDish(dish.id, { tags: newTags });
-                                    }
-                                    showNotification(`Category "${cat}" deleted.`);
+                                onClick={() => {
+                                  if (catDishes.length > 0) {
+                                    setCategoryToDelete({ name: cat, dishesCount: catDishes.length, error: true });
+                                  } else {
+                                    setCategoryToDelete({ name: cat, dishesCount: 0, error: false });
                                   }
                                 }}
                                 className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/20 transition-colors"
@@ -1327,7 +1306,7 @@ export default function VendorDashboardPage() {
                               <h3 className="font-bold text-sm leading-tight">{dish.name}</h3>
                               <p className="text-xs text-neutral-500 mt-0.5">{dish.chef || 'Chef of House'}</p>
                             </div>
-                            <span className="font-display font-black text-base text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
+                            <span className="font-display font-black text-base text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-4">
                             {dish.tags?.filter(t => t !== 'sold_out' && t !== 'hidden').slice(0,3).map(t => (
@@ -1504,7 +1483,7 @@ export default function VendorDashboardPage() {
                                 {(dish.modelUrl || dish.model_url) && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-500">3D</span>}
                               </div>
                               <div className="flex items-center gap-3 mt-0.5">
-                                <span className="font-display font-black text-sm text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
+                                <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
                                 <span className="text-[11px] text-neutral-400">{dish.chef || 'Chef of House'}</span>
                               </div>
                               {/* Category tags on this dish */}
@@ -1690,7 +1669,7 @@ export default function VendorDashboardPage() {
                                   </div>
                                   <div>
                                     <p className="font-bold text-sm">{comboParent.name}</p>
-                                    <p className="text-xs text-neutral-500">${Number(comboParent.price).toFixed(2)}</p>
+                                    <p className="text-xs text-neutral-500">₹{Number(comboParent.price).toFixed(2)}</p>
                                   </div>
                                 </div>
                                 <button onClick={() => setComboParent(null)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><X size={14} /></button>
@@ -1784,7 +1763,7 @@ export default function VendorDashboardPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-bold text-xs truncate">{d.name}</p>
-                                  <p className="text-[10px] text-neutral-500">${Number(d.price).toFixed(2)}</p>
+                                  <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(2)}</p>
                                 </div>
                                 {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
                                 {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
@@ -1883,7 +1862,7 @@ export default function VendorDashboardPage() {
 
                       <div className="grid grid-cols-2 gap-4 font-sans">
                         <div>
-                          <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Entry Price ($) (0 if free)</label>
+                          <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Entry Price (₹) (0 if free)</label>
                           <input type="number" step="0.01" value={editingEvent.price || 0} onChange={e => setEditingEvent({...editingEvent, price: e.target.value})}
                             className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
                         </div>
@@ -1981,7 +1960,7 @@ export default function VendorDashboardPage() {
                                   <div className="flex justify-between items-start">
                                     <h3 className="font-bold text-lg truncate pr-2">{event.name}</h3>
                                     {event.price > 0 ? (
-                                      <span className="text-emerald-500 font-black text-sm font-sans">${Number(event.price).toFixed(2)}</span>
+                                      <span className="text-emerald-500 font-black text-sm font-sans">₹{Number(event.price).toFixed(2)}</span>
                                     ) : (
                                       <span className="text-indigo-500 font-bold text-xs font-sans">Free</span>
                                     )}
@@ -2078,7 +2057,7 @@ export default function VendorDashboardPage() {
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Price ($) *</label>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Price (₹) *</label>
                         <input required type="number" step="0.01" value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
@@ -2774,6 +2753,109 @@ export default function VendorDashboardPage() {
                   </button>
                 </form>
               </div>
+            </motion.div>
+          )}
+
+          {/* ── CUSTOM DELETE CATEGORY CONFIRM DIALOG ── */}
+          {categoryToDelete && (
+            <motion.div
+              key="delete-category-dialog"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setCategoryToDelete(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 relative overflow-hidden text-neutral-900 dark:text-white"
+              >
+                {/* Visual Accent */}
+                <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl rounded-full pointer-events-none ${
+                  categoryToDelete.error ? 'bg-red-500/10' : 'bg-amber-500/10'
+                }`} />
+
+                {categoryToDelete.error ? (
+                  /* ERROR STATE: Dishes fall in this category */
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-950/30 text-red-500 rounded-2xl flex items-center justify-center mb-4">
+                      <AlertTriangle size={32} />
+                    </div>
+                    <h3 className="font-display font-black text-xl text-neutral-900 dark:text-white mb-2">Shift Dishes First</h3>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+                      The category <strong className="text-neutral-900 dark:text-white">"{categoryToDelete.name}"</strong> cannot be deleted because it has <strong className="text-red-500 font-extrabold">{categoryToDelete.dishesCount}</strong> assigned dish(es).
+                      <br /><br />
+                      Please edit those dishes and shift them to another category first.
+                    </p>
+                    <button
+                      onClick={() => setCategoryToDelete(null)}
+                      className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-black text-sm rounded-xl transition-all shadow-md"
+                    >
+                      Got It
+                    </button>
+                  </div>
+                ) : (
+                  /* CONFIRM STATE: Safe to delete category */
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto bg-amber-100 dark:bg-amber-950/30 text-amber-500 rounded-2xl flex items-center justify-center mb-4">
+                      <Trash2 size={32} />
+                    </div>
+                    <h3 className="font-display font-black text-xl text-neutral-900 dark:text-white mb-2">Delete Category</h3>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+                      Are you sure you want to delete the category <strong className="text-neutral-900 dark:text-white">"{categoryToDelete.name}"</strong>?
+                      <br /><br />
+                      This category will be permanently removed from your dashboard and the diner menu.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setCategoryToDelete(null)}
+                        className="py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-300 font-bold text-sm rounded-xl transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const cat = categoryToDelete.name;
+                          const updated = customCategories.filter(c => c !== cat);
+                          const newCategoryOrders = { ...(metadataRecord?.macros?.categoryOrders || {}) };
+                          delete newCategoryOrders[cat];
+
+                          const payload = {
+                            name: "_categories_metadata",
+                            price: 0,
+                            description: "Metadata for custom categories",
+                            tags: ["_categories_metadata"],
+                            macros: { categories: updated, categoryOrders: newCategoryOrders }
+                          };
+
+                          let success = false;
+                          if (metadataRecord?.id) {
+                            const res = await updateDish(metadataRecord.id, payload);
+                            success = res !== null;
+                          } else {
+                            const res = await addDish({
+                              ...payload,
+                              restId: activeRestId
+                            });
+                            success = res !== null;
+                          }
+
+                          if (success) {
+                            showNotification(`Category "${cat}" deleted.`);
+                            setCategoryToDelete(null);
+                          }
+                        }}
+                        className="py-3 bg-red-600 hover:bg-red-700 text-white font-black text-sm rounded-xl transition-all shadow-lg shadow-red-600/20"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             </motion.div>
           )}
 

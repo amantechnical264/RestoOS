@@ -233,7 +233,7 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
               <span className="flex items-center gap-0.5">⏱ {dish.prepTime}m</span>
             )}
           </div>
-          <span className="font-display font-black text-base text-[#D4AF37]">${Number(dish.price).toFixed(2)}</span>
+          <span className="font-display font-black text-base text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
         </div>
 
         {/* Blinkit-style Add / Stepper button */}
@@ -286,7 +286,7 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
         {/* Price */}
         <div className="font-display font-black text-base text-[#D4AF37] mt-0.5">
-          ${Number(dish.price).toFixed(2)}
+          ₹{Number(dish.price).toFixed(2)}
         </div>
 
         {/* Chef / Prep Details */}
@@ -804,7 +804,7 @@ export default function MenuPage() {
                     </div>
                     {event.price > 0 && (
                       <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-200 dark:border-emerald-800/30">
-                        ${Number(event.price).toFixed(2)}
+                        ₹{Number(event.price).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -1045,7 +1045,7 @@ export default function MenuPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base tabular-nums">
-                  ${cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0).toFixed(2)}
+                  ₹{cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0).toFixed(2)}
                 </span>
                 <ChevronRight size={18} strokeWidth={2.5} />
               </div>
