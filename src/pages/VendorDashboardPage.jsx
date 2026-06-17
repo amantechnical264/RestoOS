@@ -54,9 +54,10 @@ const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
 });
 
 // ─── KPI Card ─────────────────────────────────────────────────────────
-const KpiCard = React.memo(({ icon: Icon, label, value, sub, color, trend }) => (
+const KpiCard = React.memo(({ icon: Icon, label, value, sub, color, trend, onClick }) => (
   <div
-    className="rounded-3xl p-5 flex flex-col gap-3 hover:scale-[1.02] transition-transform cursor-default bg-white dark:bg-transparent"
+    onClick={onClick}
+    className={`rounded-3xl p-5 flex flex-col gap-3 transition-transform bg-white dark:bg-transparent ${onClick ? 'cursor-pointer hover:scale-[1.02] active:scale-95' : 'hover:scale-[1.02] cursor-default'}`}
     style={{ ...( document.documentElement.classList.contains('dark') ? cardStyle : cardStyleLight ) }}
   >
     <div className="flex justify-between items-start">
@@ -436,6 +437,7 @@ export default function VendorDashboardPage() {
   const [comboParent, setComboParent] = React.useState(null);
   const [comboRecs, setComboRecs] = React.useState([]);
   const [categoryToDelete, setCategoryToDelete] = React.useState(null);
+  const [customerFilter, setCustomerFilter] = React.useState('top'); // 'top', 'all', 'repeat'
 
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
@@ -2450,8 +2452,8 @@ export default function VendorDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" />
-                  <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" />
+                  <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" onClick={() => setCustomerFilter(f => f === 'all' ? 'top' : 'all')} />
+                  <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" onClick={() => setCustomerFilter(f => f === 'repeat' ? 'top' : 'repeat')} />
                   <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`$${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
                   <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
                 </div>
@@ -2459,11 +2461,13 @@ export default function VendorDashboardPage() {
                 {/* Customer list from orders */}
                 <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl overflow-hidden shadow-sm">
                   <div className="p-5 border-b border-neutral-50 dark:border-white/5 flex justify-between items-center">
-                    <h3 className="font-display font-black text-base">Top Customers (by Spend)</h3>
-                    <span className="text-xs text-neutral-400 font-bold">{customerList.length} total profiles</span>
+                    <h3 className="font-display font-black text-base">{customerFilter === 'repeat' ? 'Repeat Customers' : customerFilter === 'all' ? 'All Customers' : 'Top Customers (by Spend)'}</h3>
+                    <span className="text-xs text-neutral-400 font-bold">
+                      {customerFilter === 'repeat' ? repeatCustomers : customerFilter === 'all' ? uniqueCustomers : Math.min(15, uniqueCustomers)} shown
+                    </span>
                   </div>
                   <div className="divide-y divide-neutral-50 dark:divide-white/4">
-                    {customerList.slice(0, 15).map(c => (
+                    {(customerFilter === 'repeat' ? customerList.filter(c => c.orderCount > 1) : customerFilter === 'all' ? customerList : customerList.slice(0, 15)).map(c => (
                       <div key={c.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
                         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-[#AA8C2C] flex items-center justify-center text-white font-black text-sm shrink-0">
                           {c.name[0].toUpperCase()}
