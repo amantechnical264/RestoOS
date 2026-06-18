@@ -412,6 +412,7 @@ export default function MenuPage() {
   const [dinerPhone, setDinerPhone] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
+  const scrollDirection = useScrollDirection();
 
   // ─── PARSE QR CODE URL PARAMS ─────────────────────────────────────────────
   // Set activeRestId immediately from URL params (no need to wait for data)
