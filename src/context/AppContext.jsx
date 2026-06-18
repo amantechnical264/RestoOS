@@ -164,22 +164,23 @@ export const AppProvider = ({ children }) => {
     try { return JSON.parse(localStorage.getItem('3dish_promos') || '{}'); } catch { return {}; }
   });
 
-  const activatePromo = async (restId, promo) => {
+  const updateMarketingCampaign = async (restId, type, campaignData) => {
     setPromos(prev => {
-      const next = { ...prev, [restId]: promo };
+      const current = prev[restId] || { flash: null, happyHour: null };
+      const nextPromoState = { ...current, [type]: campaignData };
+      const next = { ...prev, [restId]: nextPromoState };
       localStorage.setItem('3dish_promos', JSON.stringify(next));
+
+      supabase
+        .from('restaurants')
+        .update({ promo: nextPromoState })
+        .eq('id', restId)
+        .then(({ error }) => {
+          if (error) console.error("Error syncing promo to Supabase:", error);
+        });
+
       return next;
     });
-
-    try {
-      const { error } = await supabase
-        .from('restaurants')
-        .update({ promo: promo })
-        .eq('id', restId);
-      if (error) console.error("Error syncing promo to Supabase:", error);
-    } catch (err) {
-      console.error(err);
-    }
   };
 
   const ordersChannelRef = useRef(null);
@@ -337,10 +338,17 @@ export const AppProvider = ({ children }) => {
         );
         if (error) { console.warn('Restaurants fetch error:', error.message); return; }
         if (data) {
-          // Extract promos and update local state
           const newPromos = {};
           data.forEach(r => {
-            newPromos[r.id] = r.promo || null;
+            if (r.promo) {
+              if (r.promo.flash !== undefined || r.promo.happyHour !== undefined) {
+                newPromos[r.id] = r.promo;
+              } else {
+                newPromos[r.id] = { flash: r.promo, happyHour: null };
+              }
+            } else {
+              newPromos[r.id] = { flash: null, happyHour: null };
+            }
           });
           setPromos(prev => {
             const merged = { ...prev, ...newPromos };
@@ -833,16 +841,40 @@ export const AppProvider = ({ children }) => {
   // Dynamically apply active promos to dishes
   const processedDishes = React.useMemo(() => {
     return dishes.map(dish => {
-      const promo = promos[dish.restId];
-      if (promo) {
-        const isExpired = promo.expires && new Date(promo.expires + 'T23:59:59') < new Date();
-        const appliesToDish = !promo.applicableDishes || promo.applicableDishes.length === 0 || promo.applicableDishes.includes(dish.id);
+      const marketing = promos[dish.restId];
+      if (!marketing) return dish;
+
+      // 1. Check Flash Promo (Overrides Happy Hour)
+      const flash = marketing.flash;
+      if (flash) {
+        const isExpired = flash.expires && new Date(flash.expires + 'T23:59:59') < new Date();
+        const appliesToDish = !flash.applicableDishes || flash.applicableDishes.length === 0 || flash.applicableDishes.includes(dish.id);
         
-        if (!isExpired && appliesToDish && promo.discount > 0 && promo.discount <= 100) {
-          const discountAmt = (dish.price * promo.discount) / 100;
+        if (!isExpired && appliesToDish && flash.discount > 0 && flash.discount <= 100) {
+          const discountAmt = (dish.price * flash.discount) / 100;
           return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt };
         }
       }
+
+      // 2. Check Happy Hour (Applies to all dishes)
+      const hh = marketing.happyHour;
+      if (hh && hh.startTime && hh.endTime && hh.discount > 0 && hh.discount <= 100) {
+        const now = new Date();
+        const current = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
+        
+        const start = hh.startTime;
+        const end = hh.endTime;
+        
+        const isActive = start <= end 
+          ? (current >= start && current <= end)
+          : (current >= start || current <= end);
+
+        if (isActive) {
+          const discountAmt = (dish.price * hh.discount) / 100;
+          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt };
+        }
+      }
+
       return dish;
     });
   }, [dishes, promos]);
@@ -858,7 +890,7 @@ export const AppProvider = ({ children }) => {
     cart, setCart,
     orders, setOrders,
     dishes: processedDishes, setDishes, addDish, updateDish,
-    promos, activatePromo,
+    promos, updateMarketingCampaign,
     notification, showNotification,
     plans, planFor, upgradePlan,
     serviceAlerts, setServiceAlerts,

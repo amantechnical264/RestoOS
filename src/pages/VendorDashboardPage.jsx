@@ -389,7 +389,7 @@ export default function VendorDashboardPage() {
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
     planFor, upgradePlan, isDataLoaded,
-    promos, activatePromo,
+    promos, updateMarketingCampaign,
   } = useAppContext();
 
   // ── Subscription helpers ────────────────────────────────────────
@@ -428,6 +428,7 @@ export default function VendorDashboardPage() {
   const [activePromo, setActivePromo] = React.useState(null);
   const [notifText, setNotifText]     = React.useState('');
   const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', expires: '', applicableDishes: [] });
+  const [happyHourForm, setHappyHourForm] = React.useState({ startTime: '17:00', endTime: '19:00', discount: 20 });
 
   const handleActivatePromo = () => {
     const disc = Number(promoForm.discount);
@@ -456,7 +457,7 @@ export default function VendorDashboardPage() {
       return;
     }
 
-    activatePromo(activeRestId, {
+    updateMarketingCampaign(activeRestId, 'flash', {
       label: promoForm.label,
       discount: disc,
       expires: promoForm.expires,
@@ -464,6 +465,27 @@ export default function VendorDashboardPage() {
     });
     
     showNotification(`Promo "${promoForm.label}" activated for ${promoForm.applicableDishes.length} dishes!`);
+    setActivePromo(null);
+  };
+
+  const handleActivateHappyHour = () => {
+    const disc = Number(happyHourForm.discount);
+    if (!happyHourForm.startTime || !happyHourForm.endTime) {
+      showNotification('Please enter both start and end times');
+      return;
+    }
+    if (isNaN(disc) || disc <= 0 || disc > 100) {
+      showNotification('Discount must be between 1% and 100%');
+      return;
+    }
+
+    updateMarketingCampaign(activeRestId, 'happyHour', {
+      startTime: happyHourForm.startTime,
+      endTime: happyHourForm.endTime,
+      discount: disc
+    });
+    
+    showNotification(`Happy Hour activated: ${happyHourForm.startTime} - ${happyHourForm.endTime} at ${disc}% off!`);
     setActivePromo(null);
   };
   const [dishVisibility, setDishVisibility] = React.useState({});
@@ -2403,7 +2425,7 @@ export default function VendorDashboardPage() {
                       if (activePromo === 'discount') {
                         setActivePromo(null);
                       } else {
-                        const existing = promos[activeRestId];
+                        const existing = promos[activeRestId]?.flash;
                         if (existing) {
                           setPromoForm({
                             label: existing.label || '',
@@ -2500,18 +2522,43 @@ export default function VendorDashboardPage() {
                   </AnimatePresence>
 
                   <PromoCard icon={Clock} title="Happy Hour" badge="High Impact" badgeColor="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                    desc="Configure time windows where selected categories (drinks, starters) get automatic discounts."
-                    onClick={() => setActivePromo(activePromo === 'happy' ? null : 'happy')} />
+                    desc="Configure time windows where the entire menu gets an automatic discount everyday."
+                    onClick={() => {
+                      if (activePromo === 'happy') {
+                        setActivePromo(null);
+                      } else {
+                        const existing = promos[activeRestId]?.happyHour;
+                        if (existing) {
+                          setHappyHourForm({
+                            startTime: existing.startTime || '17:00',
+                            endTime: existing.endTime || '19:00',
+                            discount: existing.discount || 20
+                          });
+                        } else {
+                          setHappyHourForm({ startTime: '17:00', endTime: '19:00', discount: 20 });
+                        }
+                        setActivePromo('happy');
+                      }
+                    }} />
                   <AnimatePresence>
                     {activePromo === 'happy' && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5">
                           <div className="grid grid-cols-3 gap-4">
-                            <div><label className="text-xs font-bold text-neutral-500 block mb-1.5">From</label><input type="time" defaultValue="17:00" className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" /></div>
-                            <div><label className="text-xs font-bold text-neutral-500 block mb-1.5">To</label><input type="time" defaultValue="19:00" className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" /></div>
-                            <div><label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label><input type="number" defaultValue="20" className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" /></div>
+                            <div>
+                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">From</label>
+                              <input type="time" value={happyHourForm.startTime} onChange={e => setHappyHourForm(h => ({...h, startTime: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">To</label>
+                              <input type="time" value={happyHourForm.endTime} onChange={e => setHappyHourForm(h => ({...h, endTime: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
+                              <input type="number" min="1" max="100" value={happyHourForm.discount} onChange={e => setHappyHourForm(h => ({...h, discount: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                            </div>
                           </div>
-                          <button onClick={() => { showNotification('Happy Hour configured: 5–7 PM at 20% off!'); setActivePromo(null); }}
+                          <button onClick={handleActivateHappyHour}
                             className="mt-4 w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
                             Enable Happy Hour
                           </button>
@@ -2561,18 +2608,32 @@ export default function VendorDashboardPage() {
                   <p className="text-sm text-blue-100 mb-4">Based on your current daily average, projected monthly revenue:</p>
                   <p className="font-display font-black text-5xl mb-2">${(todayRevenue * 26).toFixed(0)}</p>
                   
-                  {promos[activeRestId] && new Date(promos[activeRestId].expires + 'T23:59:59') >= new Date() ? (
+                  {promos[activeRestId]?.flash && new Date(promos[activeRestId].flash.expires + 'T23:59:59') >= new Date() && (
                     <div className="mt-4 p-3 bg-white/10 rounded-xl flex justify-between items-center">
                       <div>
-                        <span className="block text-xs text-white/60 font-bold uppercase tracking-wider mb-0.5">Active Promo</span>
-                        <span className="font-bold text-sm">{promos[activeRestId].label} — {promos[activeRestId].discount}% OFF</span>
+                        <span className="block text-xs text-white/60 font-bold uppercase tracking-wider mb-0.5">Flash Discount</span>
+                        <span className="font-bold text-sm">{promos[activeRestId].flash.label} — {promos[activeRestId].flash.discount}% OFF</span>
                       </div>
-                      <button onClick={() => activatePromo(activeRestId, null)} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+                      <button onClick={() => updateMarketingCampaign(activeRestId, 'flash', null)} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
                         Deactivate
                       </button>
                     </div>
-                  ) : (
-                    <p className="text-xs text-blue-200">Activate promos to increase this by 15-40%</p>
+                  )}
+
+                  {promos[activeRestId]?.happyHour && (
+                    <div className="mt-3 p-3 bg-amber-500/20 border border-amber-400/30 rounded-xl flex justify-between items-center">
+                      <div>
+                        <span className="block text-xs text-amber-200 font-bold uppercase tracking-wider mb-0.5">Happy Hour</span>
+                        <span className="font-bold text-sm text-amber-50">{promos[activeRestId].happyHour.startTime} - {promos[activeRestId].happyHour.endTime} — {promos[activeRestId].happyHour.discount}% OFF</span>
+                      </div>
+                      <button onClick={() => updateMarketingCampaign(activeRestId, 'happyHour', null)} className="text-xs font-bold text-amber-100 bg-amber-500/20 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg transition-colors">
+                        Deactivate
+                      </button>
+                    </div>
+                  )}
+
+                  {(!promos[activeRestId]?.flash && !promos[activeRestId]?.happyHour) && (
+                    <p className="text-xs text-blue-200 mt-4">Activate promos to increase this by 15-40%</p>
                   )}
                 </div>
               </div>
