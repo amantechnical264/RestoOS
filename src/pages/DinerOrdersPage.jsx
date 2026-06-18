@@ -60,14 +60,46 @@ function OrderTimeline({ currentStatus }) {
 // Zomato style Historical Order Card
 function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview }) {
   const isCancelled = order.status === 'Cancelled';
-  const [rating, setRating] = React.useState(0);
+
+  // ── Determine initial state from the order's existing review data ──────────
+  // 1. Prefer the review_rating that came back from Supabase (real-time update)
+  // 2. Fall back to localStorage in case the Supabase update hasn't propagated yet
+  const persistedRating = React.useMemo(() => {
+    if (order.review_rating) return order.review_rating;
+    try {
+      const local = JSON.parse(localStorage.getItem('3dish_submitted_reviews') || '{}');
+      return local[order.id] || 0;
+    } catch { return 0; }
+  }, [order.id, order.review_rating]);
+
+  const [rating, setRating] = React.useState(persistedRating);
   const [hoverRating, setHoverRating] = React.useState(0);
-  const [isSubmitted, setIsSubmitted] = React.useState(false);
+  const [isSubmitted, setIsSubmitted] = React.useState(persistedRating > 0);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Keep state in sync if the order object updates (real-time Supabase push)
+  React.useEffect(() => {
+    if (order.review_rating && order.review_rating !== rating) {
+      setRating(order.review_rating);
+      setIsSubmitted(true);
+    }
+  }, [order.review_rating]);
 
   const handleSubmitReview = async () => {
-    if (rating > 0 && !isSubmitted) {
-      await onSubmitReview(order.id, restaurant?.id, rating);
-      setIsSubmitted(true);
+    if (rating > 0 && !isSubmitted && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await onSubmitReview(order.id, restaurant?.id, rating);
+        // Persist to localStorage so the submitted state survives a refresh
+        // before the Supabase real-time update arrives
+        const key = '3dish_submitted_reviews';
+        const stored = JSON.parse(localStorage.getItem(key) || '{}');
+        stored[order.id] = rating;
+        localStorage.setItem(key, JSON.stringify(stored));
+        setIsSubmitted(true);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
   
@@ -103,13 +135,10 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
       {/* Items List */}
       <div className="p-4 space-y-3">
         {order.items.map((item, i) => {
-          // Assume veg (green) if tags includes 'veg' or not 'non-veg'. Zomato shows green square with dot inside.
           const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
-          const iconColor = isNonVeg ? '#E23744' : '#22c55e'; // Red or Green
-          
+          const iconColor = isNonVeg ? '#E23744' : '#22c55e';
           return (
             <div key={i} className="flex items-start gap-3">
-              {/* Veg/Non-veg icon indicator */}
               <div className="shrink-0 mt-1 flex items-center justify-center w-3 h-3 rounded-sm border" style={{ borderColor: iconColor }}>
                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: iconColor }} />
               </div>
@@ -176,20 +205,38 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                   animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
                   exit={{ opacity: 0, height: 0, marginTop: 0 }}
                   onClick={handleSubmitReview}
-                  className="w-full py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors"
+                  disabled={isSubmitting}
+                  className="w-full py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
                 >
-                  Submit {rating}-Star Review
+                  {isSubmitting ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting…</>
+                  ) : (
+                    `Submit ${rating}-Star Review`
+                  )}
                 </motion.button>
               )}
             </AnimatePresence>
           </div>
         ) : (
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
-              <CheckCircle2 size={18} className="fill-green-100 dark:fill-green-900" />
-              <span className="text-[14px] font-bold">Review submitted successfully</span>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
+                <CheckCircle2 size={18} className="fill-green-100 dark:fill-green-900 shrink-0" />
+                <span className="text-[14px] font-bold">Your review was submitted</span>
+              </div>
+              {/* Show the submitted star rating */}
+              <div className="flex gap-0.5 ml-7">
+                {[1,2,3,4,5].map(star => (
+                  <Star
+                    key={star}
+                    size={14}
+                    className={rating >= star ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-700'}
+                  />
+                ))}
+                <span className="text-[11px] text-neutral-400 ml-1 font-semibold">{rating}/5 stars</span>
+              </div>
             </div>
-            <button className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors">
+            <button className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors shrink-0">
               Reorder
             </button>
           </div>
@@ -198,7 +245,6 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
     </motion.div>
   );
 }
-
 // Active Order Card (Legacy UI)
 function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate, formattedTime, tableNumber, cardStyleClass, t }) {
   return (
