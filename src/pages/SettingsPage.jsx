@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     if (supabase && supabaseUser) await supabase.auth.signOut();
     setUser(null);
-    navigate('/scanner', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const inputClass = "w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-[#D4AF37]/20 text-neutral-900 dark:text-white focus:outline-none focus:ring-0";

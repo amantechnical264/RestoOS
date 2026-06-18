@@ -519,7 +519,7 @@ export default function MenuPage() {
   };
 
   useEffect(() => {
-    if (!activeRestId) navigate('/scanner', { replace: true });
+    if (!activeRestId && !searchParams.get('restId')) navigate('/', { replace: true });
   }, [activeRestId, navigate]);
 
   const restaurant = restaurants.find(r => r.id === activeRestId);
@@ -646,7 +646,7 @@ export default function MenuPage() {
 
         {/* Top Bar */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-12 z-10">
-          <button onClick={() => navigate('/scanner?rescan=true')}
+          <button onClick={() => navigate('/')}
             className="p-2.5 rounded-full bg-black/30 border border-neutral-200 dark:border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
             <QrCode size={18} className="text-neutral-900 dark:text-white/80" />
           </button>

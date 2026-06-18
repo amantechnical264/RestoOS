@@ -19,7 +19,7 @@ export default function CartPage() {
   const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
   
   useEffect(() => {
-    if (!activeRestId) navigate('/scanner', { replace: true });
+    if (!activeRestId) navigate('/', { replace: true });
   }, [activeRestId, navigate]);
 
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);

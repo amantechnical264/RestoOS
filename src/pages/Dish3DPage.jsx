@@ -15,7 +15,7 @@ export default function Dish3DPage() {
   const arContainerRef = useRef(null);
 
   useEffect(() => {
-    if (!activeRestId) navigate('/scanner', { replace: true });
+    if (!activeRestId) navigate('/', { replace: true });
   }, [activeRestId, navigate]);
 
   // Eagerly load model-viewer script for the hidden AR activator

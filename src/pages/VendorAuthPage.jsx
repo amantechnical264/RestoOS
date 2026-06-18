@@ -35,7 +35,7 @@ export default function VendorAuthPage() {
         style={{ background: 'radial-gradient(ellipse, rgba(212,175,55,0.12), transparent 70%)' }} />
 
       {/* Back button */}
-      <button onClick={() => navigate('/scanner')}
+      <button onClick={() => navigate('/')}
         className="absolute top-10 left-6 flex items-center gap-2 text-sm font-sans font-medium transition-colors"
         style={{ color: '#6B7280' }}
         onMouseEnter={e => e.target.style.color = '#D4AF37'}
