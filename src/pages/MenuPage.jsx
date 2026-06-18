@@ -399,7 +399,7 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded, promos } = useAppContext();
+  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded, promos, currentTime } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(false);
@@ -415,14 +415,13 @@ export default function MenuPage() {
   const activePromoObj = promos[activeRestId] || {};
   const activePromosList = useMemo(() => {
     const list = [];
-    if (activePromoObj.flash && new Date(activePromoObj.flash.expires + 'T23:59:59') >= new Date()) {
+    if (activePromoObj.flash && new Date(activePromoObj.flash.expires + 'T23:59:59') >= currentTime) {
       list.push({ type: 'flash', data: activePromoObj.flash });
     }
     
     const hh = activePromoObj.happyHour;
     if (hh && hh.startTime && hh.endTime) {
-      const now = new Date();
-      const current = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
+      const current = currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
       const start = hh.startTime;
       const end = hh.endTime;
       const isActive = start <= end ? (current >= start && current <= end) : (current >= start || current <= end);
@@ -432,7 +431,7 @@ export default function MenuPage() {
       }
     }
     return list;
-  }, [activePromoObj]);
+  }, [activePromoObj, currentTime]);
 
   useEffect(() => {
     if (activePromosList.length <= 1) return;

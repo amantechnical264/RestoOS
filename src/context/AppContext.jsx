@@ -159,6 +159,13 @@ export const AppProvider = ({ children }) => {
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
 
+  // Real-time clock to trigger promo expiration evaluations every minute
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   // ── Promos State ──────────────────────────────────────────────────
   const [promos, setPromos] = useState(() => {
     try { return JSON.parse(localStorage.getItem('3dish_promos') || '{}'); } catch { return {}; }
@@ -847,7 +854,7 @@ export const AppProvider = ({ children }) => {
       // 1. Check Flash Promo (Overrides Happy Hour)
       const flash = marketing.flash;
       if (flash) {
-        const isExpired = flash.expires && new Date(flash.expires + 'T23:59:59') < new Date();
+        const isExpired = flash.expires && new Date(flash.expires + 'T23:59:59') < currentTime;
         const appliesToDish = !flash.applicableDishes || flash.applicableDishes.length === 0 || flash.applicableDishes.includes(dish.id);
         
         if (!isExpired && appliesToDish && flash.discount > 0 && flash.discount <= 100) {
@@ -859,8 +866,7 @@ export const AppProvider = ({ children }) => {
       // 2. Check Happy Hour (Applies to all dishes)
       const hh = marketing.happyHour;
       if (hh && hh.startTime && hh.endTime && hh.discount > 0 && hh.discount <= 100) {
-        const now = new Date();
-        const current = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
+        const current = currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
         
         const start = hh.startTime;
         const end = hh.endTime;
@@ -877,7 +883,7 @@ export const AppProvider = ({ children }) => {
 
       return dish;
     });
-  }, [dishes, promos]);
+  }, [dishes, promos, currentTime]);
 
   const value = {
     supabaseUser,
@@ -890,7 +896,7 @@ export const AppProvider = ({ children }) => {
     cart, setCart,
     orders, setOrders,
     dishes: processedDishes, setDishes, addDish, updateDish,
-    promos, updateMarketingCampaign,
+    promos, updateMarketingCampaign, currentTime,
     notification, showNotification,
     plans, planFor, upgradePlan,
     serviceAlerts, setServiceAlerts,
