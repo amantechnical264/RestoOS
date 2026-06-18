@@ -1,12 +1,11 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppProvider, useAppContext } from './context/AppContext';
 import Notification from './components/Notification';
 import FullscreenManager from './components/FullscreenManager';
 
 // Lazy-load all pages for code-splitting (eliminates the chunk size warning)
-const ScannerPage         = React.lazy(() => import('./pages/ScannerPage'));
 const MenuPage            = React.lazy(() => import('./pages/MenuPage'));
 const Dish3DPage          = React.lazy(() => import('./pages/Dish3DPage'));
 const CartPage            = React.lazy(() => import('./pages/CartPage'));
@@ -33,8 +32,14 @@ function RootRedirect() {
   const { user, isInitializing } = useAppContext();
   if (isInitializing) return <PageLoader />;
   if (user?.role === 'vendor') return <Navigate to="/vendor" replace />;
-  // For diner or anonymous (null), go to scanner
-  return <Navigate to="/scanner" replace />;
+  // For diner or anonymous (null), go to LandingPage
+  return <Navigate to="/" replace />;
+}
+
+// Redirects legacy QR codes (which pointed to /scanner?restId=xyz) directly to the menu
+function LegacyScannerRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/menu${location.search}`} replace />;
 }
 
 function AnimatedRoutes() {
@@ -42,9 +47,11 @@ function AnimatedRoutes() {
     <AnimatePresence>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        
+        {/* Legacy QR Code Support */}
+        <Route path="/scanner" element={<LegacyScannerRedirect />} />
 
         {/* Diner Routes */}
-        <Route path="/scanner"     element={<ScannerPage />} />
         <Route path="/menu"        element={<MenuPage />} />
         <Route path="/dish/:id"    element={<Dish3DPage />} />
         <Route path="/cart"        element={<CartPage />} />

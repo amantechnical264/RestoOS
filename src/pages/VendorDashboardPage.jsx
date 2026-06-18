@@ -2875,12 +2875,12 @@ export default function VendorDashboardPage() {
                     <div key={i} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 flex flex-col items-center shadow-sm">
                       <p className="font-black text-xs text-neutral-400 mb-4 uppercase tracking-widest">Table {i + 1}</p>
                       <QRCodeSVG
-                        value={`${window.location.origin}/scanner?restId=${activeRestId}&table=${i + 1}`}
+                        value={`${window.location.origin}/menu?restId=${activeRestId}&table=${i + 1}`}
                         size={130} level="H" includeMargin={false} fgColor="#111111"
                         className="dark:hidden"
                       />
                       <QRCodeSVG
-                        value={`${window.location.origin}/scanner?restId=${activeRestId}&table=${i + 1}`}
+                        value={`${window.location.origin}/menu?restId=${activeRestId}&table=${i + 1}`}
                         size={130} level="H" includeMargin={false} fgColor="#FFFFFF"
                         bgColor="#12141D"
                         className="hidden dark:block"

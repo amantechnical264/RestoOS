@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen, Minus, Plus, ChevronRight, Clock } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
@@ -400,7 +400,8 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded, promos, currentTime } = useAppContext();
+  const [searchParams] = useSearchParams();
+  const { activeRestId, setActiveRestId, tableNumber, setTableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded, promos, currentTime } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(false);
@@ -411,6 +412,21 @@ export default function MenuPage() {
   const [dinerPhone, setDinerPhone] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
+
+  // ─── PARSE QR CODE URL PARAMS ─────────────────────────────────────────────
+  useEffect(() => {
+    const paramRestId = searchParams.get('restId');
+    const paramTableNum = searchParams.get('table');
+    
+    if (paramRestId && isDataLoaded) {
+      if (activeRestId !== paramRestId) {
+        setActiveRestId(paramRestId);
+      }
+      if (paramTableNum && tableNumber !== paramTableNum) {
+        setTableNumber(paramTableNum);
+      }
+    }
+  }, [searchParams, isDataLoaded, activeRestId, tableNumber, setActiveRestId, setTableNumber]);
 
   // Active promos for the banner
   const activePromoObj = promos[activeRestId] || {};
