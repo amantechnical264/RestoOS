@@ -399,7 +399,7 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded } = useAppContext();
+  const { activeRestId, tableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded, promos } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(false);
@@ -409,6 +409,28 @@ export default function MenuPage() {
   const [dinerName, setDinerName] = useState('');
   const [dinerPhone, setDinerPhone] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [promoIndex, setPromoIndex] = useState(0);
+
+  // Active promos for the banner
+  const activePromoObj = promos[activeRestId] || {};
+  const activePromosList = useMemo(() => {
+    const list = [];
+    if (activePromoObj.flash && new Date(activePromoObj.flash.expires + 'T23:59:59') >= new Date()) {
+      list.push({ type: 'flash', data: activePromoObj.flash });
+    }
+    if (activePromoObj.happyHour) {
+      list.push({ type: 'happyHour', data: activePromoObj.happyHour });
+    }
+    return list;
+  }, [activePromoObj]);
+
+  useEffect(() => {
+    if (activePromosList.length <= 1) return;
+    const timer = setInterval(() => {
+      setPromoIndex(prev => prev + 1);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [activePromosList.length]);
 
   // ── Subscription plan gate for this restaurant ──
   const PLANS = ['Starter', 'Pro', 'Enterprise'];
@@ -673,6 +695,54 @@ export default function MenuPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── PROMO BANNER ── */}
+      {activePromosList.length > 0 && (
+        <div className="px-4 flex-shrink-0 mt-1">
+          <div className="rounded-2xl overflow-hidden relative h-12 shadow-md border border-neutral-200 dark:border-white/10">
+            <AnimatePresence mode="wait">
+              {(() => {
+                const promo = activePromosList[promoIndex % activePromosList.length];
+                if (promo.type === 'flash') {
+                  return (
+                    <motion.div
+                      key={`flash-${promoIndex}`}
+                      initial={{ x: '100%' }}
+                      animate={{ x: 0 }}
+                      exit={{ x: '-100%' }}
+                      transition={{ type: "tween", duration: 0.5, ease: "easeInOut" }}
+                      className="absolute inset-0 flex items-center justify-between px-4 bg-gradient-to-r from-red-600 to-orange-500 text-white"
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Flame size={16} className="fill-current animate-pulse shrink-0" />
+                        <span className="font-bold text-sm truncate">{promo.data.label}</span>
+                      </div>
+                      <span className="font-black bg-white/20 px-2 py-0.5 rounded text-xs shrink-0">{promo.data.discount}% OFF</span>
+                    </motion.div>
+                  );
+                } else {
+                  return (
+                    <motion.div
+                      key={`happyHour-${promoIndex}`}
+                      initial={{ x: '100%' }}
+                      animate={{ x: 0 }}
+                      exit={{ x: '-100%' }}
+                      transition={{ type: "tween", duration: 0.5, ease: "easeInOut" }}
+                      className="absolute inset-0 flex items-center justify-between px-4 bg-gradient-to-r from-amber-400 to-yellow-500 text-neutral-900"
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Clock size={16} className="shrink-0" />
+                        <span className="font-bold text-sm truncate">Happy Hour ({promo.data.startTime} - {promo.data.endTime})</span>
+                      </div>
+                      <span className="font-black bg-black/10 px-2 py-0.5 rounded text-xs shrink-0">{promo.data.discount}% OFF</span>
+                    </motion.div>
+                  );
+                }
+              })()}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
         <div className="flex gap-2 px-5 mt-6 mb-2 overflow-x-auto no-scrollbar snap-x pb-4">
           {dynamicCategoryTabs.map((cat) => (
