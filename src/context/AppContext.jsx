@@ -449,6 +449,13 @@ export const AppProvider = ({ children }) => {
               : [...prev, mapped];
             return next;
           });
+          
+          if (r.promo !== undefined) {
+            setPromos(prev => ({
+              ...prev,
+              [r.id]: r.promo || { flash: null, happyHour: null }
+            }));
+          }
         } else if (payload.eventType === 'DELETE') {
           setRestaurants(prev => prev.filter(r => r.id !== payload.old.id));
         }
@@ -854,10 +861,9 @@ export const AppProvider = ({ children }) => {
       // 1. Check Flash Promo (Overrides Happy Hour)
       const flash = marketing.flash;
       if (flash) {
-        const isExpired = flash.expires && new Date(flash.expires + 'T23:59:59') < currentTime;
         const appliesToDish = !flash.applicableDishes || flash.applicableDishes.length === 0 || flash.applicableDishes.includes(dish.id);
         
-        if (!isExpired && appliesToDish && flash.discount > 0 && flash.discount <= 100) {
+        if (appliesToDish && flash.discount > 0 && flash.discount <= 100) {
           const discountAmt = (dish.price * flash.discount) / 100;
           return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'flash' };
         }

@@ -415,7 +415,7 @@ export default function MenuPage() {
   const activePromoObj = promos[activeRestId] || {};
   const activePromosList = useMemo(() => {
     const list = [];
-    if (activePromoObj.flash && new Date(activePromoObj.flash.expires + 'T23:59:59') >= currentTime) {
+    if (activePromoObj.flash) {
       list.push({ type: 'flash', data: activePromoObj.flash });
     }
     

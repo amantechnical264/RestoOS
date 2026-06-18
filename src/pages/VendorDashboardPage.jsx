@@ -451,7 +451,7 @@ export default function VendorDashboardPage() {
   const [tableCount, setTableCount]   = React.useState(5);
   const [activePromo, setActivePromo] = React.useState(null);
   const [notifText, setNotifText]     = React.useState('');
-  const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', expires: '', applicableDishes: [] });
+  const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
   const [happyHourForm, setHappyHourForm] = React.useState({ startTime: '17:00', endTime: '19:00', discount: 20 });
 
   const handleActivatePromo = () => {
@@ -464,31 +464,19 @@ export default function VendorDashboardPage() {
       showNotification('Discount must be between 1% and 100%');
       return;
     }
-    if (!promoForm.expires) {
-      showNotification('Please select an expiry date');
-      return;
-    }
     if (promoForm.applicableDishes.length === 0) {
       showNotification('Please select at least one dish for the promo');
-      return;
-    }
-    
-    // Check if expiry date is in the past
-    // Set to end of the day in local time
-    const expiryDate = new Date(promoForm.expires + 'T23:59:59');
-    if (expiryDate < new Date()) {
-      showNotification('Expiry date cannot be in the past');
       return;
     }
 
     updateMarketingCampaign(activeRestId, 'flash', {
       label: promoForm.label,
       discount: disc,
-      expires: promoForm.expires,
       applicableDishes: promoForm.applicableDishes
     });
     
-    showNotification(`Promo "${promoForm.label}" activated for ${promoForm.applicableDishes.length} dishes!`);
+    const existingFlash = promos[activeRestId]?.flash;
+    showNotification(`Promo "${promoForm.label}" ${existingFlash ? 'updated' : 'activated'} for ${promoForm.applicableDishes.length} dishes!`);
     setActivePromo(null);
   };
 
@@ -509,7 +497,8 @@ export default function VendorDashboardPage() {
       discount: disc
     });
     
-    showNotification(`Happy Hour activated: ${happyHourForm.startTime} - ${happyHourForm.endTime} at ${disc}% off!`);
+    const existingHappy = promos[activeRestId]?.happyHour;
+    showNotification(`Happy Hour ${existingHappy ? 'updated' : 'activated'}: ${happyHourForm.startTime} - ${happyHourForm.endTime} at ${disc}% off!`);
     setActivePromo(null);
   };
   const [dishVisibility, setDishVisibility] = React.useState({});
@@ -2591,11 +2580,10 @@ export default function VendorDashboardPage() {
                             label: existing.label || '',
                             discount: existing.discount || 15,
                             type: 'percent',
-                            expires: existing.expires || '',
                             applicableDishes: existing.applicableDishes || []
                           });
                         } else {
-                          setPromoForm({ label: '', discount: 15, type: 'percent', expires: '', applicableDishes: [] });
+                          setPromoForm({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
                         }
                         setActivePromo('discount');
                       }
@@ -2616,12 +2604,6 @@ export default function VendorDashboardPage() {
                               <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
                               <input type="number" value={promoForm.discount} min="1" max="100"
                                 onChange={e => setPromoForm(p => ({...p, discount: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">Expires</label>
-                              <input type="date" value={promoForm.expires}
-                                onChange={e => setPromoForm(p => ({...p, expires: e.target.value}))}
                                 className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
                             </div>
                             
@@ -2669,11 +2651,24 @@ export default function VendorDashboardPage() {
                               </div>
                             </div>
 
-                            <div className="col-span-2 flex items-end mt-2">
-                              <button onClick={handleActivatePromo}
-                                className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
-                                Activate Promo
-                              </button>
+                            <div className="col-span-2 mt-2">
+                              {promos[activeRestId]?.flash ? (
+                                <div className="flex gap-2">
+                                  <button onClick={handleActivatePromo}
+                                    className="flex-1 py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
+                                    Save Edits
+                                  </button>
+                                  <button onClick={() => { updateMarketingCampaign(activeRestId, 'flash', null); setActivePromo(null); showNotification('Promo stopped'); }}
+                                    className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-colors">
+                                    Stop Promo
+                                  </button>
+                                </div>
+                              ) : (
+                                <button onClick={handleActivatePromo}
+                                  className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
+                                  Activate Promo
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2718,10 +2713,25 @@ export default function VendorDashboardPage() {
                               <input type="number" min="1" max="100" value={happyHourForm.discount} onChange={e => setHappyHourForm(h => ({...h, discount: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
                             </div>
                           </div>
-                          <button onClick={handleActivateHappyHour}
-                            className="mt-4 w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
-                            Enable Happy Hour
-                          </button>
+                          <div className="mt-4">
+                            {promos[activeRestId]?.happyHour ? (
+                              <div className="flex gap-2">
+                                <button onClick={handleActivateHappyHour}
+                                  className="flex-1 py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
+                                  Save Edits
+                                </button>
+                                <button onClick={() => { updateMarketingCampaign(activeRestId, 'happyHour', null); setActivePromo(null); showNotification('Happy Hour stopped'); }}
+                                  className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-colors">
+                                  Stop Promo
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={handleActivateHappyHour}
+                                className="w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
+                                Enable Happy Hour
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     )}
