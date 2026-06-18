@@ -2399,7 +2399,25 @@ export default function VendorDashboardPage() {
                 <div className="space-y-3">
                   <PromoCard icon={Percent} title="Flash Discount" badge="Popular" badgeColor="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                     desc="Set a time-limited % discount on selected dishes or the entire menu to drive impulse purchases."
-                    onClick={() => setActivePromo(activePromo === 'discount' ? null : 'discount')} />
+                    onClick={() => {
+                      if (activePromo === 'discount') {
+                        setActivePromo(null);
+                      } else {
+                        const existing = promos[activeRestId];
+                        if (existing) {
+                          setPromoForm({
+                            label: existing.label || '',
+                            discount: existing.discount || 15,
+                            type: 'percent',
+                            expires: existing.expires || '',
+                            applicableDishes: existing.applicableDishes || []
+                          });
+                        } else {
+                          setPromoForm({ label: '', discount: 15, type: 'percent', expires: '', applicableDishes: [] });
+                        }
+                        setActivePromo('discount');
+                      }
+                    }} />
                   <AnimatePresence>
                     {activePromo === 'discount' && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
