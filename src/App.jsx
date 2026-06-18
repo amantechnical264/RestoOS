@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppProvider, useAppContext } from './context/AppContext';
 import Notification from './components/Notification';
+import FullscreenManager from './components/FullscreenManager';
 
 // Lazy-load all pages for code-splitting (eliminates the chunk size warning)
 const ScannerPage         = React.lazy(() => import('./pages/ScannerPage'));
@@ -68,6 +69,7 @@ export default function App() {
     <AppProvider>
       <BrowserRouter>
         <div className="font-sans antialiased selection:bg-blue-500/30">
+          <FullscreenManager />
           <Notification />
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
