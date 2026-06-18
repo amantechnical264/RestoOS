@@ -424,7 +424,7 @@ export default function MenuPage() {
       const current = currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
       const start = hh.startTime;
       const end = hh.endTime;
-      const isActive = start <= end ? (current >= start && current <= end) : (current >= start || current <= end);
+      const isActive = start <= end ? (current >= start && current < end) : (current >= start || current < end);
       
       if (isActive) {
         list.push({ type: 'happyHour', data: hh });

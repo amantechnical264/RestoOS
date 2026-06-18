@@ -159,11 +159,21 @@ export const AppProvider = ({ children }) => {
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
 
-  // Real-time clock to trigger promo expiration evaluations every minute
+  // Real-time clock synchronized to the exact minute boundary
   const [currentTime, setCurrentTime] = useState(() => new Date());
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
+    let timeoutId;
+    const syncClock = () => {
+      setCurrentTime(new Date());
+      const now = new Date();
+      // Calculate milliseconds until the next minute starts
+      const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+      // Add a 50ms buffer to ensure we've crossed the boundary before updating state again
+      timeoutId = setTimeout(syncClock, msUntilNextMinute + 50);
+    };
+    // Start the recursive precise timer
+    syncClock();
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // ── Promos State ──────────────────────────────────────────────────
@@ -878,8 +888,8 @@ export const AppProvider = ({ children }) => {
         const end = hh.endTime;
         
         const isActive = start <= end 
-          ? (current >= start && current <= end)
-          : (current >= start || current <= end);
+          ? (current >= start && current < end)
+          : (current >= start || current < end);
 
         if (isActive) {
           const discountAmt = (dish.price * hh.discount) / 100;
