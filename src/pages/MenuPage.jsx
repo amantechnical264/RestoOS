@@ -418,8 +418,18 @@ export default function MenuPage() {
     if (activePromoObj.flash && new Date(activePromoObj.flash.expires + 'T23:59:59') >= new Date()) {
       list.push({ type: 'flash', data: activePromoObj.flash });
     }
-    if (activePromoObj.happyHour) {
-      list.push({ type: 'happyHour', data: activePromoObj.happyHour });
+    
+    const hh = activePromoObj.happyHour;
+    if (hh && hh.startTime && hh.endTime) {
+      const now = new Date();
+      const current = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
+      const start = hh.startTime;
+      const end = hh.endTime;
+      const isActive = start <= end ? (current >= start && current <= end) : (current >= start || current <= end);
+      
+      if (isActive) {
+        list.push({ type: 'happyHour', data: hh });
+      }
     }
     return list;
   }, [activePromoObj]);
