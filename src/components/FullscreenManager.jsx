@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 export default function FullscreenManager() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasDismissed, setHasDismissed] = useState(false);
+  const scrollDirection = useScrollDirection();
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -72,13 +74,13 @@ export default function FullscreenManager() {
 
   return (
     <AnimatePresence>
-      {isFullscreen && (
+      {isFullscreen && scrollDirection === 'up' && (
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           onClick={exitFullscreen}
-          className="fixed top-4 left-4 z-[99999] p-3 rounded-full bg-black/50 backdrop-blur-xl border border-white/10 text-white shadow-2xl hover:bg-black/70 transition-colors"
+          className="fixed top-4 left-4 z-[99999] p-3 rounded-full bg-white dark:bg-black backdrop-blur-xl border border-black/10 dark:border-white/10 text-[#D4AF37] shadow-2xl hover:scale-105 transition-all"
           aria-label="Exit Fullscreen"
         >
           <ArrowLeft size={24} />

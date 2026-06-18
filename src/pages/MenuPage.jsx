@@ -7,6 +7,7 @@ import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
 import AIWaiter from '../components/AIWaiter';
 import { MenuPageSkeleton } from '../components/Skeleton';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 // ─── Optimized Image with shimmer → fade-in ──────────────────────────────────
 const OptimizedImage = ({ src, alt, className = '', eager = false, sizes }) => {
@@ -950,42 +951,51 @@ export default function MenuPage() {
         </div>
 
       {/* ── SERVICE HUB FAB ── */}
-      <div className="fixed bottom-24 right-5 z-50 flex flex-col items-end">
-        <AnimatePresence>
-          {serviceHubOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className="flex flex-col gap-3 mb-4 items-end"
+      <AnimatePresence>
+        {scrollDirection === 'up' && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-24 right-5 z-50 flex flex-col items-end"
+          >
+            <AnimatePresence>
+              {serviceHubOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                  className="flex flex-col gap-3 mb-4 items-end"
+                >
+                  <button id="service-btn-water" onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
+                    <span className="text-sm font-bold">Water</span>
+                    <Droplets size={16} className="text-blue-400" />
+                  </button>
+                  <button id="service-btn-bill" onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
+                    <span className="text-sm font-bold">Bill</span>
+                    <Receipt size={16} className="text-emerald-400" />
+                  </button>
+                  <button id="service-btn-waiter" onClick={() => requestService('Waiter')} className="flex items-center gap-3 bg-[#D4AF37]/90 backdrop-blur-xl border border-[#D4AF37]/50 px-4 py-2.5 rounded-2xl text-black shadow-xl hover:bg-[#D4AF37]">
+                    <span className="text-sm font-bold">Call Waiter</span>
+                    <BellRing size={16} className="text-black" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button
+              id="service-fab"
+              onClick={() => setServiceHubOpen(!serviceHubOpen)}
+              className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border ${
+                serviceHubOpen 
+                  ? 'bg-neutral-50 dark:bg-[#0a0a0a] border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white' 
+                  : 'bg-gradient-to-tr from-[#D4AF37] to-amber-300 border-amber-300/50 text-black'
+              }`}
             >
-              <button id="service-btn-water" onClick={() => requestService('Water Refill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
-                <span className="text-sm font-bold">Water</span>
-                <Droplets size={16} className="text-blue-400" />
-              </button>
-              <button id="service-btn-bill" onClick={() => requestService('Bill')} className="flex items-center gap-3 bg-neutral-50 dark:bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-white/10 px-4 py-2.5 rounded-2xl text-neutral-900 dark:text-white shadow-xl hover:bg-white/10">
-                <span className="text-sm font-bold">Bill</span>
-                <Receipt size={16} className="text-emerald-400" />
-              </button>
-              <button id="service-btn-waiter" onClick={() => requestService('Waiter')} className="flex items-center gap-3 bg-[#D4AF37]/90 backdrop-blur-xl border border-[#D4AF37]/50 px-4 py-2.5 rounded-2xl text-black shadow-xl hover:bg-[#D4AF37]">
-                <span className="text-sm font-bold">Call Waiter</span>
-                <BellRing size={16} className="text-black" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <button
-          id="service-fab"
-          onClick={() => setServiceHubOpen(!serviceHubOpen)}
-          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border ${
-            serviceHubOpen 
-              ? 'bg-neutral-50 dark:bg-[#0a0a0a] border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white' 
-              : 'bg-gradient-to-tr from-[#D4AF37] to-amber-300 border-amber-300/50 text-black'
-          }`}
-        >
-          {serviceHubOpen ? <X size={24} /> : <BellRing size={24} />}
-        </button>
-      </div>
+              {serviceHubOpen ? <X size={24} /> : <BellRing size={24} />}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showOnboarding && (
