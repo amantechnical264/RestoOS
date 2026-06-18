@@ -626,13 +626,6 @@ export default function MenuPage() {
 
         {/* Restaurant Info */}
         <div className="absolute bottom-5 left-5 right-5 z-10">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="flex items-center gap-2 mb-2">
-            <Star size={10} className="text-[#D4AF37] fill-[#D4AF37]" />
-            <span className="text-[10px] font-bold tracking-[0.25em] text-[#D4AF37] uppercase">
-              {restaurant?.cuisine || 'Signature Menu'} · {restaurant?.city || 'Est. 2024'}
-            </span>
-          </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
             className="font-display font-black text-4xl text-neutral-900 dark:text-white leading-tight tracking-tight mb-3">
             {restaurant?.name || 'Restaurant'}
@@ -643,10 +636,6 @@ export default function MenuPage() {
               TABLE {tableNumber || '12'}
             </span>
             <span className="text-xs text-neutral-900 dark:text-white/50">{allDishes.length} dishes available</span>
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              AR Active
-            </span>
           </motion.div>
         </div>
       </div>

@@ -54,8 +54,7 @@ export default function BottomNav() {
                     layoutId="nav-glow"
                     className="absolute -inset-3 rounded-2xl"
                     style={{
-                      background: 'rgba(212,175,55,0.1)',
-                      border: '1px solid rgba(212,175,55,0.35)',
+                      background: 'rgba(212,175,55,0.15)',
                       boxShadow: '0 0 20px rgba(212,175,55,0.2)',
                     }}
                     transition={{ type: 'spring', bounce: 0.25, duration: 0.4 }}
