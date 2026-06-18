@@ -692,33 +692,62 @@ export default function VendorDashboardPage() {
   const avgOrderValue = React.useMemo(() => rangedCompleted.length > 0 ? todayRevenue / rangedCompleted.length : 0, [rangedCompleted, todayRevenue]);
   const cancelRate = React.useMemo(() => rangedAllOrders.length > 0 ? Math.round((rangedAllOrders.filter(o => o.status === 'Cancelled').length / rangedAllOrders.length) * 100) : 0, [rangedAllOrders]);
 
-  // Previous day's metrics for comparison
-  const prevDayMetrics = React.useMemo(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toLocaleDateString('en-CA');
-
+  // Previous period's metrics for comparison (adapts to selected range)
+  const prevPeriodMetrics = React.useMemo(() => {
+    const now = new Date();
+    
+    if (analyticsRange === 'Today') {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+  
+      const prevCompleted = restOrders.filter(o => {
+        if (o.status !== 'Completed' || !o.timestamp) return false;
+        return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
+      });
+  
+      const prevAll = restOrders.filter(o => {
+        if (!o.timestamp) return false;
+        return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
+      });
+  
+      const prevRevenue = prevCompleted.reduce((s, o) => s + (o.total || 0), 0);
+      const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
+      const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
+  
+      return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
+    }
+    
+    // For Week and Month
+    const prevStart = new Date(now);
+    const prevEnd = new Date(now);
+    
+    if (analyticsRange === 'Week') {
+      prevStart.setDate(now.getDate() - 14);
+      prevEnd.setDate(now.getDate() - 7);
+    } else { // Month
+      prevStart.setDate(now.getDate() - 60);
+      prevEnd.setDate(now.getDate() - 30);
+    }
+    
     const prevCompleted = restOrders.filter(o => {
       if (o.status !== 'Completed' || !o.timestamp) return false;
-      return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
+      const t = new Date(o.timestamp);
+      return t >= prevStart && t < prevEnd;
     });
-
+    
     const prevAll = restOrders.filter(o => {
       if (!o.timestamp) return false;
-      return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
+      const t = new Date(o.timestamp);
+      return t >= prevStart && t < prevEnd;
     });
-
+    
     const prevRevenue = prevCompleted.reduce((s, o) => s + (o.total || 0), 0);
     const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
     const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
-
-    return {
-      revenue: prevRevenue,
-      orders: prevCompleted.length,
-      avgOrder: prevAvg,
-      cancelRate: prevCancelRate
-    };
-  }, [restOrders]);
+    
+    return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
+  }, [restOrders, analyticsRange]);
 
   // Helper: compute % change (capped at ±999 to avoid Infinity)
   const pctChange = (current, previous) => {
@@ -726,10 +755,10 @@ export default function VendorDashboardPage() {
     return Math.round(((current - previous) / previous) * 100);
   };
 
-  const trendRevenue = pctChange(todayRevenue, prevDayMetrics.revenue);
-  const trendOrders = pctChange(rangedCompleted.length, prevDayMetrics.orders);
-  const trendAvg = pctChange(avgOrderValue, prevDayMetrics.avgOrder);
-  const trendCancel = pctChange(cancelRate, prevDayMetrics.cancelRate);
+  const trendRevenue = pctChange(todayRevenue, prevPeriodMetrics.revenue);
+  const trendOrders = pctChange(rangedCompleted.length, prevPeriodMetrics.orders);
+  const trendAvg = pctChange(avgOrderValue, prevPeriodMetrics.avgOrder);
+  const trendCancel = pctChange(cancelRate, prevPeriodMetrics.cancelRate);
 
   // Dish order counts
   const dishRanking = React.useMemo(() => {
@@ -1232,7 +1261,9 @@ export default function VendorDashboardPage() {
                   <div className="md:col-span-2 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === 'Week' ? '7 Days' : '30 Days'}</h3>
-                      <span className="text-xs font-semibold text-neutral-400">vs prev. week <span className="text-emerald-500">↑ 12%</span></span>
+                      <span className="text-xs font-semibold text-neutral-400">
+                        vs prev. {analyticsRange === 'Today' ? 'day' : analyticsRange === 'Week' ? 'week' : 'month'} <span className={`${trendRevenue >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{trendRevenue >= 0 ? '↑' : '↓'} {Math.abs(trendRevenue)}%</span>
+                      </span>
                     </div>
                     <MiniBarChart data={weekData} color="#3B82F6" height={100} />
                     <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(2)}</div>
