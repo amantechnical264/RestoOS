@@ -268,17 +268,6 @@ export default function CartPage() {
                         </div>
                       </div>
                     </div>
-                    
-                    <input 
-                      type="text" 
-                      placeholder="Add note (e.g. no onions)" 
-                      value={item.specialInstructions || ''}
-                      onChange={(e) => {
-                        const newCart = cart.map(c => c.id === item.id ? {...c, specialInstructions: e.target.value} : c);
-                        setCart(newCart);
-                      }}
-                      className="w-full text-xs bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 focus:outline-none focus:border-[#D4AF37] transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                    />
                   </div>
                 </motion.div>
               ))}
@@ -539,7 +528,7 @@ export default function CartPage() {
 
       {/* Floating Action Button Footer */}
       {step !== 'auth' && (
-        <div className="fixed bottom-0 left-0 w-full p-6 pt-10 pb-8 z-30 pointer-events-none"
+        <div className="fixed bottom-0 left-0 w-full p-6 pt-10 pb-24 z-30 pointer-events-none"
           style={{ background: 'linear-gradient(to top, rgba(9,10,15,1) 30%, rgba(9,10,15,0.8) 70%, transparent 100%)' }}>
           
           <div className="pointer-events-auto flex flex-col gap-3">
