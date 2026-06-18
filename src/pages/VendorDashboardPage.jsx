@@ -818,6 +818,8 @@ export default function VendorDashboardPage() {
 
       // Create a unique key for grouping. Prefer phone or user_id, fallback to name or generic ID.
       const key = cPhone || (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || cName || 'anonymous_' + o.id;
+      const orderDate = new Date(o.timestamp);
+
       if (!map[key]) {
         let displayName = 'Guest Diner';
         if (cName) {
@@ -836,13 +838,21 @@ export default function VendorDashboardPage() {
           totalSpend: 0,
           orderCount: 0,
           lastOrder: o.timestamp,
+          latestBill: Number(o.total || 0),
+          latestDishes: (o.items || []).map(i => i.name).join(', '),
           orderType: oType || 'dine_in'
         };
       }
+      
       map[key].totalSpend += Number(o.total || 0);
       map[key].orderCount += 1;
-      if (new Date(o.timestamp) > new Date(map[key].lastOrder)) {
+      
+      // Update latest order details if this order is newer than the stored one
+      if (orderDate > new Date(map[key].lastOrder)) {
         map[key].lastOrder = o.timestamp;
+        map[key].latestBill = Number(o.total || 0);
+        map[key].latestDishes = (o.items || []).map(i => i.name).join(', ');
+        map[key].orderType = oType || 'dine_in';
       }
     });
 
