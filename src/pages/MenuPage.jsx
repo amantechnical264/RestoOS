@@ -153,7 +153,9 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
   const hasModel = !!(dish.modelUrl || dish.model_url);
   const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
   const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
-  const promoBorder = hasPromo ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'border-neutral-200 dark:border-white/5';
+  const promoBorder = !hasPromo ? 'border-neutral-200 dark:border-white/5' 
+    : dish.promoType === 'flash' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
+    : 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
 
   return (
     <motion.div
@@ -211,7 +213,7 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
 
         {/* Promo Badge */}
         {hasPromo && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1.5 rounded-xl bg-amber-500 text-white text-[10px] font-black tracking-wider shadow-lg z-10 animate-pulse border border-amber-400">
+          <div className={`absolute top-3 right-3 flex items-center gap-1 px-2 py-1.5 rounded-xl text-white text-[10px] font-black tracking-wider shadow-lg z-10 animate-pulse border ${dish.promoType === 'flash' ? 'bg-red-500 border-red-400' : 'bg-emerald-500 border-emerald-400'}`}>
             <Flame size={12} className="fill-white" /> {promoDiscount}% OFF
           </div>
         )}
@@ -283,9 +285,13 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
   const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
   const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
+  
+  const rowStyle = !hasPromo ? 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'
+    : dish.promoType === 'flash' ? 'bg-red-50/50 dark:bg-red-900/10 border border-red-200/50 dark:border-red-500/20 shadow-sm'
+    : 'bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200/50 dark:border-emerald-500/20 shadow-sm';
 
   return (
-    <div className={`flex justify-between items-start gap-4 cursor-pointer group transition-all p-3 -mx-3 rounded-2xl ${hasPromo ? 'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-500/20 shadow-sm' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`} onClick={() => onDishClick(dish.id)}>
+    <div className={`flex justify-between items-start gap-4 cursor-pointer group transition-all p-3 -mx-3 rounded-2xl ${rowStyle}`} onClick={() => onDishClick(dish.id)}>
       {/* Left Details Panel */}
       <div className="flex-1 min-w-0 flex flex-col gap-1.5 text-left">
         {/* Veg / Non-veg Indicator */}
@@ -299,7 +305,7 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
             </span>
           )}
           {hasPromo && (
-            <span className="px-2 py-0.5 rounded flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-white border border-amber-400">
+            <span className={`px-2 py-0.5 rounded flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-white border ${dish.promoType === 'flash' ? 'bg-red-500 border-red-400' : 'bg-emerald-500 border-emerald-400'}`}>
               <Flame size={10} className="fill-white" /> {promoDiscount}% OFF
             </span>
           )}

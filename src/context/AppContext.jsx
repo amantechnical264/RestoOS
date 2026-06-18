@@ -852,7 +852,7 @@ export const AppProvider = ({ children }) => {
         
         if (!isExpired && appliesToDish && flash.discount > 0 && flash.discount <= 100) {
           const discountAmt = (dish.price * flash.discount) / 100;
-          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt };
+          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'flash' };
         }
       }
 
@@ -871,7 +871,7 @@ export const AppProvider = ({ children }) => {
 
         if (isActive) {
           const discountAmt = (dish.price * hh.discount) / 100;
-          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt };
+          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'happyHour' };
         }
       }
 
