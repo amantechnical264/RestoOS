@@ -2575,36 +2575,7 @@ export default function VendorDashboardPage() {
                     )}
                   </AnimatePresence>
 
-                  <PromoCard icon={Bell} title="Push Notification" desc="Send a custom message to all recent customers — announce a new dish, daily special, or invite them back."
-                    onClick={() => setActivePromo(activePromo === 'notif' ? null : 'notif')} />
-                  <AnimatePresence>
-                    {activePromo === 'notif' && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-3">
-                          <textarea value={notifText} onChange={e => setNotifText(e.target.value)} rows={3}
-                            placeholder="🍽 Tonight's special: Truffle Risotto — only 8 seats left!"
-                            className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white resize-none" />
-                          <div className="flex gap-3">
-                            <div className="flex-1 py-3 px-4 bg-neutral-50 dark:bg-[#0d0d10] rounded-xl text-xs text-neutral-500 border border-neutral-100 dark:border-white/8">
-                              📣 Will reach ~{uniqueCustomers} recent customers
-                            </div>
-                            <button onClick={() => { showNotification(`Notification sent to ${uniqueCustomers} customers!`); setNotifText(''); setActivePromo(null); }}
-                              className="px-5 py-3 rounded-xl bg-blue-500 text-white text-sm font-black hover:bg-blue-600 transition-colors">
-                              Send Now
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
-                  <PromoCard icon={Gift} title="Loyalty Rewards" badge="Coming Soon" badgeColor="bg-neutral-100 dark:bg-white/8 text-neutral-500"
-                    desc="Set up a stamp-card system where customers earn points and redeem rewards automatically."
-                    onClick={() => showNotification('Loyalty rewards launching soon!')} />
-
-                  <PromoCard icon={Target} title="Smart Upsell Rules" badge="AI" badgeColor="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-                    desc="Automatically suggest high-margin add-ons when customers add specific dishes to their cart."
-                    onClick={() => showNotification('AI upsell rules coming soon!')} />
                 </div>
 
                 {/* Revenue Forecast */}
