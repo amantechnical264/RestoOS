@@ -164,12 +164,22 @@ export const AppProvider = ({ children }) => {
     try { return JSON.parse(localStorage.getItem('3dish_promos') || '{}'); } catch { return {}; }
   });
 
-  const activatePromo = (restId, promo) => {
+  const activatePromo = async (restId, promo) => {
     setPromos(prev => {
       const next = { ...prev, [restId]: promo };
       localStorage.setItem('3dish_promos', JSON.stringify(next));
       return next;
     });
+
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ promo: promo })
+        .eq('id', restId);
+      if (error) console.error("Error syncing promo to Supabase:", error);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const ordersChannelRef = useRef(null);
@@ -323,10 +333,21 @@ export const AppProvider = ({ children }) => {
     const fetchRestaurants = async () => {
       try {
         const { data, error } = await withTimeout(
-          supabase.from('restaurants').select('id, vendor_id, name, cover, tax_rate, accept_cash, created_at')
+          supabase.from('restaurants').select('id, vendor_id, name, cover, tax_rate, accept_cash, promo, created_at')
         );
         if (error) { console.warn('Restaurants fetch error:', error.message); return; }
         if (data) {
+          // Extract promos and update local state
+          const newPromos = {};
+          data.forEach(r => {
+            newPromos[r.id] = r.promo || null;
+          });
+          setPromos(prev => {
+            const merged = { ...prev, ...newPromos };
+            try { localStorage.setItem('3dish_promos', JSON.stringify(merged)); } catch {}
+            return merged;
+          });
+
           setRestaurants(prev => {
             const mapped = data.map(r => ({
               ...r,
