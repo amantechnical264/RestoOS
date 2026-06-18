@@ -18,6 +18,43 @@ const SettingsPage        = React.lazy(() => import('./pages/SettingsPage'));
 const CustomerProfilePage = React.lazy(() => import('./pages/CustomerProfilePage'));
 const LandingPage         = React.lazy(() => import('./pages/LandingPage'));
 
+// Global Error Boundary to catch PWA stale-cache chunk loading errors
+class GlobalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Global error caught:", error, errorInfo);
+    // If it's a chunk load error (from outdated PWA cache), force a hard reload
+    if (error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to fetch dynamically imported module')) {
+      window.location.reload(true);
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h2 className="text-xl font-bold dark:text-white mb-2">Update Available</h2>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-xs">
+            We've released a new version of the app. Refreshing your session to get the latest features.
+          </p>
+          <button onClick={() => window.location.reload(true)} className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-full">
+            Refresh Now
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Full-screen loading shimmer shown while a lazy chunk loads
 function PageLoader() {
   return (
@@ -78,9 +115,11 @@ export default function App() {
         <div className="font-sans antialiased selection:bg-blue-500/30">
           <FullscreenManager />
           <Notification />
-          <Suspense fallback={<PageLoader />}>
-            <AnimatedRoutes />
-          </Suspense>
+          <GlobalErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <AnimatedRoutes />
+            </Suspense>
+          </GlobalErrorBoundary>
         </div>
       </BrowserRouter>
     </AppProvider>
