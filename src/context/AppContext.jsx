@@ -159,6 +159,19 @@ export const AppProvider = ({ children }) => {
   const [serviceAlerts, setServiceAlerts] = useState([]);
   const [notification, setNotification] = useState(null);
 
+  // ── Promos State ──────────────────────────────────────────────────
+  const [promos, setPromos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('3dish_promos') || '{}'); } catch { return {}; }
+  });
+
+  const activatePromo = (restId, promo) => {
+    setPromos(prev => {
+      const next = { ...prev, [restId]: promo };
+      localStorage.setItem('3dish_promos', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const ordersChannelRef = useRef(null);
 
   // ── Subscription Plan State ────────────────────────────────────────
@@ -796,6 +809,23 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Dynamically apply active promos to dishes
+  const processedDishes = React.useMemo(() => {
+    return dishes.map(dish => {
+      const promo = promos[dish.restId];
+      if (promo) {
+        const isExpired = promo.expires && new Date(promo.expires + 'T23:59:59') < new Date();
+        const appliesToDish = !promo.applicableDishes || promo.applicableDishes.length === 0 || promo.applicableDishes.includes(dish.id);
+        
+        if (!isExpired && appliesToDish && promo.discount > 0 && promo.discount <= 100) {
+          const discountAmt = (dish.price * promo.discount) / 100;
+          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt };
+        }
+      }
+      return dish;
+    });
+  }, [dishes, promos]);
+
   const value = {
     supabaseUser,
     isInitializing,
@@ -806,7 +836,8 @@ export const AppProvider = ({ children }) => {
     restaurants, setRestaurants, addRestaurant, updateRestaurant,
     cart, setCart,
     orders, setOrders,
-    dishes, setDishes, addDish, updateDish,
+    dishes: processedDishes, setDishes, addDish, updateDish,
+    promos, activatePromo,
     notification, showNotification,
     plans, planFor, upgradePlan,
     serviceAlerts, setServiceAlerts,

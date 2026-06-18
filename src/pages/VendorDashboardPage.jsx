@@ -389,6 +389,7 @@ export default function VendorDashboardPage() {
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
     planFor, upgradePlan, isDataLoaded,
+    promos, activatePromo,
   } = useAppContext();
 
   // ── Subscription helpers ────────────────────────────────────────
@@ -426,7 +427,45 @@ export default function VendorDashboardPage() {
   const [tableCount, setTableCount]   = React.useState(5);
   const [activePromo, setActivePromo] = React.useState(null);
   const [notifText, setNotifText]     = React.useState('');
-  const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', expires: '' });
+  const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', expires: '', applicableDishes: [] });
+
+  const handleActivatePromo = () => {
+    const disc = Number(promoForm.discount);
+    if (!promoForm.label.trim()) {
+      showNotification('Please enter a promo label');
+      return;
+    }
+    if (isNaN(disc) || disc <= 0 || disc > 100) {
+      showNotification('Discount must be between 1% and 100%');
+      return;
+    }
+    if (!promoForm.expires) {
+      showNotification('Please select an expiry date');
+      return;
+    }
+    if (promoForm.applicableDishes.length === 0) {
+      showNotification('Please select at least one dish for the promo');
+      return;
+    }
+    
+    // Check if expiry date is in the past
+    // Set to end of the day in local time
+    const expiryDate = new Date(promoForm.expires + 'T23:59:59');
+    if (expiryDate < new Date()) {
+      showNotification('Expiry date cannot be in the past');
+      return;
+    }
+
+    activatePromo(activeRestId, {
+      label: promoForm.label,
+      discount: disc,
+      expires: promoForm.expires,
+      applicableDishes: promoForm.applicableDishes
+    });
+    
+    showNotification(`Promo "${promoForm.label}" activated for ${promoForm.applicableDishes.length} dishes!`);
+    setActivePromo(null);
+  };
   const [dishVisibility, setDishVisibility] = React.useState({});
   const [soldOutDishes, setSoldOutDishes]   = React.useState({});
   const [analyticsRange, setAnalyticsRange] = React.useState('7d');
@@ -2375,7 +2414,7 @@ export default function VendorDashboardPage() {
                             </div>
                             <div>
                               <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
-                              <input type="number" value={promoForm.discount} min="1" max="70"
+                              <input type="number" value={promoForm.discount} min="1" max="100"
                                 onChange={e => setPromoForm(p => ({...p, discount: e.target.value}))}
                                 className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
                             </div>
@@ -2385,8 +2424,53 @@ export default function VendorDashboardPage() {
                                 onChange={e => setPromoForm(p => ({...p, expires: e.target.value}))}
                                 className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
                             </div>
-                            <div className="flex items-end">
-                              <button onClick={() => { showNotification(`Promo "${promoForm.label}" activated — ${promoForm.discount}% off!`); setActivePromo(null); }}
+                            
+                            <div className="col-span-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs font-bold text-neutral-500 block">Applicable Dishes</label>
+                                <button 
+                                  onClick={() => {
+                                    const vendorDishes = dishes.filter(d => d.restId === activeRestId);
+                                    if (promoForm.applicableDishes.length === vendorDishes.length) {
+                                      setPromoForm(p => ({...p, applicableDishes: []}));
+                                    } else {
+                                      setPromoForm(p => ({...p, applicableDishes: vendorDishes.map(d => d.id)}));
+                                    }
+                                  }}
+                                  className="text-[10px] font-bold text-[#D4AF37] hover:underline"
+                                >
+                                  {promoForm.applicableDishes.length === dishes.filter(d => d.restId === activeRestId).length ? 'Deselect All' : 'Select All'}
+                                </button>
+                              </div>
+                              <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
+                                {dishes.filter(d => d.restId === activeRestId).map(dish => (
+                                  <label key={dish.id} className="flex items-center gap-2 cursor-pointer">
+                                    <input 
+                                      type="checkbox" 
+                                      checked={promoForm.applicableDishes.includes(dish.id)}
+                                      onChange={(e) => {
+                                        setPromoForm(p => {
+                                          const checked = e.target.checked;
+                                          const newDishes = checked 
+                                            ? [...p.applicableDishes, dish.id]
+                                            : p.applicableDishes.filter(id => id !== dish.id);
+                                          return { ...p, applicableDishes: newDishes };
+                                        });
+                                      }}
+                                      className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm dark:text-neutral-200">{dish.name}</span>
+                                    <span className="text-xs text-neutral-500 ml-auto">₹{dish.originalPrice || dish.price}</span>
+                                  </label>
+                                ))}
+                                {dishes.filter(d => d.restId === activeRestId).length === 0 && (
+                                  <div className="text-xs text-neutral-500 text-center py-2">No dishes available. Add dishes first.</div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="col-span-2 flex items-end mt-2">
+                              <button onClick={handleActivatePromo}
                                 className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
                                 Activate Promo
                               </button>
@@ -2458,7 +2542,20 @@ export default function VendorDashboardPage() {
                   </div>
                   <p className="text-sm text-blue-100 mb-4">Based on your current daily average, projected monthly revenue:</p>
                   <p className="font-display font-black text-5xl mb-2">${(todayRevenue * 26).toFixed(0)}</p>
-                  <p className="text-xs text-blue-200">Activate promos to increase this by 15-40%</p>
+                  
+                  {promos[activeRestId] && new Date(promos[activeRestId].expires + 'T23:59:59') >= new Date() ? (
+                    <div className="mt-4 p-3 bg-white/10 rounded-xl flex justify-between items-center">
+                      <div>
+                        <span className="block text-xs text-white/60 font-bold uppercase tracking-wider mb-0.5">Active Promo</span>
+                        <span className="font-bold text-sm">{promos[activeRestId].label} — {promos[activeRestId].discount}% OFF</span>
+                      </div>
+                      <button onClick={() => activatePromo(activeRestId, null)} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+                        Deactivate
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-blue-200">Activate promos to increase this by 15-40%</p>
+                  )}
                 </div>
               </div>
               )}

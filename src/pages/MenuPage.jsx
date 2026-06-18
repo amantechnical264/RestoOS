@@ -151,6 +151,9 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
   const hasModel = !!(dish.modelUrl || dish.model_url);
+  const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
+  const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
+  const promoBorder = hasPromo ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'border-neutral-200 dark:border-white/5';
 
   return (
     <motion.div
@@ -159,7 +162,7 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className="relative flex flex-col rounded-[1.75rem] overflow-hidden bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5 shadow-xl group cursor-pointer"
+      className={`relative flex flex-col rounded-[1.75rem] overflow-hidden bg-neutral-50 dark:bg-[#0a0a0a] border shadow-xl group cursor-pointer transition-all ${promoBorder}`}
       onClick={() => onDishClick(dish.id)}
     >
       {/* Food Photo */}
@@ -196,14 +199,21 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
           </div>
         )}
 
-        {/* AR expand icon — top right */}
+        {/* AR expand icon — top right (pushed left if promo exists) */}
         {hasModel && (
           <button
             onClick={e => { e.stopPropagation(); onARClick(dish.id); }}
-            className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-black/40 border border-neutral-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"
+            className={`absolute top-3 ${hasPromo ? 'right-16' : 'right-3'} w-8 h-8 rounded-xl bg-black/40 border border-neutral-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all z-10`}
           >
             <Maximize2 size={14} className="text-neutral-900 dark:text-white" />
           </button>
+        )}
+
+        {/* Promo Badge */}
+        {hasPromo && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1.5 rounded-xl bg-amber-500 text-white text-[10px] font-black tracking-wider shadow-lg z-10 animate-pulse border border-amber-400">
+            <Flame size={12} className="fill-white" /> {promoDiscount}% OFF
+          </div>
         )}
 
         {/* Favorite */}
@@ -234,7 +244,14 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
               <span className="flex items-center gap-0.5">⏱ {dish.prepTime}m</span>
             )}
           </div>
-          <span className="font-display font-black text-base text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
+          <span className="font-display font-black text-base text-[#D4AF37] flex items-center gap-1.5">
+            {dish.originalPrice && dish.originalPrice > dish.price && (
+              <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
+                ₹{Number(dish.originalPrice).toFixed(2)}
+              </span>
+            )}
+            ₹{Number(dish.price).toFixed(2)}
+          </span>
         </div>
 
         {/* Blinkit-style Add / Stepper button */}
@@ -264,8 +281,11 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
     || dish.tags?.includes('vegan')
     || dish.tags?.includes('vegetarian');
 
+  const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
+  const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
+
   return (
-    <div className="flex justify-between items-start gap-4 cursor-pointer group" onClick={onDishClick}>
+    <div className={`flex justify-between items-start gap-4 cursor-pointer group transition-all p-3 -mx-3 rounded-2xl ${hasPromo ? 'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-500/20 shadow-sm' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`} onClick={() => onDishClick(dish.id)}>
       {/* Left Details Panel */}
       <div className="flex-1 min-w-0 flex flex-col gap-1.5 text-left">
         {/* Veg / Non-veg Indicator */}
@@ -278,6 +298,11 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
               {primaryBadge}
             </span>
           )}
+          {hasPromo && (
+            <span className="px-2 py-0.5 rounded flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-white border border-amber-400">
+              <Flame size={10} className="fill-white" /> {promoDiscount}% OFF
+            </span>
+          )}
         </div>
 
         {/* Dish Name */}
@@ -286,7 +311,12 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
         </h3>
 
         {/* Price */}
-        <div className="font-display font-black text-base text-[#D4AF37] mt-0.5">
+        <div className="font-display font-black text-base text-[#D4AF37] mt-0.5 flex items-center gap-2">
+          {dish.originalPrice && dish.originalPrice > dish.price && (
+            <span className="text-neutral-400 dark:text-neutral-500 line-through text-sm font-medium">
+              ₹{Number(dish.originalPrice).toFixed(2)}
+            </span>
+          )}
           ₹{Number(dish.price).toFixed(2)}
         </div>
 

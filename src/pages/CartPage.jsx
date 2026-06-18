@@ -247,9 +247,15 @@ export default function CartPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-2">
-                        <span className="font-black text-lg text-[#D4AF37]">₹{(Number(item.price) * item.quantity).toFixed(2)}</span>
-                        
+                      <div className="text-right flex flex-col items-end gap-1.5">
+                        <div className="flex flex-col items-end">
+                          {item.originalPrice && item.originalPrice > item.price && (
+                            <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
+                              ₹{(Number(item.originalPrice) * item.quantity).toFixed(2)}
+                            </span>
+                          )}
+                          <span className="font-black text-lg text-[#D4AF37] leading-none mt-0.5">₹{(Number(item.price) * item.quantity).toFixed(2)}</span>
+                        </div>
                         {/* Stepper */}
                         <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg overflow-hidden">
                           <button onClick={(e) => { e.stopPropagation(); removeOneFromCart(item.id); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
