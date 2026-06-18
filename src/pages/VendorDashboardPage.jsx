@@ -2910,10 +2910,38 @@ export default function VendorDashboardPage() {
                         className="w-full rounded-xl p-3 text-sm" placeholder="My Restaurant" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Cover Image URL</label>
-                      <input type="url" value={settingsForm.cover} onChange={e => setSettingsForm({...settingsForm, cover: e.target.value})}
-                        className="w-full rounded-xl p-3 text-sm" placeholder="https://..." />
-                      {settingsForm.cover && <div className="mt-2 h-28 rounded-xl bg-cover bg-center border" style={{ backgroundImage: `url(${settingsForm.cover})`, borderColor: 'rgba(212,175,55,0.2)' }} />}
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Cover Image</label>
+                      {settingsForm.cover ? (
+                        <div className="relative group h-32 rounded-xl overflow-hidden border bg-neutral-100 dark:bg-[#1A1A1A]" style={{ borderColor: 'rgba(212,175,55,0.2)' }}>
+                          <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${settingsForm.cover})` }} />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
+                            <label className="cursor-pointer bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                              <Upload size={16} /> Edit Image
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (evt) => setSettingsForm({...settingsForm, cover: evt.target.result});
+                                  reader.readAsDataURL(file);
+                                }
+                              }} />
+                            </label>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer h-32 border-2 border-dashed border-neutral-300 dark:border-white/10 rounded-xl flex flex-col items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-white hover:border-neutral-400 transition-colors">
+                          <Upload size={24} className="mb-2 opacity-50" />
+                          <span className="text-sm font-bold">Upload Cover Image</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (evt) => setSettingsForm({...settingsForm, cover: evt.target.result});
+                                  reader.readAsDataURL(file);
+                                }
+                              }} />
+                        </label>
+                      )}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Phone Number</label>
