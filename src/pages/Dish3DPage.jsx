@@ -118,12 +118,6 @@ export default function Dish3DPage() {
             className="w-11 h-11 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/10 transition-all">
             <ChevronLeft size={22} className="text-white" />
           </motion.button>
-          <motion.button whileTap={{ scale: 1.2 }} onClick={() => toggleFavorite(id)}
-            className={`w-11 h-11 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all ${
-              isFav ? 'bg-red-500/20 border-red-500/30' : 'bg-black/40 border-white/10'
-            }`}>
-            <Heart size={20} className={isFav ? 'text-red-400 fill-red-400' : 'text-white'} />
-          </motion.button>
         </div>
 
         {/* Badge */}
@@ -160,12 +154,6 @@ export default function Dish3DPage() {
                 ₹{Number(dish.price).toFixed(2)}
               </span>
             </div>
-          </div>
-
-          {/* ── Chef ── */}
-          <div className="flex items-center gap-2 mb-4">
-            <ChefHat size={14} className="text-[#D4AF37]" />
-            <span className="text-sm font-semibold text-[#D4AF37]">{dish.chef || 'Chef of the House'}</span>
           </div>
 
           {/* ── Description ── */}

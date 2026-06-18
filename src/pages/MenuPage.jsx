@@ -202,37 +202,18 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
           </div>
         )}
 
-        {/* AR expand icon — top right (pushed left if promo exists) */}
-        {hasModel && (
-          <button
-            onClick={e => { e.stopPropagation(); onARClick(dish.id); }}
-            className={`absolute top-3 ${hasPromo ? 'right-16' : 'right-3'} w-8 h-8 rounded-xl bg-black/40 border border-neutral-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all z-10`}
-          >
-            <Maximize2 size={14} className="text-neutral-900 dark:text-white" />
-          </button>
-        )}
-
         {/* Promo Badge */}
         {hasPromo && (
           <div className={`absolute top-3 right-3 flex items-center gap-1 px-2 py-1.5 rounded-xl text-white text-[10px] font-black tracking-wider shadow-lg z-10 animate-pulse border ${dish.promoType === 'flash' ? 'bg-red-500 border-red-400' : 'bg-emerald-500 border-emerald-400'}`}>
             <Flame size={12} className="fill-white" /> {promoDiscount}% OFF
           </div>
         )}
-
-        {/* Favorite */}
-        <button
-          onClick={e => { e.stopPropagation(); onToggleFav(dish.id); }}
-          className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/40 border border-neutral-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-red-500/30 transition-all"
-        >
-          <Heart size={13} className={isFav ? 'text-red-400 fill-red-400' : 'text-neutral-900 dark:text-white'} />
-        </button>
       </div>
 
       {/* Card Body */}
       <div className="p-3 flex flex-col gap-2">
         <div>
           <h3 className="font-display font-bold text-[15px] text-neutral-900 dark:text-white leading-snug line-clamp-2">{dish.name}</h3>
-          <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{dish.chef || 'Chef of the House'}</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-1 mt-1">
@@ -339,31 +320,6 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
             {dish.description}
           </p>
         )}
-
-        {/* Action icons (Bookmark/AR) */}
-        <div className="flex items-center gap-2 mt-2" onClick={e => e.stopPropagation()}>
-          <button
-            onClick={onToggleFav}
-            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${
-              isFav 
-                ? 'bg-red-500/10 border-red-500/25 text-red-500' 
-                : 'bg-white dark:bg-[#0d0d10] border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5'
-            }`}
-          >
-            <Heart size={12} className={isFav ? 'fill-current' : ''} />
-            <span>{isFav ? 'Bookmarked' : 'Bookmark'}</span>
-          </button>
-          
-          {hasModel && (
-            <button
-              onClick={onARClick}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border bg-white dark:bg-[#0d0d10] border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 text-[11px] font-bold transition-all"
-            >
-              <Maximize2 size={12} className="text-indigo-400" />
-              <span>View in AR</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Right Image / Add Button Panel */}

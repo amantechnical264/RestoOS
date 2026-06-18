@@ -193,9 +193,6 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                   ))}
                 </div>
               </div>
-              <button className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors">
-                Reorder
-              </button>
             </div>
             
             <AnimatePresence>
@@ -236,9 +233,6 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                 <span className="text-[11px] text-neutral-400 ml-1 font-semibold">{rating}/5 stars</span>
               </div>
             </div>
-            <button className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-neutral-200/50 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 transition-colors shrink-0">
-              Reorder
-            </button>
           </div>
         )}
       </div>
