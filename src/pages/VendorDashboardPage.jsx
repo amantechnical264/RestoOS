@@ -15,6 +15,7 @@ import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import { reviewService } from '../services/ReviewService';
 import ModelViewer from '../components/ModelViewer';
+import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
 
 // ── Design Tokens ─────────────────────────────────────────────────────
 const GOLD = '#D4AF37';
@@ -387,7 +388,7 @@ export default function VendorDashboardPage() {
     dishes, setDishes, restaurants, addDish, updateDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
-    planFor, upgradePlan,
+    planFor, upgradePlan, isDataLoaded,
   } = useAppContext();
 
   // ── Subscription helpers ────────────────────────────────────────
@@ -797,6 +798,20 @@ export default function VendorDashboardPage() {
             <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-x-auto p-5 flex gap-4 items-start">
 
+              {/* Skeleton lanes — shown until orders data is ready */}
+              {!isDataLoaded && (
+                <>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="w-72 shrink-0 rounded-2xl border border-neutral-200 dark:border-white/6 overflow-hidden">
+                      <div className="sk h-12 rounded-none" />
+                      <div className="p-3 space-y-3">
+                        {Array.from({ length: 2 }).map((__, j) => <OrderLaneSkeleton key={j} />)}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
               {/* Pending Verification */}
               <div className="w-72 shrink-0 bg-white dark:bg-[#12141D] rounded-2xl border border-amber-200 dark:border-amber-900/40 flex flex-col max-h-full overflow-hidden shadow-sm">
                 <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-900/30 flex justify-between items-center">
@@ -1018,12 +1033,18 @@ export default function VendorDashboardPage() {
                   </div>
                 </div>
 
-                {/* KPI Grid */}
+                {/* KPI Grid — skeleton while data loads */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <KpiCard icon={DollarSign}   label="Today's Revenue"  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
-                  <KpiCard icon={ShoppingBag}  label="Orders Completed" value={completed.length}                  color="bg-blue-500"    trend={5} />
-                  <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={-3} />
-                  <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={cancelRate > 10 ? 8 : -2} />
+                  {!isDataLoaded ? (
+                    Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
+                  ) : (
+                    <>
+                      <KpiCard icon={DollarSign}   label="Today's Revenue"  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
+                      <KpiCard icon={ShoppingBag}  label="Orders Completed" value={completed.length}                  color="bg-blue-500"    trend={5} />
+                      <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={-3} />
+                      <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={cancelRate > 10 ? 8 : -2} />
+                    </>
+                  )}
                 </div>
 
                 {/* Revenue Chart + Order Split */}
@@ -2456,10 +2477,16 @@ export default function VendorDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" onClick={() => setCustomerFilter(f => f === 'all' ? 'top' : 'all')} />
-                  <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" onClick={() => setCustomerFilter(f => f === 'repeat' ? 'top' : 'repeat')} />
-                  <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`$${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
-                  <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
+                  {!isDataLoaded ? (
+                    Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
+                  ) : (
+                    <>
+                      <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" onClick={() => setCustomerFilter(f => f === 'all' ? 'top' : 'all')} />
+                      <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" onClick={() => setCustomerFilter(f => f === 'repeat' ? 'top' : 'repeat')} />
+                      <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`₹${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
+                      <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
+                    </>
+                  )}
                 </div>
 
                 {/* Customer list from orders */}
@@ -2471,7 +2498,11 @@ export default function VendorDashboardPage() {
                     </span>
                   </div>
                   <div className="divide-y divide-neutral-50 dark:divide-white/4">
-                    {(customerFilter === 'repeat' ? customerList.filter(c => c.orderCount > 1) : customerFilter === 'all' ? customerList : customerList.slice(0, 15)).map(c => (
+                    {/* Skeleton rows while loading */}
+                    {!isDataLoaded && (
+                      Array.from({ length: 5 }).map((_, i) => <CustomerRowSkeleton key={i} />)
+                    )}
+                    {isDataLoaded && (customerFilter === 'repeat' ? customerList.filter(c => c.orderCount > 1) : customerFilter === 'all' ? customerList : customerList.slice(0, 15)).map(c => (
                       <div key={c.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{c.name}</p>
@@ -2480,12 +2511,12 @@ export default function VendorDashboardPage() {
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-black text-sm text-emerald-600">${Number(c.totalSpend).toFixed(2)}</p>
+                          <p className="font-black text-sm text-emerald-600">₹{Number(c.totalSpend).toFixed(2)}</p>
                           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{c.orderType === 'dine_in' ? 'Dine-In' : 'Pre-Order'}</p>
                         </div>
                       </div>
                     ))}
-                    {customerList.length === 0 && (
+                    {isDataLoaded && customerList.length === 0 && (
                       <div className="text-center py-12 text-neutral-400">
                         <Users size={36} className="mx-auto mb-3 opacity-20" />
                         <p className="text-sm">Customer data appears after orders are placed</p>

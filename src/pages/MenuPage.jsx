@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
 import AIWaiter from '../components/AIWaiter';
+import { MenuPageSkeleton } from '../components/Skeleton';
 
 // ─── Optimized Image with shimmer → fade-in ──────────────────────────────────
 const OptimizedImage = ({ src, alt, className = '', eager = false, sizes }) => {
@@ -545,33 +546,7 @@ export default function MenuPage() {
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
   const cartCount = cart.length;
 
-  if (!isDataLoaded) {
-    return (
-      <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col z-50">
-        {/* Skeleton Hero */}
-        <div className="h-52 bg-neutral-200 dark:bg-neutral-900 shimmer-wave" />
-        {/* Skeleton Category Pills */}
-        <div className="flex gap-2 px-5 py-4">
-          {[80, 60, 70, 55].map((w, i) => (
-            <div key={i} className="h-9 rounded-2xl bg-neutral-200 dark:bg-neutral-800 shimmer-wave" style={{ width: w }} />
-          ))}
-        </div>
-        {/* Skeleton Dish Cards */}
-        <div className="grid grid-cols-2 gap-3 px-5 pb-8">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-[1.75rem] overflow-hidden bg-neutral-100 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5">
-              <div className="aspect-[4/3] bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
-              <div className="p-3 space-y-2">
-                <div className="h-4 w-3/4 rounded bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
-                <div className="h-3 w-1/2 rounded bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
-                <div className="h-8 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800 shimmer-wave" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (!isDataLoaded) return <MenuPageSkeleton />;
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-white dark:bg-[#0d0d10] text-neutral-900 dark:text-white font-sans">

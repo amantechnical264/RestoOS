@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
 import { reviewService } from '../services/ReviewService';
+import { OrderCardSkeleton } from '../components/Skeleton';
 
 const GOLD = '#D4AF37';
 const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
@@ -317,7 +318,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
 }
 
 export default function DinerOrdersPage() {
-  const { orders, user, restaurants, tableNumber, setActiveRestId } = useAppContext();
+  const { orders, user, restaurants, tableNumber, setActiveRestId, isDataLoaded } = useAppContext();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -391,7 +392,14 @@ export default function DinerOrdersPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 bg-neutral-50 dark:bg-black">
-        {myOrders.length === 0 && (
+        {/* Loading skeleton — shown until orders data arrives */}
+        {!isDataLoaded && (
+          <div className="space-y-1">
+            {Array.from({ length: 3 }).map((_, i) => <OrderCardSkeleton key={i} />)}
+          </div>
+        )}
+
+        {isDataLoaded && myOrders.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4" style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
