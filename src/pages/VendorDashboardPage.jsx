@@ -606,7 +606,15 @@ export default function VendorDashboardPage() {
   const pending   = React.useMemo(() => restOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled'), [restOrders]);
   const prep      = React.useMemo(() => restOrders.filter(o => o.status === 'Preparing'), [restOrders]);
   const ready     = React.useMemo(() => restOrders.filter(o => o.status === 'Ready'), [restOrders]);
-  const completed = React.useMemo(() => restOrders.filter(o => o.status === 'Completed'), [restOrders]);
+  const completed = React.useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" in local time
+    return restOrders.filter(o => {
+      if (o.status !== 'Completed') return false;
+      if (!o.timestamp) return false;
+      const orderDate = new Date(o.timestamp).toLocaleDateString('en-CA');
+      return orderDate === todayStr;
+    });
+  }, [restOrders]);
   const cancelled = React.useMemo(() => restOrders.filter(o => o.status === 'Cancelled'), [restOrders]);
 
   const getOrderNumber = React.useCallback((order) => {
