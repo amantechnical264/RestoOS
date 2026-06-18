@@ -668,6 +668,45 @@ export default function VendorDashboardPage() {
   const avgOrderValue = React.useMemo(() => rangedCompleted.length > 0 ? todayRevenue / rangedCompleted.length : 0, [rangedCompleted, todayRevenue]);
   const cancelRate = React.useMemo(() => rangedAllOrders.length > 0 ? Math.round((rangedAllOrders.filter(o => o.status === 'Cancelled').length / rangedAllOrders.length) * 100) : 0, [rangedAllOrders]);
 
+  // Previous day's metrics for comparison
+  const prevDayMetrics = React.useMemo(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+    const prevCompleted = restOrders.filter(o => {
+      if (o.status !== 'Completed' || !o.timestamp) return false;
+      return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
+    });
+
+    const prevAll = restOrders.filter(o => {
+      if (!o.timestamp) return false;
+      return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
+    });
+
+    const prevRevenue = prevCompleted.reduce((s, o) => s + (o.total || 0), 0);
+    const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
+    const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
+
+    return {
+      revenue: prevRevenue,
+      orders: prevCompleted.length,
+      avgOrder: prevAvg,
+      cancelRate: prevCancelRate
+    };
+  }, [restOrders]);
+
+  // Helper: compute % change (capped at ±999 to avoid Infinity)
+  const pctChange = (current, previous) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  };
+
+  const trendRevenue = pctChange(todayRevenue, prevDayMetrics.revenue);
+  const trendOrders = pctChange(rangedCompleted.length, prevDayMetrics.orders);
+  const trendAvg = pctChange(avgOrderValue, prevDayMetrics.avgOrder);
+  const trendCancel = pctChange(cancelRate, prevDayMetrics.cancelRate);
+
   // Dish order counts
   const dishRanking = React.useMemo(() => {
     const dishCounts = {};
@@ -1151,10 +1190,10 @@ export default function VendorDashboardPage() {
                     Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
                   ) : (
                     <>
-                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
-                      <KpiCard icon={ShoppingBag}  label="Orders Completed" value={rangedCompleted.length}                  color="bg-blue-500"    trend={5} />
-                      <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={-3} />
-                      <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={cancelRate > 10 ? 8 : -2} />
+                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={trendRevenue} />
+                      <KpiCard icon={ShoppingBag}  label="Orders Completed" value={rangedCompleted.length}                  color="bg-blue-500"    trend={trendOrders} />
+                      <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={trendAvg} />
+                      <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={trendCancel} />
                     </>
                   )}
                 </div>
