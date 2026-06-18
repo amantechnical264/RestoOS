@@ -414,11 +414,12 @@ export default function MenuPage() {
   const [promoIndex, setPromoIndex] = useState(0);
 
   // ─── PARSE QR CODE URL PARAMS ─────────────────────────────────────────────
+  // Set activeRestId immediately from URL params (no need to wait for data)
   useEffect(() => {
     const paramRestId = searchParams.get('restId');
     const paramTableNum = searchParams.get('table');
     
-    if (paramRestId && isDataLoaded) {
+    if (paramRestId) {
       if (activeRestId !== paramRestId) {
         setActiveRestId(paramRestId);
       }
@@ -426,7 +427,7 @@ export default function MenuPage() {
         setTableNumber(paramTableNum);
       }
     }
-  }, [searchParams, isDataLoaded, activeRestId, tableNumber, setActiveRestId, setTableNumber]);
+  }, [searchParams, activeRestId, tableNumber, setActiveRestId, setTableNumber]);
 
   // Active promos for the banner
   const activePromoObj = promos[activeRestId] || {};
@@ -519,8 +520,11 @@ export default function MenuPage() {
   };
 
   useEffect(() => {
-    if (!activeRestId && !searchParams.get('restId')) navigate('/', { replace: true });
-  }, [activeRestId, navigate]);
+    // Only redirect if data has loaded AND there's no restId from any source
+    if (isDataLoaded && !activeRestId && !searchParams.get('restId')) {
+      navigate('/', { replace: true });
+    }
+  }, [activeRestId, navigate, isDataLoaded, searchParams]);
 
   const restaurant = restaurants.find(r => r.id === activeRestId);
   const allDishes = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && !d.tags?.includes('event') && !d.tags?.includes('_categories_metadata'));
@@ -630,7 +634,7 @@ export default function MenuPage() {
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
   const cartCount = cart.length;
 
-  if (!isDataLoaded) return <MenuPageSkeleton />;
+  if (!isDataLoaded || !activeRestId) return <MenuPageSkeleton />;
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-white dark:bg-[#0d0d10] text-neutral-900 dark:text-white font-sans">

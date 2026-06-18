@@ -37,6 +37,10 @@ export default function FullscreenManager() {
     // If they are already in fullscreen or have explicitly dismissed it, do not auto-trigger
     if (isFullscreen || hasDismissed) return;
 
+    let delayTimeout;
+    let cleanupClick;
+    let cleanupTouch;
+
     const requestFullscreen = async () => {
       try {
         if (document.documentElement.requestFullscreen) {
@@ -51,13 +55,18 @@ export default function FullscreenManager() {
       }
     };
 
-    // Attach to the first user interaction
-    document.addEventListener('click', requestFullscreen, { once: true });
-    document.addEventListener('touchstart', requestFullscreen, { once: true });
+    // Wait 2 seconds for the page to fully render before listening for the first interaction
+    delayTimeout = setTimeout(() => {
+      document.addEventListener('click', requestFullscreen, { once: true });
+      document.addEventListener('touchstart', requestFullscreen, { once: true });
+      cleanupClick = () => document.removeEventListener('click', requestFullscreen);
+      cleanupTouch = () => document.removeEventListener('touchstart', requestFullscreen);
+    }, 2000);
 
     return () => {
-      document.removeEventListener('click', requestFullscreen);
-      document.removeEventListener('touchstart', requestFullscreen);
+      clearTimeout(delayTimeout);
+      if (cleanupClick) cleanupClick();
+      if (cleanupTouch) cleanupTouch();
     };
   }, [isFullscreen, hasDismissed]);
 
