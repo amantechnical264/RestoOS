@@ -1166,7 +1166,7 @@ export default function MenuPage() {
               <div className="flex items-center">
                 {cart.slice(0, 3).map((item, i) => (
                   <div key={`${item.id}-${i}`} className={`w-10 h-10 rounded-full overflow-hidden border-2 border-[#318616] bg-white ${i > 0 ? '-ml-4' : ''} shadow-sm`} style={{ zIndex: 10 - i }}>
-                    <img src={item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop'} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.cover || item.images?.[0] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop'} alt={item.name} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
