@@ -35,22 +35,46 @@ const cardStyleLight = {
 // ─── Mini Bar Chart (pure SVG, no library) ────────────────────────────
 const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
   const max = Math.max(...data.map(d => d.value), 1);
-  const barW = 100 / (data.length * 2 - 1);
+  const [hovered, setHovered] = React.useState(null);
   return (
-    <svg viewBox={`0 0 100 ${height}`} className="w-full" style={{ height }}>
-      {data.map((d, i) => {
-        const bh = (d.value / max) * (height - 20);
-        const x = i * (barW * 2);
-        return (
-          <g key={i}>
-            <rect x={x} y={height - 20 - bh} width={barW} height={bh}
-              rx="2" fill={color} opacity="0.85" />
-            <text x={x + barW / 2} y={height - 4} textAnchor="middle"
-              fontSize="6" fill="#6B7280">{d.label}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="relative" style={{ height: height + 30 }}>
+      {/* Tooltip */}
+      {hovered !== null && data[hovered] && (
+        <div className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-[11px] font-bold shadow-xl pointer-events-none whitespace-nowrap"
+          style={{
+            left: `${((hovered + 0.5) / data.length) * 100}%`,
+            top: 0,
+            transform: 'translateX(-50%)'
+          }}>
+          <div>₹{Number(data[hovered].value).toFixed(2)}</div>
+          <div className="text-[10px] font-medium opacity-70">{data[hovered].orders || 0} orders</div>
+          {data[hovered].fullDate && <div className="text-[9px] opacity-50">{data[hovered].fullDate}</div>}
+        </div>
+      )}
+      {/* Bars */}
+      <div className="flex items-end justify-between gap-[2px] h-full pt-8 pb-5">
+        {data.map((d, i) => {
+          const bh = Math.max((d.value / max) * (height - 20), 2);
+          return (
+            <div key={i} className="flex flex-col items-center flex-1 cursor-pointer group"
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}>
+              <div
+                className="w-full rounded-t-sm transition-all duration-150"
+                style={{
+                  height: bh,
+                  backgroundColor: color,
+                  opacity: hovered === null ? 0.85 : hovered === i ? 1 : 0.4,
+                  transform: hovered === i ? 'scaleY(1.05)' : 'scaleY(1)',
+                  transformOrigin: 'bottom'
+                }}
+              />
+              <span className="text-[9px] text-neutral-500 mt-1 select-none">{d.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 });
 
@@ -732,10 +756,15 @@ export default function VendorDashboardPage() {
       const d = new Date();
       d.setDate(d.getDate() - (days - 1 - i));
       const dayStr = d.toLocaleDateString('en-CA');
-      const dayRev = restOrders
-        .filter(o => o.status === 'Completed' && o.timestamp && new Date(o.timestamp).toLocaleDateString('en-CA') === dayStr)
-        .reduce((s, o) => s + (o.total || 0), 0);
-      return { label: days === 1 ? `${d.getHours()}h` : d.toLocaleDateString('en-US', { weekday: 'short' })[0], value: dayRev };
+      const dayOrders = restOrders
+        .filter(o => o.status === 'Completed' && o.timestamp && new Date(o.timestamp).toLocaleDateString('en-CA') === dayStr);
+      const dayRev = dayOrders.reduce((s, o) => s + (o.total || 0), 0);
+      return {
+        label: days === 1 ? `${d.getHours()}h` : d.toLocaleDateString('en-US', { weekday: 'short' })[0],
+        value: dayRev,
+        orders: dayOrders.length,
+        fullDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      };
     });
   }, [restOrders, analyticsRange]);
 
