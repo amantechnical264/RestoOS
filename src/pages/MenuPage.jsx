@@ -882,7 +882,7 @@ export default function MenuPage() {
                   <button 
                     onClick={async () => {
                       if (guestId === 'anonymous') {
-                        showNotification('Please fill in your name and phone first to RSVP!');
+                        showNotification('Please fill in your name and phone first to join!');
                         setShowOnboarding(true);
                         return;
                       }
@@ -900,7 +900,7 @@ export default function MenuPage() {
                       };
                       
                       await rsvpToEvent(event.id, updatedMacros);
-                      showNotification(hasRsvpd ? 'RSVP Cancelled' : 'Successfully RSVP\'d!');
+                      showNotification(hasRsvpd ? 'Event Left' : 'Successfully Joined!');
                     }}
                     className={`w-full py-3 font-black text-sm rounded-xl transition-all shadow-sm ${
                       isRsvpd
@@ -908,7 +908,7 @@ export default function MenuPage() {
                         : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                     }`}
                   >
-                    {isRsvpd ? '✓ RSVP\'d' : 'RSVP Now'}
+                    {isRsvpd ? '✓ Joined' : 'Join Event'}
                   </button>
                   <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-2 text-center font-bold">
                     {rsvpsList.length} guest(s) attending
