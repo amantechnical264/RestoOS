@@ -728,13 +728,13 @@ export default function MenuPage() {
                       animate={{ x: 0 }}
                       exit={{ x: '-100%' }}
                       transition={{ type: "tween", duration: 0.5, ease: "easeInOut" }}
-                      className="absolute inset-0 flex items-center justify-between px-4 bg-gradient-to-r from-amber-400 to-yellow-500 text-neutral-900"
+                      className="absolute inset-0 flex items-center justify-between px-4 bg-gradient-to-r from-emerald-500 to-green-500 text-white"
                     >
                       <div className="flex items-center gap-2 overflow-hidden">
                         <Clock size={16} className="shrink-0" />
                         <span className="font-bold text-sm truncate">Happy Hour ({promo.data.startTime} - {promo.data.endTime})</span>
                       </div>
-                      <span className="font-black bg-black/10 px-2 py-0.5 rounded text-xs shrink-0">{promo.data.discount}% OFF</span>
+                      <span className="font-black bg-white/20 px-2 py-0.5 rounded text-xs shrink-0">{promo.data.discount}% OFF</span>
                     </motion.div>
                   );
                 }
