@@ -834,8 +834,15 @@ export default function MenuPage() {
             {events.map((event) => {
               const profile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
               const guestId = profile.guestId || 'anonymous';
+              const userPhone = profile.phone || '';
               const rsvpsList = event.macros?.rsvps || [];
-              const isRsvpd = rsvpsList.some(r => typeof r === 'object' ? r.guestId === guestId : r === guestId);
+              const isRsvpd = rsvpsList.some(r => {
+                if (typeof r === 'object') {
+                  if (userPhone && r.phone === userPhone) return true;
+                  return r.guestId === guestId;
+                }
+                return r === guestId;
+              });
               
               // Extract date parts
               const dateStr = event.macros?.date || '';
@@ -883,9 +890,15 @@ export default function MenuPage() {
                         return;
                       }
                       
-                      const hasRsvpd = rsvpsList.some(r => typeof r === 'object' ? r.guestId === guestId : r === guestId);
+                      const hasRsvpd = isRsvpd;
                       const newRsvps = hasRsvpd
-                        ? rsvpsList.filter(r => typeof r === 'object' ? r.guestId !== guestId : r !== guestId)
+                        ? rsvpsList.filter(r => {
+                            if (typeof r === 'object') {
+                              if (userPhone && r.phone === userPhone) return false;
+                              return r.guestId !== guestId;
+                            }
+                            return r !== guestId;
+                          })
                         : [...rsvpsList, { guestId, name: profile.name, phone: profile.phone, timestamp: new Date().toISOString() }];
                         
                       const updatedMacros = {
