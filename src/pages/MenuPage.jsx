@@ -1061,17 +1061,25 @@ export default function MenuPage() {
 
       {/* ── FLOATING ZOMATO MENU BUTTON ── */}
       {categoriesWithDishes.length > 0 && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
+        <motion.div 
+          initial={false}
+          animate={{
+            left: cart.length > 0 ? '1.25rem' : '50%',
+            x: cart.length > 0 ? '0%' : '-50%'
+          }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="fixed bottom-24 z-40"
+        >
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setMenuOpen(true)}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xl font-bold text-sm tracking-wide transition-all border border-white/10 dark:border-black/5"
+            className="flex items-center justify-center gap-2 px-5 h-14 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xl font-bold text-sm tracking-wide transition-all border border-white/10 dark:border-black/5"
           >
             <BookOpen size={16} />
-            <span>Menu</span>
+            <span className={cart.length > 0 ? "hidden md:inline" : ""}>Menu</span>
           </motion.button>
-        </div>
+        </motion.div>
       )}
 
       {/* ── MENU POPUP OVERLAY ── */}
@@ -1140,36 +1148,33 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
-      {/* ── BLINKIT-STYLE FLOATING CART BAR ── */}
+      {/* ── BLINKIT-STYLE FLOATING CART PILL ── */}
       <AnimatePresence>
         {cart.length > 0 && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-            className="fixed bottom-20 left-4 right-4 z-50"
+            initial={{ y: 50, opacity: 0, scale: 0.9, x: '-50%' }}
+            animate={{ y: 0, opacity: 1, scale: 1, x: '-50%' }}
+            exit={{ y: 50, opacity: 0, scale: 0.9, x: '-50%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-24 left-1/2 z-50 flex justify-center"
           >
             <motion.button
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/cart')}
-              className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 border border-emerald-500/50"
+              className="flex items-center gap-3 h-14 pl-2 pr-4 rounded-full bg-[#318616] text-white shadow-xl shadow-[#318616]/30 border border-white/10 hover:bg-[#286f12] transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
-                  <ShoppingCart size={16} />
-                </div>
-                <div className="text-left">
-                  <span className="text-xs font-bold opacity-90">{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
-                  <p className="text-[10px] opacity-70 -mt-0.5">added to cart</p>
-                </div>
+              <div className="flex items-center">
+                {cart.slice(0, 3).map((item, i) => (
+                  <div key={`${item.id}-${i}`} className={`w-10 h-10 rounded-full overflow-hidden border-2 border-[#318616] bg-white ${i > 0 ? '-ml-4' : ''} shadow-sm`} style={{ zIndex: 10 - i }}>
+                    <img src={item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop'} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-base tabular-nums">
-                  ₹{cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0).toFixed(2)}
-                </span>
-                <ChevronRight size={18} strokeWidth={2.5} />
+              <div className="flex flex-col items-center justify-center px-1">
+                <span className="text-[13px] font-extrabold tracking-wide leading-tight">View cart</span>
+                <span className="text-[10px] font-semibold opacity-90">{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
               </div>
+              <ChevronRight size={18} strokeWidth={2.5} className="opacity-90 ml-1" />
             </motion.button>
           </motion.div>
         )}
