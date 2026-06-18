@@ -624,15 +624,55 @@ export default function VendorDashboardPage() {
   }, [restOrders]);
 
   // ── Analytics computations ────────────────────────────────────────
-  const todayRevenue = React.useMemo(() => completed.reduce((s, o) => s + (o.total || 0), 0), [completed]);
-  const avgOrderValue = React.useMemo(() => completed.length > 0 ? todayRevenue / completed.length : 0, [completed, todayRevenue]);
-  const cancelRate = React.useMemo(() => restOrders.length > 0 ? Math.round((cancelled.length / restOrders.length) * 100) : 0, [restOrders, cancelled]);
+  // Filter completed/all orders by the selected analytics range
+  const rangedCompleted = React.useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('en-CA');
+    return restOrders.filter(o => {
+      if (o.status !== 'Completed' || !o.timestamp) return false;
+      const orderDate = new Date(o.timestamp).toLocaleDateString('en-CA');
+      if (analyticsRange === 'Today') return orderDate === todayStr;
+      if (analyticsRange === '7d') {
+        const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 7);
+        return new Date(o.timestamp) >= cutoff;
+      }
+      if (analyticsRange === '30d') {
+        const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30);
+        return new Date(o.timestamp) >= cutoff;
+      }
+      return true;
+    });
+  }, [restOrders, analyticsRange]);
+
+  const rangedAllOrders = React.useMemo(() => {
+    const now = new Date();
+    return restOrders.filter(o => {
+      if (!o.timestamp) return false;
+      if (analyticsRange === 'Today') {
+        const todayStr = now.toLocaleDateString('en-CA');
+        return new Date(o.timestamp).toLocaleDateString('en-CA') === todayStr;
+      }
+      if (analyticsRange === '7d') {
+        const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 7);
+        return new Date(o.timestamp) >= cutoff;
+      }
+      if (analyticsRange === '30d') {
+        const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30);
+        return new Date(o.timestamp) >= cutoff;
+      }
+      return true;
+    });
+  }, [restOrders, analyticsRange]);
+
+  const todayRevenue = React.useMemo(() => rangedCompleted.reduce((s, o) => s + (o.total || 0), 0), [rangedCompleted]);
+  const avgOrderValue = React.useMemo(() => rangedCompleted.length > 0 ? todayRevenue / rangedCompleted.length : 0, [rangedCompleted, todayRevenue]);
+  const cancelRate = React.useMemo(() => rangedAllOrders.length > 0 ? Math.round((rangedAllOrders.filter(o => o.status === 'Cancelled').length / rangedAllOrders.length) * 100) : 0, [rangedAllOrders]);
 
   // Dish order counts
   const dishRanking = React.useMemo(() => {
     const dishCounts = {};
     const dishRevenue = {};
-    completed.forEach(order => {
+    rangedCompleted.forEach(order => {
       (order.items || []).forEach(item => {
         dishCounts[item.name] = (dishCounts[item.name] || 0) + 1;
         dishRevenue[item.name] = (dishRevenue[item.name] || 0) + Number(item.price || 0);
@@ -642,20 +682,23 @@ export default function VendorDashboardPage() {
       .map(([name, count]) => ({ name, count, revenue: dishRevenue[name] || 0 }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
-  }, [completed]);
+  }, [rangedCompleted]);
 
   const totalOrderedItems = React.useMemo(() => dishRanking.reduce((s, d) => s + d.count, 0), [dishRanking]);
 
-  // 7-day revenue (real data)
+  // Revenue chart — adapts to selected range
   const weekData = React.useMemo(() => {
-    return [...Array(7)].map((_, i) => {
+    const days = analyticsRange === '30d' ? 30 : analyticsRange === '7d' ? 7 : 1;
+    return [...Array(days)].map((_, i) => {
       const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      const dayStr = d.toISOString().split('T')[0];
-      const dayRev = completed.filter(o => o.timestamp?.startsWith(dayStr)).reduce((s, o) => s + (o.total || 0), 0);
-      return { label: d.toLocaleDateString('en-US', { weekday: 'short' })[0], value: dayRev };
+      d.setDate(d.getDate() - (days - 1 - i));
+      const dayStr = d.toLocaleDateString('en-CA');
+      const dayRev = restOrders
+        .filter(o => o.status === 'Completed' && o.timestamp && new Date(o.timestamp).toLocaleDateString('en-CA') === dayStr)
+        .reduce((s, o) => s + (o.total || 0), 0);
+      return { label: days === 1 ? `${d.getHours()}h` : d.toLocaleDateString('en-US', { weekday: 'short' })[0], value: dayRev };
     });
-  }, [completed]);
+  }, [restOrders, analyticsRange]);
 
   // Peak hours (real heatmap data)
   const peakData = React.useMemo(() => {
@@ -1108,8 +1151,8 @@ export default function VendorDashboardPage() {
                     Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
                   ) : (
                     <>
-                      <KpiCard icon={DollarSign}   label="Today's Revenue"  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
-                      <KpiCard icon={ShoppingBag}  label="Orders Completed" value={completed.length}                  color="bg-blue-500"    trend={5} />
+                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={12} />
+                      <KpiCard icon={ShoppingBag}  label="Orders Completed" value={rangedCompleted.length}                  color="bg-blue-500"    trend={5} />
                       <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={-3} />
                       <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={cancelRate > 10 ? 8 : -2} />
                     </>
@@ -1120,11 +1163,11 @@ export default function VendorDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
-                      <h3 className="font-display font-black text-base">Revenue — 7 Days</h3>
+                      <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === '7d' ? '7 Days' : '30 Days'}</h3>
                       <span className="text-xs font-semibold text-neutral-400">vs prev. week <span className="text-emerald-500">↑ 12%</span></span>
                     </div>
                     <MiniBarChart data={weekData} color="#3B82F6" height={100} />
-                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Today: ₹{todayRevenue.toFixed(2)}</div>
+                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(2)}</div>
                   </div>
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <h3 className="font-display font-black text-base mb-6">Order Types</h3>
