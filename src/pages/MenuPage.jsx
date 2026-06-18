@@ -357,7 +357,7 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 export default function MenuPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { activeRestId, setActiveRestId, tableNumber, setTableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, showNotification, isDataLoaded, promos, currentTime } = useAppContext();
+  const { activeRestId, setActiveRestId, tableNumber, setTableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, rsvpToEvent, showNotification, isDataLoaded, promos, currentTime } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [vegOnly, setVegOnly] = useState(false);
@@ -839,7 +839,7 @@ export default function MenuPage() {
               const profile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
               const guestId = profile.guestId || 'anonymous';
               const rsvpsList = event.macros?.rsvps || [];
-              const isRsvpd = rsvpsList.includes(guestId);
+              const isRsvpd = rsvpsList.some(r => typeof r === 'object' ? r.guestId === guestId : r === guestId);
               
               // Extract date parts
               const dateStr = event.macros?.date || '';
@@ -887,10 +887,10 @@ export default function MenuPage() {
                         return;
                       }
                       
-                      const hasRsvpd = rsvpsList.includes(guestId);
+                      const hasRsvpd = rsvpsList.some(r => typeof r === 'object' ? r.guestId === guestId : r === guestId);
                       const newRsvps = hasRsvpd
-                        ? rsvpsList.filter(id => id !== guestId)
-                        : [...rsvpsList, guestId];
+                        ? rsvpsList.filter(r => typeof r === 'object' ? r.guestId !== guestId : r !== guestId)
+                        : [...rsvpsList, { guestId, name: profile.name, phone: profile.phone, timestamp: new Date().toISOString() }];
                         
                       const updatedMacros = {
                         ...(event.macros || {}),
@@ -899,7 +899,7 @@ export default function MenuPage() {
                         date: dateStr
                       };
                       
-                      await updateDish(event.id, { macros: updatedMacros });
+                      await rsvpToEvent(event.id, updatedMacros);
                       showNotification(hasRsvpd ? 'RSVP Cancelled' : 'Successfully RSVP\'d!');
                     }}
                     className={`w-full py-3 font-black text-sm rounded-xl transition-all shadow-sm ${

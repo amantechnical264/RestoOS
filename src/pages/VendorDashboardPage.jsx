@@ -441,6 +441,7 @@ export default function VendorDashboardPage() {
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
   const [editingDish, setEditingDish] = React.useState(null);
   const [editingEvent, setEditingEvent] = React.useState(null);
+  const [viewingRsvpsEvent, setViewingRsvpsEvent] = React.useState(null);
   const [managingCategories, setManagingCategories] = React.useState(false);
   const [newCategoryName, setNewCategoryName] = React.useState('');
   const [selectedEditCategory, setSelectedEditCategory] = React.useState('All');
@@ -2204,7 +2205,7 @@ export default function VendorDashboardPage() {
                                   </div>
                                   <p className="text-sm text-neutral-500 line-clamp-2 mt-1">{event.description}</p>
                                   <div className="mt-3 flex gap-2">
-                                    <span className="px-2 py-1 bg-neutral-100 dark:bg-white/5 rounded-md text-xs font-bold font-sans">{rsvpsCount} RSVP(s)</span>
+                                    <button onClick={() => setViewingRsvpsEvent(event)} className="px-2 py-1 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 transition-colors rounded-md text-xs font-bold font-sans text-indigo-700 dark:text-indigo-300">{rsvpsCount} RSVP(s)</button>
                                     <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-bold font-sans">Active</span>
                                   </div>
                                 </div>
@@ -3204,8 +3205,63 @@ export default function VendorDashboardPage() {
             </motion.div>
           )}
 
+          {viewingRsvpsEvent && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex justify-center items-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setViewingRsvpsEvent(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 relative flex flex-col max-h-[80vh] text-neutral-900 dark:text-white"
+              >
+                <div className="flex justify-between items-center mb-6 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <Users size={20} />
+                    </div>
+                    <div>
+                      <h2 className="font-display font-black text-xl">Guest List</h2>
+                      <p className="text-xs text-neutral-500 font-sans">{viewingRsvpsEvent.name}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setViewingRsvpsEvent(null)} className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 flex items-center justify-center transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto no-scrollbar pr-2 space-y-3">
+                  {!viewingRsvpsEvent.macros?.rsvps || viewingRsvpsEvent.macros.rsvps.length === 0 ? (
+                    <div className="text-center py-10">
+                      <p className="text-neutral-500 text-sm">No RSVPs yet.</p>
+                    </div>
+                  ) : (
+                    viewingRsvpsEvent.macros.rsvps.map((rsvp, idx) => {
+                      const isObj = typeof rsvp === 'object';
+                      const name = isObj ? (rsvp.name || 'Anonymous Guest') : 'Anonymous Guest';
+                      const phone = isObj ? (rsvp.phone || 'No phone provided') : 'No phone provided';
+                      const timestamp = isObj && rsvp.timestamp ? new Date(rsvp.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Unknown date';
+                      
+                      return (
+                        <div key={idx} className="flex flex-col gap-1 p-3 rounded-xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5">
+                          <p className="text-sm font-bold">{name}</p>
+                          <div className="flex justify-between text-xs text-neutral-500">
+                            <span>{phone}</span>
+                            <span>{timestamp}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
     </div>
   );
 }
+

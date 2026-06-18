@@ -818,6 +818,32 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const rsvpToEvent = async (eventId, updatedMacros) => {
+    try {
+      const dbUpdate = { macros: updatedMacros };
+      
+      console.log('RSVPing to event:', eventId, dbUpdate);
+      const { data, error } = await supabase.from('dishes').update(dbUpdate).eq('id', eventId).select();
+      if (error) throw error;
+      
+      if (data && data[0]) {
+        const mappedDish = {
+          ...data[0],
+          cover: data[0].macros?.cover || '',
+          images: data[0].macros?.images || [],
+          modelUrl: data[0].model_url || data[0].modelUrl,
+          restId: data[0].rest_id || data[0].restId
+        };
+        setDishes(prev => prev.map(d => d.id === eventId ? mappedDish : d));
+      }
+      return true;
+    } catch (error) {
+      console.error('RSVP event error:', error);
+      showNotification(`Failed to RSVP: ${error.message}`);
+      return false;
+    }
+  };
+
   const updateOrderStatus = async (orderId, newStatus) => {
     if (!supabase) return;
     
@@ -911,7 +937,7 @@ export const AppProvider = ({ children }) => {
     restaurants, setRestaurants, addRestaurant, updateRestaurant,
     cart, setCart,
     orders, setOrders,
-    dishes: processedDishes, setDishes, addDish, updateDish,
+    dishes: processedDishes, setDishes, addDish, updateDish, rsvpToEvent,
     promos, updateMarketingCampaign, currentTime,
     notification, showNotification,
     plans, planFor, upgradePlan,
