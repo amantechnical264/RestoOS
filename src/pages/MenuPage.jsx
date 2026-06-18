@@ -752,16 +752,7 @@ export default function MenuPage() {
           </button>
         </div>
 
-        {/* Dynamic Offer Banner */}
-        {new Date().getHours() >= 16 && new Date().getHours() <= 19 && (
-          <div className="mx-5 mb-4 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-500/20 flex items-center justify-between">
-            <div>
-              <h3 className="font-display font-black text-lg flex items-center gap-2"><Flame size={18}/> Happy Hour!</h3>
-              <p className="text-sm text-white/90">20% off all drinks and starters</p>
-            </div>
-            <div className="bg-white text-orange-500 font-black px-3 py-1.5 rounded-lg text-sm">-20%</div>
-          </div>
-        )}
+
 
         {/* ── ZOMATO-STYLE GROUPED DISH LIST ── */}
         <div className="pb-32">
