@@ -514,7 +514,7 @@ export default function VendorDashboardPage() {
   };
   const [dishVisibility, setDishVisibility] = React.useState({});
   const [soldOutDishes, setSoldOutDishes]   = React.useState({});
-  const [analyticsRange, setAnalyticsRange] = React.useState('7d');
+  const [analyticsRange, setAnalyticsRange] = React.useState('Week');
   const [isGenerating3D, setIsGenerating3D] = React.useState(false);
   const [enteredCodes, setEnteredCodes] = React.useState({});
 
@@ -656,11 +656,11 @@ export default function VendorDashboardPage() {
       if (o.status !== 'Completed' || !o.timestamp) return false;
       const orderDate = new Date(o.timestamp).toLocaleDateString('en-CA');
       if (analyticsRange === 'Today') return orderDate === todayStr;
-      if (analyticsRange === '7d') {
+      if (analyticsRange === 'Week') {
         const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 7);
         return new Date(o.timestamp) >= cutoff;
       }
-      if (analyticsRange === '30d') {
+      if (analyticsRange === 'Month') {
         const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30);
         return new Date(o.timestamp) >= cutoff;
       }
@@ -676,11 +676,11 @@ export default function VendorDashboardPage() {
         const todayStr = now.toLocaleDateString('en-CA');
         return new Date(o.timestamp).toLocaleDateString('en-CA') === todayStr;
       }
-      if (analyticsRange === '7d') {
+      if (analyticsRange === 'Week') {
         const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 7);
         return new Date(o.timestamp) >= cutoff;
       }
-      if (analyticsRange === '30d') {
+      if (analyticsRange === 'Month') {
         const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30);
         return new Date(o.timestamp) >= cutoff;
       }
@@ -751,7 +751,7 @@ export default function VendorDashboardPage() {
 
   // Revenue chart — adapts to selected range
   const weekData = React.useMemo(() => {
-    const days = analyticsRange === '30d' ? 30 : analyticsRange === '7d' ? 7 : 1;
+    const days = analyticsRange === 'Month' ? 30 : analyticsRange === 'Week' ? 7 : 1;
     return [...Array(days)].map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (days - 1 - i));
@@ -1204,7 +1204,7 @@ export default function VendorDashboardPage() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Deep insights into your restaurant's performance</p>
                   </div>
                   <div className="flex gap-2">
-                    {['Today','7d','30d'].map(r => (
+                    {['Today','Week','Month'].map(r => (
                       <button key={r} onClick={() => setAnalyticsRange(r)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${analyticsRange === r ? 'bg-neutral-900 dark:bg-white text-white dark:text-black' : 'bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500'}`}>
                         {r}
@@ -1219,7 +1219,7 @@ export default function VendorDashboardPage() {
                     Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
                   ) : (
                     <>
-                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={trendRevenue} />
+                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange === 'Week' ? "This Week's" : "This Month's"} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={trendRevenue} />
                       <KpiCard icon={ShoppingBag}  label="Orders Completed" value={rangedCompleted.length}                  color="bg-blue-500"    trend={trendOrders} />
                       <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={trendAvg} />
                       <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={trendCancel} />
@@ -1231,7 +1231,7 @@ export default function VendorDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
-                      <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === '7d' ? '7 Days' : '30 Days'}</h3>
+                      <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === 'Week' ? '7 Days' : '30 Days'}</h3>
                       <span className="text-xs font-semibold text-neutral-400">vs prev. week <span className="text-emerald-500">↑ 12%</span></span>
                     </div>
                     <MiniBarChart data={weekData} color="#3B82F6" height={100} />
