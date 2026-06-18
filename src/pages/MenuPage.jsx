@@ -597,20 +597,16 @@ export default function MenuPage() {
     <div className="flex flex-col min-h-[100dvh] bg-white dark:bg-[#0d0d10] text-neutral-900 dark:text-white font-sans">
 
       {/* ── HERO ── */}
-      <div className="relative h-[52vw] max-h-80 min-h-52 overflow-hidden flex-shrink-0">
+      <div className="relative h-[52vw] max-h-80 min-h-52 flex-shrink-0" style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)' }}>
         <motion.div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${restaurant?.cover})`, y: heroParallax, opacity: heroOpacity }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d10] via-[#0d0d10]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-[#0d0d10] via-white/30 dark:via-[#0d0d10]/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 
         {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-12 z-10">
-          <button onClick={() => navigate('/')}
-            className="p-2.5 rounded-full bg-black/30 border border-neutral-200 dark:border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
-            <QrCode size={18} className="text-neutral-900 dark:text-white/80" />
-          </button>
+        <div className="absolute top-0 left-0 right-0 flex justify-end items-start px-5 pt-12 z-10">
           <div className="flex gap-2">
             <button onClick={() => navigate('/health')}
               className="p-2.5 rounded-full bg-black/30 border border-neutral-200 dark:border-white/10 backdrop-blur-md hover:bg-white/10 transition-all">
