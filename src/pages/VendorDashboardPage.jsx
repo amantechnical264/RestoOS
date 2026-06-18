@@ -2689,43 +2689,7 @@ export default function VendorDashboardPage() {
 
                 </div>
 
-                {/* Revenue Forecast */}
-                <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl p-6 text-white">
-                  <div className="flex items-center gap-3 mb-4">
-                    <TrendingUp size={20} />
-                    <h3 className="font-display font-black text-lg">Revenue Forecast</h3>
-                  </div>
-                  <p className="text-sm text-blue-100 mb-4">Based on your current daily average, projected monthly revenue:</p>
-                  <p className="font-display font-black text-5xl mb-2">${(todayRevenue * 26).toFixed(0)}</p>
-                  
-                  {promos[activeRestId]?.flash && new Date(promos[activeRestId].flash.expires + 'T23:59:59') >= new Date() && (
-                    <div className="mt-4 p-3 bg-white/10 rounded-xl flex justify-between items-center">
-                      <div>
-                        <span className="block text-xs text-white/60 font-bold uppercase tracking-wider mb-0.5">Flash Discount</span>
-                        <span className="font-bold text-sm">{promos[activeRestId].flash.label} — {promos[activeRestId].flash.discount}% OFF</span>
-                      </div>
-                      <button onClick={() => updateMarketingCampaign(activeRestId, 'flash', null)} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-                        Deactivate
-                      </button>
-                    </div>
-                  )}
 
-                  {promos[activeRestId]?.happyHour && (
-                    <div className="mt-3 p-3 bg-amber-500/20 border border-amber-400/30 rounded-xl flex justify-between items-center">
-                      <div>
-                        <span className="block text-xs text-amber-200 font-bold uppercase tracking-wider mb-0.5">Happy Hour</span>
-                        <span className="font-bold text-sm text-amber-50">{promos[activeRestId].happyHour.startTime} - {promos[activeRestId].happyHour.endTime} — {promos[activeRestId].happyHour.discount}% OFF</span>
-                      </div>
-                      <button onClick={() => updateMarketingCampaign(activeRestId, 'happyHour', null)} className="text-xs font-bold text-amber-100 bg-amber-500/20 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg transition-colors">
-                        Deactivate
-                      </button>
-                    </div>
-                  )}
-
-                  {(!promos[activeRestId]?.flash && !promos[activeRestId]?.happyHour) && (
-                    <p className="text-xs text-blue-200 mt-4">Activate promos to increase this by 15-40%</p>
-                  )}
-                </div>
               </div>
               )}
             </motion.div>
