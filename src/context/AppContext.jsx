@@ -380,10 +380,8 @@ export const AppProvider = ({ children }) => {
               cover: r.cover || ''
             }));
             if (fastArrayEquals(prev, mapped)) return prev;
-            // Store without cover to keep cache small; cover comes fresh from DB
             try {
-              const cacheData = mapped.map(({ cover, ...rest }) => rest);
-              localStorage.setItem('3dish_cached_restaurants', JSON.stringify(cacheData));
+              localStorage.setItem('3dish_cached_restaurants', JSON.stringify(mapped));
             } catch {}
             return mapped;
           });
