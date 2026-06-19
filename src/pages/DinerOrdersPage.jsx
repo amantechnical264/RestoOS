@@ -314,30 +314,58 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
 
       {/* Call Waiter button */}
       {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
-        <button
-          onClick={async () => {
-            try {
-              await import('../services/supabase').then(({ supabase }) => {
-                if (supabase) {
-                  supabase.channel('service-requests').send({
-                    type: 'broadcast', event: 'waiter_call',
-                    payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
-                  });
+        <div className="flex gap-3 mb-4">
+          <button
+            onClick={async () => {
+              try {
+                await import('../services/supabase').then(({ supabase }) => {
+                  if (supabase) {
+                    supabase.channel('service-requests').send({
+                      type: 'broadcast', event: 'waiter_call',
+                      payload: { tableNumber: tableNumber || '12', type: 'Waiter via Order Tracking', time: new Date().toISOString() }
+                    });
+                  }
+                });
+                const btn = document.getElementById(`call-waiter-${order.id}`);
+                if (btn) {
+                  btn.textContent = '✔ Waiter Notified!';
+                  setTimeout(() => { btn.textContent = '🔔 Call Waiter'; }, 3000);
                 }
-              });
-              const btn = document.getElementById(`call-waiter-${order.id}`);
-              if (btn) {
-                btn.textContent = '✔ Waiter Notified!';
-                setTimeout(() => { btn.textContent = '🔔 Call Waiter'; }, 3000);
-              }
-            } catch(e) { console.error(e); }
-          }}
-          id={`call-waiter-${order.id}`}
-          className="w-full mb-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-          style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
-        >
-          <Bell size={15}/> Call Waiter
-        </button>
+              } catch(e) { console.error(e); }
+            }}
+            id={`call-waiter-${order.id}`}
+            className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+            style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
+          >
+            <Bell size={15}/> Call Waiter
+          </button>
+          
+          {order.paymentStatus === 'Unpaid' && (
+            <button
+              onClick={async () => {
+                try {
+                  await import('../services/supabase').then(({ supabase }) => {
+                    if (supabase) {
+                      supabase.channel('service-requests').send({
+                        type: 'broadcast', event: 'bill_request',
+                        payload: { tableNumber: tableNumber || '12', type: 'Bill Request', orderId: order.id, time: new Date().toISOString() }
+                      });
+                    }
+                  });
+                  const btn = document.getElementById(`ask-bill-${order.id}`);
+                  if (btn) {
+                    btn.textContent = '✔ Bill Requested!';
+                    setTimeout(() => { btn.textContent = 'Ask for Bill'; }, 3000);
+                  }
+                } catch(e) { console.error(e); }
+              }}
+              id={`ask-bill-${order.id}`}
+              className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+            >
+              <Store size={15}/> Ask for Bill
+            </button>
+          )}
+        </div>
       )}
 
       {/* Total */}

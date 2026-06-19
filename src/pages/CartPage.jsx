@@ -38,6 +38,7 @@ export default function CartPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showArCombo, setShowArCombo] = useState(false);
   const [splitCount, setSplitCount] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('Pay at Counter');
 
   const hasSoldOutItem = cart.some(item => {
     const dbDish = dishes.find(d => d.id === item.id);
@@ -75,13 +76,13 @@ export default function CartPage() {
 
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     const status = 'Pending Verification';
-    const paymentStatus = 'Unpaid';
+    const finalPaymentStatus = 'Unpaid';
     
     const success = await placeOrder({ 
       orderType: 'dine_in', 
       scheduledTime: null,
-      paymentMethod: 'Digital',
-      paymentStatus: paymentStatus,
+      paymentMethod: paymentMethod,
+      paymentStatus: finalPaymentStatus,
       status: status,
       tipAmount: 0,
       verificationCode: code,
@@ -238,6 +239,31 @@ export default function CartPage() {
               <span className="text-sm font-bold text-[#D4AF37]">+150 XP</span>
             </div>
           </div>
+
+          {/* Payment Method Selector */}
+          <div className="mt-4 mb-8 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-5 backdrop-blur-md">
+            <h3 className="font-display font-bold text-neutral-900 dark:text-white text-sm mb-3">Payment Method</h3>
+            <div 
+              onClick={() => setPaymentMethod('Pay at Counter')}
+              className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border-2 transition-all ${
+                paymentMethod === 'Pay at Counter' 
+                  ? 'border-[#D4AF37] bg-[#D4AF37]/10' 
+                  : 'border-transparent bg-neutral-100 dark:bg-white/5'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-black shadow-sm">
+                <Store size={18} className="text-[#D4AF37]" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-neutral-900 dark:text-white text-sm">Pay at Counter</p>
+                <p className="text-xs text-neutral-500">Pay with Cash, Card, or UPI after your meal.</p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'Pay at Counter' ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                {paymentMethod === 'Pay at Counter' && <div className="w-2 h-2 bg-white rounded-full" />}
+              </div>
+            </div>
+          </div>
+
         </motion.div>
       </div>
 

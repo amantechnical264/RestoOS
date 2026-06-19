@@ -71,18 +71,25 @@ export default function StaffDashboard({
                     <Bell className="animate-pulse" size={20}/> Active Requests
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {serviceAlerts.map((alert, idx) => (
-                      <div key={idx} className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-500/50 p-5 rounded-3xl flex flex-col justify-between shadow-[0_4px_20px_rgba(245,158,11,0.15)]">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-500 mb-1">Table {alert.tableNumber}</p>
-                          <p className="text-xl font-display font-black text-amber-900 dark:text-amber-100">{alert.type}</p>
+                    {serviceAlerts.map((alert, idx) => {
+                      const isBill = alert.type === 'Bill Request';
+                      const colorTheme = isBill 
+                        ? { bg: 'bg-emerald-50 dark:bg-emerald-950/40', border: 'border-emerald-400 dark:border-emerald-500/50', text: 'text-emerald-700 dark:text-emerald-500', shadow: 'shadow-[0_4px_20px_rgba(16,185,129,0.15)]', btn: 'bg-emerald-500 hover:bg-emerald-600' }
+                        : { bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-400 dark:border-amber-500/50', text: 'text-amber-700 dark:text-amber-500', shadow: 'shadow-[0_4px_20px_rgba(245,158,11,0.15)]', btn: 'bg-amber-500 hover:bg-amber-600' };
+                        
+                      return (
+                        <div key={idx} className={`${colorTheme.bg} border-2 ${colorTheme.border} p-5 rounded-3xl flex flex-col justify-between ${colorTheme.shadow}`}>
+                          <div>
+                            <p className={`text-[10px] font-black uppercase tracking-widest ${colorTheme.text} mb-1`}>Table {alert.tableNumber}</p>
+                            <p className="text-xl font-display font-black text-neutral-900 dark:text-white">{alert.type}</p>
+                          </div>
+                          <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))}
+                            className={`mt-6 w-full py-3 ${colorTheme.btn} text-white font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg`}>
+                            <CheckCircle size={18}/> Resolve
+                          </button>
                         </div>
-                        <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))}
-                          className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg">
-                          <CheckCircle size={18}/> Resolve
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

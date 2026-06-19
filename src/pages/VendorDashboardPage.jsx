@@ -615,6 +615,14 @@ export default function VendorDashboardPage() {
   const [glbUpload, setGlbUpload] = React.useState({ uploading: false, progress: 0, error: null });
 
   const uploadGlbFile = async (file) => {
+    // 5MB limit to protect Supabase egress quota
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      showNotification('⚠️ File too large. Please compress your GLB to under 5MB (e.g. using gltf.report).', 'error');
+      setGlbUpload({ uploading: false, progress: 0, error: 'File exceeds 5MB limit.' });
+      return null;
+    }
+
     setGlbUpload({ uploading: true, progress: 0, error: null });
 
     let currentProgress = 0;
