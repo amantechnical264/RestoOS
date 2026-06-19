@@ -440,7 +440,16 @@ export default function VendorDashboardPage() {
   }, [supabaseUser, restaurants, activeRestId, navigate, setActiveRestId, isInitializing]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut(); setUser(null); navigate('/');
+    await supabase.auth.signOut();
+    localStorage.removeItem('3dish_user');
+    sessionStorage.removeItem('3dish_active_rest');
+    window.location.href = '/vendor-auth';
+  };
+
+  const updateOrder = async (orderId, updates) => {
+    if (updates.status && updateOrderStatus) {
+      await updateOrderStatus(orderId, updates.status);
+    }
   };
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);

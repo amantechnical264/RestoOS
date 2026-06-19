@@ -1,22 +1,13 @@
-/**
- * geminiService.js
- * 
- * Real AI integrations using Google Gemini API.
- * Requires VITE_GEMINI_API_KEY in your .env file.
- * Get a free key at: https://aistudio.google.com/apikey
- */
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Utility: Convert a File/Blob to base64 string
-// ─────────────────────────────────────────────────────────────────────────────
 async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      // result is "data:<mimeType>;base64,<data>" — strip prefix
       const base64 = reader.result.split(',')[1];
       resolve(base64);
     };
@@ -25,11 +16,9 @@ async function fileToBase64(file) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 1. Menu OCR: Extract dishes from an uploaded menu image/PDF
-// ─────────────────────────────────────────────────────────────────────────────
+// 1. Menu OCR
 export async function extractMenuFromImage(file) {
-  if (!GEMINI_API_KEY) {
+  if (!genAI) {
     throw new Error('GEMINI_API_KEY_MISSING');
   }
 
@@ -56,46 +45,23 @@ Rules:
 - Keep descriptions concise (1 sentence max)
 - Return ONLY the JSON array, nothing else`;
 
-  const response = await fetch(
-    `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: base64Data,
-              }
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topP: 0.8,
-          maxOutputTokens: 4096,
-        }
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err?.error?.message || 'Gemini API error');
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-
-  // Clean up response — strip markdown code fences if present
-  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: mimeType
+        }
+      }
+    ]);
+    const response = await result.response;
+    const text = response.text();
+
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const dishes = JSON.parse(cleaned);
-    // Normalize and add unique IDs
+
     return dishes.map((d, i) => ({
       id: `ocr_${Date.now()}_${i}`,
       name: d.name || 'Unknown Dish',
@@ -103,21 +69,18 @@ Rules:
       category: d.category || 'Uncategorized',
       description: d.description || '',
     }));
-  } catch {
-    throw new Error('Failed to parse AI response. Please try again with a clearer image.');
+  } catch (error) {
+    console.error("Gemini OCR Error:", error);
+    throw new Error(error.message || 'Failed to parse AI response. Please try again with a clearer image.');
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. AI Concierge Chat: Intelligent responses using menu context
-// ─────────────────────────────────────────────────────────────────────────────
+// 2. AI Concierge Chat
 export async function getConciergeResponse(userMessage, dishes, restaurantName, customPersonality) {
-  if (!GEMINI_API_KEY) {
-    // Fallback to keyword-based smart responses when no API key
+  if (!genAI) {
     return getFallbackResponse(userMessage, dishes);
   }
 
-  // Build a concise menu summary for context
   const menuContext = dishes.slice(0, 40).map(d =>
     `- ${d.name} (${d.category || 'General'}) ₹${d.price}${d.description ? ` — ${d.description}` : ''}`
   ).join('\n');
@@ -127,41 +90,20 @@ export async function getConciergeResponse(userMessage, dishes, restaurantName, 
     You know the menu inside-out. You recommend dishes confidently, handle allergen queries carefully, 
     and make every guest feel special. Be concise (2-3 sentences max). Use an occasional emoji.`;
 
-  const prompt = `${systemPrompt}
+  const prompt = `${systemPrompt}\n\nMENU:\n${menuContext}\n\nCUSTOMER: ${userMessage}\n\nCONCIERGE:`;
 
-MENU:
-${menuContext}
-
-CUSTOMER: ${userMessage}
-
-CONCIERGE:`;
-
-  const response = await fetch(
-    `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.8,
-          topP: 0.9,
-          maxOutputTokens: 256,
-        }
-      }),
-    }
-  );
-
-  if (!response.ok) throw new Error('Gemini API error');
-
-  const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-    "I'd love to help! Could you be a bit more specific about what you're looking for?";
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text().trim() || "I'd love to help! Could you be a bit more specific about what you're looking for?";
+  } catch (error) {
+    console.error("Gemini Chat Error:", error);
+    return getFallbackResponse(userMessage, dishes);
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Fallback: Smart keyword-based responses (used when no API key)
-// ─────────────────────────────────────────────────────────────────────────────
+// Fallback logic
 function getFallbackResponse(userMessage, dishes) {
   const lower = userMessage.toLowerCase();
 
@@ -181,7 +123,7 @@ function getFallbackResponse(userMessage, dishes) {
     const sig = dishes.find(d => d.tags?.includes('Signature') || d.tags?.includes("Chef's Pick")) || dishes[0];
     return sig
       ? `⭐ I highly recommend our **${sig.name}** — it's one of the chef's absolute favorites!`
-      : 'Every dish on our menu is crafted with love. Ask your waiter for today\'s special!';
+      : 'Every dish on our menu is crafted with love. Ask your waiter for today\\'s special!';
   }
   if (lower.includes('allergen') || lower.includes('allergy') || lower.includes('gluten') || lower.includes('nut')) {
     return '⚠️ Allergen details are listed on each individual dish card. Please also inform your waiter directly for complete safety — we take allergies very seriously.';
@@ -196,7 +138,7 @@ function getFallbackResponse(userMessage, dishes) {
     const desserts = dishes.filter(d => d.category?.toLowerCase().includes('dessert') || d.tags?.includes('Dessert'));
     return desserts.length > 0
       ? `🍰 For dessert, our **${desserts[0].name}** is absolutely divine!`
-      : 'Our dessert menu changes seasonally. Ask your waiter about today\'s selection!';
+      : 'Our dessert menu changes seasonally. Ask your waiter about today\\'s selection!';
   }
 
   return "That's a great question! Let me fetch that for you — in the meantime, feel free to browse the menu or ask your waiter for assistance.";

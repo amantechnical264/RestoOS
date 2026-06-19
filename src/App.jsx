@@ -18,6 +18,10 @@ const SettingsPage        = React.lazy(() => import('./pages/SettingsPage'));
 const CustomerProfilePage = React.lazy(() => import('./pages/CustomerProfilePage'));
 const LandingPage         = React.lazy(() => import('./pages/LandingPage'));
 
+// Admin Pages
+const AdminAuthPage       = React.lazy(() => import('./pages/AdminAuthPage'));
+const AdminDashboardPage  = React.lazy(() => import('./pages/AdminDashboardPage'));
+
 // Global Error Boundary to catch PWA stale-cache chunk loading errors
 class GlobalErrorBoundary extends React.Component {
   constructor(props) {
@@ -103,6 +107,10 @@ function AnimatedRoutes() {
         {/* Health & Settings */}
         <Route path="/health"   element={<HealthDashboardPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin"          element={<AdminAuthPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
       </Routes>
     </AnimatePresence>
   );
