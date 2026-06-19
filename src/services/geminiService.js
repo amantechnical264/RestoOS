@@ -123,7 +123,7 @@ function getFallbackResponse(userMessage, dishes) {
     const sig = dishes.find(d => d.tags?.includes('Signature') || d.tags?.includes("Chef's Pick")) || dishes[0];
     return sig
       ? `⭐ I highly recommend our **${sig.name}** — it's one of the chef's absolute favorites!`
-      : 'Every dish on our menu is crafted with love. Ask your waiter for today\\'s special!';
+      : 'Every dish on our menu is crafted with love. Ask your waiter for today\'s special!';
   }
   if (lower.includes('allergen') || lower.includes('allergy') || lower.includes('gluten') || lower.includes('nut')) {
     return '⚠️ Allergen details are listed on each individual dish card. Please also inform your waiter directly for complete safety — we take allergies very seriously.';
@@ -138,7 +138,7 @@ function getFallbackResponse(userMessage, dishes) {
     const desserts = dishes.filter(d => d.category?.toLowerCase().includes('dessert') || d.tags?.includes('Dessert'));
     return desserts.length > 0
       ? `🍰 For dessert, our **${desserts[0].name}** is absolutely divine!`
-      : 'Our dessert menu changes seasonally. Ask your waiter about today\\'s selection!';
+      : 'Our dessert menu changes seasonally. Ask your waiter about today\'s selection!';
   }
 
   return "That's a great question! Let me fetch that for you — in the meantime, feel free to browse the menu or ask your waiter for assistance.";
