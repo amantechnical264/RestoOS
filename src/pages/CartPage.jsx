@@ -72,7 +72,6 @@ export default function CartPage() {
 
   const executeCheckout = async () => {
     setIsProcessing(true);
-    await new Promise(r => setTimeout(r, 2000));
 
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     const status = 'Pending Verification';

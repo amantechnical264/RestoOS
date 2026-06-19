@@ -11,12 +11,16 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import { reviewService } from '../services/ReviewService';
 import ModelViewer from '../components/ModelViewer';
 import AIImageGenerator from '../components/AIImageGenerator';
+import StaffDashboard from '../components/StaffDashboard';
 import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
+import { extractMenuFromImage } from '../services/geminiService';
+import { generateMeshyModel } from '../services/meshyService';
 
 // ── Design Tokens ─────────────────────────────────────────────────────
 const GOLD = '#D4AF37';
@@ -567,28 +571,38 @@ export default function VendorDashboardPage() {
     showNotification('Settings saved successfully!');
   };
 
-  const handleOCRUpload = (e) => {
+  const handleOCRUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset the input so the same file can be re-uploaded
+    e.target.value = '';
+
     setAiImportState('analyzing');
     setImportProgress(0);
-    // Simulate AI parsing
-    let p = 0;
-    const interval = setInterval(() => {
-      p += 15;
-      if (p >= 100) {
-        clearInterval(interval);
-        setExtractedDishes([
-          { id: 'ocr1', name: 'Truffle Fries', price: 8.99, category: 'Starters', description: 'Crispy fries with truffle oil and parmesan' },
-          { id: 'ocr2', name: 'Wagyu Burger', price: 24.50, category: 'Mains', description: 'Premium wagyu beef, caramelized onions, brioche bun' },
-          { id: 'ocr3', name: 'Matcha Tiramisu', price: 12.00, category: 'Desserts', description: 'Classic tiramisu infused with ceremonial grade matcha' }
-        ]);
-        setAiImportState('reviewing');
-        showNotification('Menu analyzed successfully. Please review the extracted items.');
+
+    try {
+      // Animate progress bar while waiting for API
+      let fakeP = 0;
+      const progressInterval = setInterval(() => {
+        fakeP = Math.min(fakeP + 8, 85); // goes up to 85%, then jump to 100 on success
+        setImportProgress(fakeP);
+      }, 500);
+
+      const dishes = await extractMenuFromImage(file);
+      clearInterval(progressInterval);
+      setImportProgress(100);
+      setExtractedDishes(dishes);
+      setAiImportState('reviewing');
+      showNotification(`✨ Extracted ${dishes.length} dishes from your menu!`);
+    } catch (err) {
+      console.error('OCR error:', err);
+      setAiImportState('idle');
+      if (err.message === 'GEMINI_API_KEY_MISSING') {
+        showNotification('⚠️ Add VITE_GEMINI_API_KEY to your .env file to enable AI menu import.');
       } else {
-        setImportProgress(p);
+        showNotification(`Import failed: ${err.message}`);
       }
-    }, 400);
+    }
   };
 
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy', 'Fish'];
@@ -628,21 +642,35 @@ export default function VendorDashboardPage() {
   };
 
   const handleAIGenerate3D = async () => {
-    if (!editingDish.cover && !editingDish.images?.length) {
+    const imageUrl = editingDish.cover || editingDish.images?.[0];
+    if (!imageUrl) {
       showNotification('Please upload at least one dish image first.');
       return;
     }
     setIsGenerating3D(true);
-    showNotification('Sending to Meshy.ai...');
-    setTimeout(() => {
-      // Mock generation completion
-      setEditingDish(prev => ({
-        ...prev, 
-        modelUrl: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb' // placeholder
-      }));
+    setScanStageLabel('Sending to Meshy.ai...');
+    showNotification('🤖 Starting 3D generation — this takes 1-3 minutes...');
+
+    try {
+      const glbUrl = await generateMeshyModel(imageUrl, (progress) => {
+        setProgress(progress);
+        setScanStageLabel(`Generating 3D model... ${Math.round(progress)}%`);
+      });
+      setEditingDish(prev => ({ ...prev, modelUrl: glbUrl }));
       setIsGenerating3D(false);
-      showNotification('3D Model generated successfully!');
-    }, 3000);
+      setScanStageLabel('3D AR Model Ready!');
+      setProgress(100);
+      showNotification('✅ 3D Model generated successfully! Preview it below.');
+    } catch (err) {
+      console.error('Meshy 3D error:', err);
+      setIsGenerating3D(false);
+      setScanStageLabel('');
+      if (err.message === 'MESHY_API_KEY_MISSING') {
+        showNotification('⚠️ Add VITE_MESHY_API_KEY to your .env file to enable 3D generation.');
+      } else {
+        showNotification(`3D generation failed: ${err.message}`);
+      }
+    }
   };
 
   // ── Order helpers ─────────────────────────────────────────────────
@@ -954,6 +982,22 @@ export default function VendorDashboardPage() {
       setVendorTab('orders');
     }
   }, [isStaffMode, vendorTab]);
+
+  if (isStaffMode) {
+    return (
+      <StaffDashboard
+        isStaffMode={isStaffMode}
+        setIsStaffMode={setIsStaffMode}
+        serviceAlerts={serviceAlerts}
+        setServiceAlerts={setServiceAlerts}
+        restOrders={restOrders}
+        updateOrder={updateOrder}
+        tableCount={tableCount}
+        GOLD={GOLD}
+        goldGradient={goldGradient}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white relative">
@@ -1603,9 +1647,9 @@ export default function VendorDashboardPage() {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
                         <Filter size={16} /> Manage Categories
                       </button>
-                      <input type="file" accept=".csv" className="hidden" id="csv-upload" onChange={handleCsvUpload} />
-                      <label htmlFor="csv-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
-                        <Upload size={16} /> Import CSV
+                      <input type="file" accept="image/*,.pdf" capture="environment" className="hidden" id="ai-menu-upload" onChange={handleOCRUpload} />
+                      <label htmlFor="ai-menu-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-black hover:bg-[#D4AF37]/20 transition-colors shadow-[0_0_15px_rgba(212,175,55,0.15)]">
+                        <Sparkles size={16} /> Import Menu (AI)
                       </label>
                       <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', images: [], tags: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
@@ -3213,75 +3257,7 @@ export default function VendorDashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── OCR Menu Import ── */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)] relative overflow-hidden">
-                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Sparkles size={13}/> AI Menu Import (OCR)
-                    </h3>
-                    <p className="text-sm text-neutral-500">Upload any existing paper/PDF menu — our AI will scan and create all dishes automatically.</p>
-                    
-                    <input type="file" accept="image/*,.pdf" ref={fileInputRef} className="hidden" onChange={handleOCRUpload} />
-                    
-                    {aiImportState === 'idle' && (
-                      <button type="button" onClick={() => fileInputRef.current?.click()}
-                        className="w-full h-32 border-2 border-dashed border-neutral-300 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group">
-                        <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform text-neutral-400 group-hover:text-[#D4AF37]">
-                          <Upload size={18} />
-                        </div>
-                        <span className="text-sm font-bold text-neutral-600 dark:text-neutral-400">Click or Drag PDF / Image Menu</span>
-                      </button>
-                    )}
 
-                    {aiImportState === 'analyzing' && (
-                      <div className="w-full h-32 border border-neutral-200 dark:border-white/10 rounded-xl flex flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-white/[0.02]">
-                        <div className="flex items-center gap-3">
-                          <BrainCircuit size={20} className="text-[#D4AF37] animate-pulse" />
-                          <span className="text-sm font-bold animate-pulse text-[#D4AF37]">Analyzing Menu Items...</span>
-                        </div>
-                        <div className="w-3/4 h-1.5 bg-neutral-200 dark:bg-white/10 rounded-full overflow-hidden">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${importProgress}%` }} className="h-full bg-[#D4AF37] rounded-full" />
-                        </div>
-                      </div>
-                    )}
-
-                    {aiImportState === 'reviewing' && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-emerald-500 flex items-center gap-1"><CheckCircle size={14}/> Found {extractedDishes.length} items</span>
-                          <button type="button" onClick={() => setAiImportState('idle')} className="text-xs text-neutral-400 hover:text-white">Cancel</button>
-                        </div>
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
-                          {extractedDishes.map((dish, i) => (
-                            <div key={dish.id} className="p-3 bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/10 rounded-xl">
-                               <input value={dish.name} onChange={e => {
-                                 const newD = [...extractedDishes]; newD[i].name = e.target.value; setExtractedDishes(newD);
-                               }} className="w-full bg-transparent text-sm font-bold text-neutral-900 dark:text-white border-none focus:ring-0 p-0 mb-1" />
-                               <div className="flex gap-2 mb-2">
-                                 <input value={dish.price} onChange={e => {
-                                   const newD = [...extractedDishes]; newD[i].price = e.target.value; setExtractedDishes(newD);
-                                 }} className="w-20 bg-neutral-100 dark:bg-black/50 text-xs rounded px-2 py-1 border border-neutral-200 dark:border-white/10 text-emerald-500 font-bold" />
-                                 <input value={dish.category} onChange={e => {
-                                   const newD = [...extractedDishes]; newD[i].category = e.target.value; setExtractedDishes(newD);
-                                 }} className="flex-1 bg-neutral-100 dark:bg-black/50 text-xs rounded px-2 py-1 border border-neutral-200 dark:border-white/10 text-neutral-500" />
-                               </div>
-                               <textarea value={dish.description} onChange={e => {
-                                 const newD = [...extractedDishes]; newD[i].description = e.target.value; setExtractedDishes(newD);
-                               }} className="w-full bg-transparent text-xs text-neutral-500 border-none focus:ring-0 p-0 resize-none h-10" />
-                            </div>
-                          ))}
-                        </div>
-                        <button type="button" onClick={async () => {
-                          for (const d of extractedDishes) {
-                            await addDish({ name: d.name, price: Number(d.price), category: d.category, description: d.description, restId: activeRestId });
-                          }
-                          setAiImportState('idle');
-                          showNotification(`Successfully imported ${extractedDishes.length} dishes!`);
-                        }} className="w-full py-2.5 rounded-xl text-sm font-black bg-[#D4AF37] text-black shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center gap-2">
-                          <CheckCircle size={16}/> Confirm & Import All
-                        </button>
-                      </div>
-                    )}
-                  </div>
 
                   <button type="submit"
                     className="w-full py-4 mt-6 rounded-2xl font-display font-black flex items-center justify-center gap-2 text-black text-base shadow-gold"
@@ -3451,6 +3427,94 @@ export default function VendorDashboardPage() {
           )}
 
         </AnimatePresence>
+
+        {/* ── AI MENU IMPORT MODAL ── */}
+        <AnimatePresence>
+          {aiImportState !== 'idle' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                className="w-full max-w-lg bg-white dark:bg-[#12141D] rounded-3xl border border-neutral-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                
+                <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-[#1a1a1f]">
+                  <h2 className="font-display font-black text-xl flex items-center gap-2 text-[#D4AF37]">
+                    <Sparkles size={20} /> AI Menu Import
+                  </h2>
+                  <button onClick={() => setAiImportState('idle')} className="text-neutral-400 hover:text-red-500 transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto">
+                  {aiImportState === 'analyzing' && (
+                    <div className="flex flex-col items-center justify-center py-10">
+                      <div className="relative w-24 h-24 mb-6">
+                        <div className="absolute inset-0 border-4 border-[#D4AF37]/20 rounded-full"></div>
+                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-0 border-4 border-t-[#D4AF37] rounded-full"></motion.div>
+                        <BrainCircuit size={40} className="absolute inset-0 m-auto text-[#D4AF37] animate-pulse" />
+                      </div>
+                      <h3 className="font-black text-lg mb-2">Analyzing Image/PDF...</h3>
+                      <p className="text-neutral-500 text-sm text-center mb-6 max-w-[250px]">Our AI is magically extracting dishes, prices, and descriptions.</p>
+                      <div className="w-full h-2 bg-neutral-200 dark:bg-white/10 rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${importProgress}%` }} className="h-full bg-[#D4AF37] rounded-full" />
+                      </div>
+                    </div>
+                  )}
+
+                  {aiImportState === 'reviewing' && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-end mb-4">
+                        <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm flex items-center gap-1.5"><CheckCircle size={16}/> Extraction Complete</p>
+                        <span className="text-xs font-black uppercase tracking-widest text-neutral-500">{extractedDishes.length} Items Found</span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {extractedDishes.map((dish, i) => (
+                          <div key={dish.id} className="bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl p-4">
+                            <input value={dish.name} onChange={e => {
+                              const newD = [...extractedDishes]; newD[i].name = e.target.value; setExtractedDishes(newD);
+                            }} className="w-full bg-transparent text-lg font-black text-neutral-900 dark:text-white border-none focus:ring-0 p-0 mb-2 placeholder:text-neutral-500" placeholder="Dish Name" />
+                            
+                            <div className="flex gap-3 mb-3">
+                              <div className="relative w-1/3">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-bold">₹</span>
+                                <input value={dish.price} onChange={e => {
+                                  const newD = [...extractedDishes]; newD[i].price = e.target.value; setExtractedDishes(newD);
+                                }} className="w-full bg-white dark:bg-[#1a1a1f] pl-7 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-[#D4AF37]/50 transition-colors" placeholder="0.00" />
+                              </div>
+                              <input value={dish.category} onChange={e => {
+                                const newD = [...extractedDishes]; newD[i].category = e.target.value; setExtractedDishes(newD);
+                              }} className="w-2/3 bg-white dark:bg-[#1a1a1f] px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-bold text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-[#D4AF37]/50 transition-colors" placeholder="Category" />
+                            </div>
+                            
+                            <textarea value={dish.description} onChange={e => {
+                              const newD = [...extractedDishes]; newD[i].description = e.target.value; setExtractedDishes(newD);
+                            }} className="w-full bg-white dark:bg-[#1a1a1f] px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 text-xs text-neutral-600 dark:text-neutral-400 resize-none h-16 focus:outline-none focus:border-[#D4AF37]/50 transition-colors" placeholder="Description..." />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {aiImportState === 'reviewing' && (
+                  <div className="p-5 border-t border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#1a1a1f] shrink-0">
+                    <button onClick={async () => {
+                      for (const d of extractedDishes) {
+                        await addDish({ name: d.name, price: Number(d.price), category: d.category, description: d.description, restId: activeRestId });
+                      }
+                      setAiImportState('idle');
+                      showNotification(`Successfully imported ${extractedDishes.length} dishes!`);
+                    }} className="w-full py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_4px_20px_rgba(212,175,55,0.3)] text-black" style={{ background: goldGradient }}>
+                      <CheckCircle size={20}/> Save All Items to Menu
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
     </div>
   );

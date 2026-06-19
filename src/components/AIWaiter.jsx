@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Mic, Sparkles, ChefHat } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { getConciergeResponse } from '../services/geminiService';
 
 export default function AIWaiter() {
-  const { dishes, addToCart } = useAppContext();
+  const { dishes, activeRestId, restaurants } = useAppContext();
+  const currentRestaurant = restaurants?.find(r => r.id === activeRestId);
+  const restaurantName = currentRestaurant?.name || 'our restaurant';
+  const aiPersonality = currentRestaurant?.aiPersonality || null;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'ai', text: "Welcome! I'm your personal TableAI concierge. Ask me anything — dish recommendations, allergens, or order help." }
@@ -22,41 +26,22 @@ export default function AIWaiter() {
     if (isOpen) scrollToBottom();
   }, [messages, isOpen]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
     const userMsg = input.trim();
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      setIsTyping(false);
-      let aiResponse = "That's a great question! Let me check with our Chef and get back to you shortly.";
-      const lower = userMsg.toLowerCase();
-
-      if (lower.includes('spicy') || lower.includes('hot')) {
-        const spicy = dishes.filter(d => d.spiceLevel === 'Hot' || d.spiceLevel === 'Extra Hot');
-        aiResponse = spicy.length > 0
-          ? `🌶️ If you love heat, our **${spicy[0].name}** is the perfect choice! Want me to add it to your order?`
-          : "We can certainly request the kitchen to spice things up for you!";
-      } else if (lower.includes('vegan') || lower.includes('vegetarian')) {
-        const vegan = dishes.filter(d => d.tags?.includes('Vegan') || d.dietaryPreference === 'Vegan');
-        aiResponse = vegan.length > 0
-          ? `🌱 Our **${vegan[0].name}** is a beautiful plant-based option our chef personally recommends.`
-          : "Please let me check the kitchen for plant-based preparations for you.";
-      } else if (lower.includes('recommend') || lower.includes('best') || lower.includes('popular')) {
-        const sig = dishes.find(d => d.tags?.includes('Signature') || d.tags?.includes("Chef's Pick"));
-        aiResponse = sig
-          ? `⭐ Our absolute star dish is the **${sig.name}** — it's the Chef's signature and our most beloved creation!`
-          : "Every dish here is crafted with love. Ask our chef for today's special!";
-      } else if (lower.includes('allergen') || lower.includes('allergy') || lower.includes('gluten') || lower.includes('nuts')) {
-        aiResponse = "Our allergen information is listed on each dish card. Tap any dish to see the full allergen profile. Please also inform your waiter directly for complete safety.";
-      } else if (lower.includes('add') || lower.includes('order') || lower.includes('cart')) {
-        aiResponse = "Tap the **+ Add** button on any dish card to add it to your order. I can also recommend something specific — just tell me what you're in the mood for!";
-      }
-
+    try {
+      const aiResponse = await getConciergeResponse(userMsg, dishes, restaurantName, aiPersonality);
       setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
-    }, 1200);
+    } catch (err) {
+      console.error('AI Concierge error:', err);
+      setMessages(prev => [...prev, { role: 'ai', text: "I'm having a moment — please try again or ask your waiter for help! 😊" }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const startListening = () => {
