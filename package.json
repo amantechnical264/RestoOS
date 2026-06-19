@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.106.2",
     "@zxing/browser": "^0.2.0",
     "@zxing/library": "^0.22.0",
@@ -23,6 +24,7 @@
     "react-dom": "^19.2.6",
     "react-i18next": "^17.0.8",
     "react-router-dom": "^7.16.0",
+    "recharts": "^3.8.1",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
