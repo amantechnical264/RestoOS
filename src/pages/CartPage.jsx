@@ -37,6 +37,7 @@ export default function CartPage() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showArCombo, setShowArCombo] = useState(false);
+  const [splitCount, setSplitCount] = useState(1);
 
   const hasSoldOutItem = cart.some(item => {
     const dbDish = dishes.find(d => d.id === item.id);
@@ -210,6 +211,32 @@ export default function CartPage() {
             <div className="text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
               <span>Total</span>
               <span className="text-[#D4AF37] text-3xl">₹{total.toFixed(2)}</span>
+            </div>
+            
+            {/* Split Bill section */}
+            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-bold flex items-center gap-2"><Users size={16}/> Split Bill</span>
+                <div className="flex items-center gap-3 bg-neutral-100 dark:bg-white/5 rounded-lg p-1">
+                  <button onClick={() => setSplitCount(Math.max(1, splitCount - 1))} className="w-6 h-6 flex items-center justify-center rounded-md bg-white dark:bg-white/10 shadow-sm"><Minus size={12}/></button>
+                  <span className="text-sm font-bold w-4 text-center">{splitCount}</span>
+                  <button onClick={() => setSplitCount(Math.min(10, splitCount + 1))} className="w-6 h-6 flex items-center justify-center rounded-md bg-white dark:bg-white/10 shadow-sm"><Plus size={12}/></button>
+                </div>
+              </div>
+              {splitCount > 1 && (
+                <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-bold">Per Person</span>
+                  <span className="text-lg font-black text-blue-600 dark:text-blue-400">₹{(total / splitCount).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            {/* Loyalty Points display */}
+            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[#D4AF37]">
+                <Zap size={16} className="animate-pulse" />
+                <span className="text-sm font-black uppercase tracking-widest">XP Points</span>
+              </div>
+              <span className="text-sm font-bold text-[#D4AF37]">+150 XP</span>
             </div>
           </div>
         </motion.div>

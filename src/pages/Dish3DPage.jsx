@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Heart, ShoppingCart, Flame, Clock, MapPin, AlertTriangle, Star, ChefHat, Leaf, Droplets, Box } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import ModelViewer from '../components/ModelViewer';
+import ARCameraOverlay from '../components/ARCameraOverlay';
 
 const ALLERGEN_ICONS = { Gluten: '🌾', Nuts: '🥜', Dairy: '🥛', Eggs: '🥚', Shellfish: '🦐', Soy: '🫘', Fish: '🐟' };
 
@@ -12,6 +13,7 @@ export default function Dish3DPage() {
   const { id } = useParams();
   const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const [showARCamera, setShowARCamera] = useState(false);
   const arContainerRef = useRef(null);
 
   useEffect(() => {
@@ -41,23 +43,8 @@ export default function Dish3DPage() {
   const macroPercent = (val, max) => Math.min(100, Math.round((parseInt(val) || 0) / max * 100));
 
   const activateAR = () => {
-    // Find model-viewer inside our own AR container ref
-    const container = arContainerRef.current;
-    if (!container) return;
-    const mv = container.querySelector('model-viewer');
-    if (mv?.activateAR) {
-      mv.activateAR();
-    } else {
-      // Retry after a short delay — script or model may still be loading
-      setTimeout(() => {
-        const mvRetry = container.querySelector('model-viewer');
-        if (mvRetry?.activateAR) {
-          mvRetry.activateAR();
-        } else {
-          console.warn('AR viewer not ready. Model may still be loading.');
-        }
-      }, 1000);
-    }
+    // Open our custom full-screen AR camera overlay
+    setShowARCamera(true);
   };
 
   const displayImages = dish.images?.length > 0 ? dish.images : (dish.cover ? [dish.cover] : []);
@@ -69,6 +56,18 @@ export default function Dish3DPage() {
 
 
   return (
+    <>
+    {/* ── AR Camera Overlay (full-screen, above everything) ── */}
+    <AnimatePresence>
+      {showARCamera && modelUrl && (
+        <ARCameraOverlay
+          modelUrl={modelUrl}
+          dishName={dish.name}
+          onClose={() => setShowARCamera(false)}
+        />
+      )}
+    </AnimatePresence>
+
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col h-[100dvh] relative overflow-hidden bg-white dark:bg-black transition-colors">
 
@@ -342,5 +341,6 @@ export default function Dish3DPage() {
         </motion.button>
       </div>
     </motion.div>
+    </>
   );
 }

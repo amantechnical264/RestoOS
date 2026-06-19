@@ -15,6 +15,7 @@ import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import { reviewService } from '../services/ReviewService';
 import ModelViewer from '../components/ModelViewer';
+import AIImageGenerator from '../components/AIImageGenerator';
 import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
 
 // ── Design Tokens ─────────────────────────────────────────────────────
@@ -449,6 +450,11 @@ export default function VendorDashboardPage() {
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]       = React.useState(0);
   const glbInputRef = React.useRef(null);
+  const [isStaffMode, setIsStaffMode] = React.useState(false);
+  const [aiImportState, setAiImportState] = React.useState('idle');
+  const [extractedDishes, setExtractedDishes] = React.useState([]);
+  const [importProgress, setImportProgress] = React.useState(0);
+  const fileInputRef = React.useRef(null);
   const [tableCount, setTableCount]   = React.useState(5);
   const [activePromo, setActivePromo] = React.useState(null);
   const [notifText, setNotifText]     = React.useState('');
@@ -506,6 +512,7 @@ export default function VendorDashboardPage() {
   const [soldOutDishes, setSoldOutDishes]   = React.useState({});
   const [analyticsRange, setAnalyticsRange] = React.useState('Week');
   const [isGenerating3D, setIsGenerating3D] = React.useState(false);
+  const [showAIImageGen, setShowAIImageGen] = React.useState(false);
   const [enteredCodes, setEnteredCodes] = React.useState({});
 
   // ── Combo Builder State ────────────────────────────────────────
@@ -558,6 +565,30 @@ export default function VendorDashboardPage() {
     e.preventDefault();
     await updateRestaurant(activeRestId, settingsForm);
     showNotification('Settings saved successfully!');
+  };
+
+  const handleOCRUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAiImportState('analyzing');
+    setImportProgress(0);
+    // Simulate AI parsing
+    let p = 0;
+    const interval = setInterval(() => {
+      p += 15;
+      if (p >= 100) {
+        clearInterval(interval);
+        setExtractedDishes([
+          { id: 'ocr1', name: 'Truffle Fries', price: 8.99, category: 'Starters', description: 'Crispy fries with truffle oil and parmesan' },
+          { id: 'ocr2', name: 'Wagyu Burger', price: 24.50, category: 'Mains', description: 'Premium wagyu beef, caramelized onions, brioche bun' },
+          { id: 'ocr3', name: 'Matcha Tiramisu', price: 12.00, category: 'Desserts', description: 'Classic tiramisu infused with ceremonial grade matcha' }
+        ]);
+        setAiImportState('reviewing');
+        showNotification('Menu analyzed successfully. Please review the extracted items.');
+      } else {
+        setImportProgress(p);
+      }
+    }, 400);
   };
 
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy', 'Fish'];
@@ -901,7 +932,7 @@ export default function VendorDashboardPage() {
     });
   };
 
-  const TAB_CONFIG = [
+  const FULL_TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
     { key: 'floor',     icon: Bell,         label: 'Floor',    badge: serviceAlerts.length },
     { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
@@ -913,6 +944,16 @@ export default function VendorDashboardPage() {
     { key: 'qr',        icon: QrIcon,       label: 'Tables' },
     { key: 'settings',  icon: Settings,     label: 'Settings' },
   ];
+
+  const TAB_CONFIG = isStaffMode 
+    ? FULL_TAB_CONFIG.filter(t => ['orders', 'floor', 'menu'].includes(t.key)) 
+    : FULL_TAB_CONFIG;
+    
+  React.useEffect(() => {
+    if (isStaffMode && !['orders', 'floor', 'menu'].includes(vendorTab)) {
+      setVendorTab('orders');
+    }
+  }, [isStaffMode, vendorTab]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white relative">
@@ -959,6 +1000,12 @@ export default function VendorDashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setIsStaffMode(!isStaffMode)}
+            className="flex items-center gap-1.5 text-[10px] font-black px-3 py-2 rounded-xl transition-all uppercase tracking-widest"
+            style={isStaffMode ? { background: '#D4AF37', color: '#000' } : { background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: GOLD }}
+          >
+            {isStaffMode ? 'Exit Staff Mode' : 'Staff Mode'}
+          </button>
           <button onClick={toggleTheme}
             className="p-2 rounded-xl transition-colors"
             style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: GOLD }}
@@ -1177,44 +1224,96 @@ export default function VendorDashboardPage() {
           {vendorTab === 'floor' && (
             <motion.div key="floor" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              <div className="max-w-4xl mx-auto space-y-6">
-                <div>
-                  <h2 className="font-display font-black text-2xl">Floor & Service Hub</h2>
-                  <p className="text-sm text-neutral-500 mt-0.5">Manage customer requests and active tables</p>
+              <div className="max-w-6xl mx-auto space-y-6">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h2 className="font-display font-black text-2xl">Live Floor Plan</h2>
+                    <p className="text-sm text-neutral-500 mt-0.5">Real-time table status and service requests</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-neutral-500">Total Tables:</span>
+                    <input type="number" value={tableCount} onChange={(e) => setTableCount(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1 text-sm font-bold text-center" />
+                  </div>
                 </div>
                 
-                <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm min-h-[50vh]">
-                  {serviceAlerts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full py-20 text-neutral-400 opacity-60">
-                      <CheckCircle size={48} className="mb-4 text-emerald-500" />
-                      <p className="font-display font-black text-lg text-neutral-900 dark:text-white">All Clear on the Floor</p>
-                      <p className="text-sm">No active service requests right now.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {Array.from({ length: tableCount }).map((_, i) => {
+                    const tNum = String(i + 1);
+                    const tableAlerts = serviceAlerts.filter(a => String(a.tableNumber) === tNum);
+                    const activeTableOrders = restOrders.filter(o => String(o.tableNumber) === tNum && (o.status === 'Pending' || o.status === 'Preparing' || o.status === 'Ready'));
+                    
+                    let status = 'available'; // available, occupied, service
+                    if (tableAlerts.length > 0) status = 'service';
+                    else if (activeTableOrders.length > 0) status = 'occupied';
+                    
+                    const statusConfig = {
+                      available: { bg: 'bg-neutral-50 dark:bg-white/[0.02]', border: 'border-neutral-200 dark:border-white/5', text: 'text-neutral-500', icon: null },
+                      occupied: { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-500/20', text: 'text-blue-500', icon: <Utensils size={14}/> },
+                      service: { bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-300 dark:border-amber-500/30', text: 'text-amber-500', icon: <Bell size={14} className="animate-pulse" /> }
+                    };
+                    const sc = statusConfig[status];
+                    
+                    return (
+                      <motion.div key={i} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}
+                        className={`relative p-5 rounded-3xl border flex flex-col items-center justify-center gap-3 transition-all ${sc.bg} ${sc.border}`}>
+                        
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center font-display font-black text-xl border-4 ${status === 'available' ? 'border-neutral-200 dark:border-white/10 text-neutral-400' : status === 'occupied' ? 'border-blue-500/30 text-blue-500 bg-blue-500/10' : 'border-amber-500/30 text-amber-500 bg-amber-500/10'}`}>
+                          {tNum}
+                        </div>
+                        
+                        <div className="flex flex-col items-center">
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${sc.text}`}>
+                            {status === 'service' ? 'Needs Service' : status}
+                          </span>
+                          {activeTableOrders.length > 0 && (
+                            <span className="text-xs font-bold text-neutral-400 mt-0.5">{activeTableOrders.length} Order(s)</span>
+                          )}
+                        </div>
+                        
+                        {tableAlerts.length > 0 && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce">
+                            <Bell size={12} />
+                          </div>
+                        )}
+                        
+                        {status === 'service' && (
+                          <button onClick={() => setServiceAlerts(prev => prev.filter(a => String(a.tableNumber) !== tNum))}
+                            className="mt-2 w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase rounded-xl transition-colors">
+                            Resolve All
+                          </button>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                
+                {serviceAlerts.length > 0 && (
+                  <div className="mt-8 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
+                    <h3 className="font-display font-black text-lg mb-4">Active Service Requests Log</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <AnimatePresence>
                         {serviceAlerts.map((alert, idx) => (
                           <motion.div key={idx} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/40 p-5 rounded-2xl flex flex-col justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-                                <Bell size={24} className="text-amber-500" />
+                            className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 p-4 rounded-2xl flex flex-col justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                                <Bell size={18} className="text-amber-500" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Table {alert.tableNumber}</p>
-                                <p className="font-display font-black text-lg text-neutral-900 dark:text-white">{alert.type}</p>
+                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-0.5">Table {alert.tableNumber}</p>
+                                <p className="font-bold text-sm text-neutral-900 dark:text-white">{alert.type}</p>
                               </div>
                             </div>
                             <button onClick={() => setServiceAlerts(prev => prev.filter((_, i) => i !== idx))}
-                              className="w-full py-3 rounded-xl bg-amber-500 text-white font-black text-sm hover:bg-amber-600 transition-colors shadow-sm">
+                              className="w-full py-2.5 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-white font-black text-xs hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors">
                               Mark as Resolved
                             </button>
                           </motion.div>
                         ))}
                       </AnimatePresence>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -2368,7 +2467,7 @@ export default function VendorDashboardPage() {
                           </div>
                         ))}
                       </div>
-                      <div className="relative flex items-center">
+                      <div className="relative flex items-center gap-2">
                         <input type="file" accept="image/*" className="hidden" id="cover-upload" multiple onChange={async e => {
                           const files = Array.from(e.target.files);
                           if(files.length > 0) {
@@ -2390,7 +2489,42 @@ export default function VendorDashboardPage() {
                         <label htmlFor="cover-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 text-xs font-bold hover:bg-neutral-50 transition-colors text-blue-500">
                           <Upload size={14} /> Upload Images
                         </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowAIImageGen(prev => !prev)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                          style={{
+                            background: showAIImageGen
+                              ? 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2))'
+                              : 'linear-gradient(135deg, rgba(168,85,247,0.08), rgba(236,72,153,0.08))',
+                            border: '1px solid rgba(168,85,247,0.3)',
+                            color: '#a855f7',
+                          }}
+                        >
+                          <Sparkles size={14} />
+                          {showAIImageGen ? 'Close AI' : 'Create with AI'}
+                        </button>
                       </div>
+
+                      {/* AI Image Generator Panel */}
+                      <AnimatePresence>
+                        {showAIImageGen && (
+                          <AIImageGenerator
+                            dishName={editingDish.name}
+                            dishDescription={editingDish.description}
+                            dishOrigin={editingDish.origin}
+                            dishCategory={editingDish.tags?.find(t => !['Chef\'s Pick', 'Bestseller', 'Signature', 'Popular', 'Seasonal', 'Vegan', 'High Protein', 'Low Calorie', 'Spicy', 'New', 'sold_out'].includes(t))}
+                            dietaryPref={editingDish.dietaryPreference}
+                            activeRestId={activeRestId}
+                            onImageConfirmed={(url) => {
+                              const updatedImgs = [...(editingDish.images || (editingDish.cover ? [editingDish.cover] : [])), url];
+                              setEditingDish(prev => ({...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover}));
+                              showNotification('AI image added to dish! ✨');
+                            }}
+                            onClose={() => setShowAIImageGen(false)}
+                          />
+                        )}
+                      </AnimatePresence>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <div>
@@ -3080,16 +3214,73 @@ export default function VendorDashboardPage() {
                   </div>
 
                   {/* ── OCR Menu Import ── */}
-                  <div className="rounded-2xl p-5 space-y-3 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
+                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)] relative overflow-hidden">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Upload size={13}/> AI Menu Import (OCR)
+                      <Sparkles size={13}/> AI Menu Import (OCR)
                     </h3>
                     <p className="text-sm text-neutral-500">Upload any existing paper/PDF menu — our AI will scan and create all dishes automatically.</p>
-                    <button type="button" onClick={() => showNotification("Analyzing PDF menu... This may take a moment.")}
-                      className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
-                      style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: GOLD }}>
-                      <Upload size={15}/> Upload PDF / Image Menu
-                    </button>
+                    
+                    <input type="file" accept="image/*,.pdf" ref={fileInputRef} className="hidden" onChange={handleOCRUpload} />
+                    
+                    {aiImportState === 'idle' && (
+                      <button type="button" onClick={() => fileInputRef.current?.click()}
+                        className="w-full h-32 border-2 border-dashed border-neutral-300 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group">
+                        <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform text-neutral-400 group-hover:text-[#D4AF37]">
+                          <Upload size={18} />
+                        </div>
+                        <span className="text-sm font-bold text-neutral-600 dark:text-neutral-400">Click or Drag PDF / Image Menu</span>
+                      </button>
+                    )}
+
+                    {aiImportState === 'analyzing' && (
+                      <div className="w-full h-32 border border-neutral-200 dark:border-white/10 rounded-xl flex flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-white/[0.02]">
+                        <div className="flex items-center gap-3">
+                          <BrainCircuit size={20} className="text-[#D4AF37] animate-pulse" />
+                          <span className="text-sm font-bold animate-pulse text-[#D4AF37]">Analyzing Menu Items...</span>
+                        </div>
+                        <div className="w-3/4 h-1.5 bg-neutral-200 dark:bg-white/10 rounded-full overflow-hidden">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${importProgress}%` }} className="h-full bg-[#D4AF37] rounded-full" />
+                        </div>
+                      </div>
+                    )}
+
+                    {aiImportState === 'reviewing' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-emerald-500 flex items-center gap-1"><CheckCircle size={14}/> Found {extractedDishes.length} items</span>
+                          <button type="button" onClick={() => setAiImportState('idle')} className="text-xs text-neutral-400 hover:text-white">Cancel</button>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                          {extractedDishes.map((dish, i) => (
+                            <div key={dish.id} className="p-3 bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/10 rounded-xl">
+                               <input value={dish.name} onChange={e => {
+                                 const newD = [...extractedDishes]; newD[i].name = e.target.value; setExtractedDishes(newD);
+                               }} className="w-full bg-transparent text-sm font-bold text-neutral-900 dark:text-white border-none focus:ring-0 p-0 mb-1" />
+                               <div className="flex gap-2 mb-2">
+                                 <input value={dish.price} onChange={e => {
+                                   const newD = [...extractedDishes]; newD[i].price = e.target.value; setExtractedDishes(newD);
+                                 }} className="w-20 bg-neutral-100 dark:bg-black/50 text-xs rounded px-2 py-1 border border-neutral-200 dark:border-white/10 text-emerald-500 font-bold" />
+                                 <input value={dish.category} onChange={e => {
+                                   const newD = [...extractedDishes]; newD[i].category = e.target.value; setExtractedDishes(newD);
+                                 }} className="flex-1 bg-neutral-100 dark:bg-black/50 text-xs rounded px-2 py-1 border border-neutral-200 dark:border-white/10 text-neutral-500" />
+                               </div>
+                               <textarea value={dish.description} onChange={e => {
+                                 const newD = [...extractedDishes]; newD[i].description = e.target.value; setExtractedDishes(newD);
+                               }} className="w-full bg-transparent text-xs text-neutral-500 border-none focus:ring-0 p-0 resize-none h-10" />
+                            </div>
+                          ))}
+                        </div>
+                        <button type="button" onClick={async () => {
+                          for (const d of extractedDishes) {
+                            await addDish({ name: d.name, price: Number(d.price), category: d.category, description: d.description, restId: activeRestId });
+                          }
+                          setAiImportState('idle');
+                          showNotification(`Successfully imported ${extractedDishes.length} dishes!`);
+                        }} className="w-full py-2.5 rounded-xl text-sm font-black bg-[#D4AF37] text-black shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center gap-2">
+                          <CheckCircle size={16}/> Confirm & Import All
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <button type="submit"

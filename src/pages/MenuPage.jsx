@@ -253,18 +253,13 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
   );
 });
 
-const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove }) => {
+const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove, activeDietaryFilters }) => {
   const hasModel = !!(dish.modelUrl || dish.model_url);
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
 
-  const isVeg = dish.dietaryPreference === 'Vegetarian' 
-    || dish.dietaryPreference === 'Vegan' 
-    || dish.tags?.includes('Vegetarian') 
-    || dish.tags?.includes('Vegan') 
-    || dish.tags?.includes('vegan')
-    || dish.tags?.includes('vegetarian');
-
+  const isVeg = dish.dietaryPreference === 'Vegetarian' || dish.dietaryPreference === 'Vegan' || dish.tags?.includes('Veg') || dish.tags?.includes('Vegan');
+  
   const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
   const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
   
@@ -360,7 +355,7 @@ export default function MenuPage() {
   const { activeRestId, setActiveRestId, tableNumber, setTableNumber, dishes, setActiveDishId, restaurants, favorites, toggleFavorite, addToCart, removeOneFromCart, cart, setUser, planFor, updateDish, rsvpToEvent, showNotification, isDataLoaded, promos, currentTime } = useAppContext();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [vegOnly, setVegOnly] = useState(false);
+  const [activeDietaryFilters, setActiveDietaryFilters] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [serviceHubOpen, setServiceHubOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -459,7 +454,10 @@ export default function MenuPage() {
 
   const requestService = async (type) => {
     setServiceHubOpen(false);
-    if (!supabase) return;
+    if (!supabase) {
+      showNotification(`Service request "${type}" could not be sent (Offline)`);
+      return;
+    }
     try {
       // Normalize service type to avoid any ambiguity
       let resolvedType = type;
@@ -471,8 +469,10 @@ export default function MenuPage() {
         event: 'waiter_call',
         payload: { tableNumber: tableNumber || '12', type: resolvedType, time: new Date().toISOString() }
       });
+      showNotification(`Waitstaff has been notified: ${resolvedType}`);
     } catch (e) {
       console.error('Failed to request service:', e);
+      showNotification('Failed to send service request. Please try again.');
     }
   };
 
@@ -586,7 +586,7 @@ export default function MenuPage() {
       }
     }
     return result;
-  }, [allDishes, activeCategory, search, vegOnly, customCategories, categoriesToRender, metadataRecord]);
+  }, [allDishes, activeCategory, search, activeDietaryFilters, customCategories, categoriesToRender, metadataRecord]);
 
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
   const cartCount = cart.length;
@@ -733,23 +733,24 @@ export default function MenuPage() {
         </div>
 
         <div className="flex justify-between items-center px-5 mt-2 mb-4 flex-shrink-0">
-          <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-            {totalItemsCount} items showing
+          <div className="text-[10px] font-black text-neutral-500 uppercase tracking-wider shrink-0 mr-3">
+            {totalItemsCount} items
           </div>
-          <button
-            onClick={() => setVegOnly(!vegOnly)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all duration-300 ${
-              vegOnly
-                ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30 shadow-md shadow-emerald-500/5'
-                : 'bg-white dark:bg-[#0a0a0a] text-neutral-500 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/10'
-            }`}
-          >
-            <Leaf size={12} className={vegOnly ? 'fill-emerald-500 text-emerald-500' : ''} />
-            <span>Veg Only</span>
-            <div className={`w-6 h-3.5 rounded-full p-0.5 transition-colors duration-300 shrink-0 flex items-center ${vegOnly ? 'bg-emerald-500 justify-end' : 'bg-neutral-300 dark:bg-white/10 justify-start'}`}>
-              <motion.div layout className="w-2.5 h-2.5 rounded-full bg-white" />
-            </div>
-          </button>
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 flex-1 mask-linear-fade">
+            {['Veg', 'Vegan', 'High Protein', 'Low Calorie', 'Spicy'].map(f => {
+              const isActive = activeDietaryFilters.includes(f);
+              return (
+                <button key={f} onClick={() => setActiveDietaryFilters(prev => isActive ? prev.filter(x => x !== f) : [...prev, f])}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold transition-all duration-300 ${
+                    isActive
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                      : 'bg-white dark:bg-[#0a0a0a] text-neutral-500 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/10'
+                  }`}>
+                  {f}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
 
