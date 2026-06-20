@@ -9,7 +9,10 @@ import { supabase } from '../services/supabase';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart, user } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart, user, setUser } = useAppContext();
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [tempPhone, setTempPhone] = useState('');
   const { t } = useTranslation();
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -72,6 +75,23 @@ export default function CartPage() {
   }
 
   const executeCheckout = async () => {
+    let finalName = user?.name;
+    let finalPhone = user?.phone;
+    
+    // Check localStorage just in case
+    if (!finalName || !finalPhone) {
+      try {
+        const dp = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
+        if (dp.name) finalName = dp.name;
+        if (dp.phone) finalPhone = dp.phone;
+      } catch(e) {}
+    }
+
+    if (!finalName || !finalPhone) {
+      setShowNamePrompt(true);
+      return; // Pause checkout until they enter their name
+    }
+
     setIsProcessing(true);
 
     const code = Math.floor(1000 + Math.random() * 9000).toString();
@@ -86,8 +106,8 @@ export default function CartPage() {
       status: status,
       tipAmount: 0,
       verificationCode: code,
-      contactName: user?.name || '',
-      contactPhone: user?.phone || '',
+      contactName: finalName,
+      contactPhone: finalPhone,
       specialInstructions: specialInstructions
     });
     
@@ -263,6 +283,58 @@ export default function CartPage() {
               </div>
             </div>
           </div>
+
+          {/* Name Prompt Modal for old profiles */}
+          <AnimatePresence>
+            {showNamePrompt && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-white dark:bg-[#12141D] w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-neutral-200 dark:border-white/10 relative overflow-hidden"
+                >
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#D4AF37]/20 blur-3xl rounded-full pointer-events-none" />
+                  <div className="text-center mb-6 relative z-10">
+                    <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white">Almost there!</h2>
+                    <p className="text-sm text-neutral-500 mt-1">Please enter your name to complete the order.</p>
+                  </div>
+                  <div className="space-y-4 relative z-10">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Your Name</label>
+                      <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} placeholder="e.g. John Doe"
+                        className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                      <input type="tel" value={tempPhone} onChange={e => setTempPhone(e.target.value)} placeholder="e.g. 9876543210"
+                        className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                    </div>
+                    <button 
+                      onClick={() => {
+                        if (tempName && tempPhone) {
+                          const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                          const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
+                          localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
+                          if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
+                          setShowNamePrompt(false);
+                          // Resume checkout
+                          executeCheckout();
+                        }
+                      }}
+                      className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
+                      Save & Checkout
+                    </button>
+                    <button 
+                      onClick={() => setShowNamePrompt(false)}
+                      className="w-full py-3 mt-1 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
         </motion.div>
       </div>

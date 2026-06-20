@@ -422,8 +422,17 @@ export default function MenuPage() {
   const heroOpacity  = useTransform(scrollY, [0, 250], [1, 0.5]);
 
   useEffect(() => {
-    const profile = localStorage.getItem('3dish_diner_profile');
-    if (!profile) {
+    try {
+      const profileStr = localStorage.getItem('3dish_diner_profile');
+      if (!profileStr) {
+        setShowOnboarding(true);
+        return;
+      }
+      const profile = JSON.parse(profileStr);
+      if (!profile.name || !profile.phone) {
+        setShowOnboarding(true);
+      }
+    } catch (e) {
       setShowOnboarding(true);
     }
   }, []);
