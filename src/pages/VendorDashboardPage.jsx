@@ -882,8 +882,8 @@ export default function VendorDashboardPage() {
       const cPhone = o.contactPhone || o.contact_phone;
       const oType = o.orderType || o.order_type;
 
-      // Create a unique key for grouping. Prefer phone or user_id, fallback to name or generic ID.
-      const key = cPhone || (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || cName || 'anonymous_' + o.id;
+      // Group by user_id first to merge anonymous past orders with newer named orders from the same guest
+      const key = (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || cPhone || cName || 'anonymous_' + o.id;
       const orderDate = new Date(o.timestamp);
 
       if (!map[key]) {
@@ -893,7 +893,11 @@ export default function VendorDashboardPage() {
         } else if (cPhone) {
           displayName = `Guest (${cPhone})`;
         } else if (o.user_id && o.user_id !== 'anonymous') {
-          displayName = `Member (${o.user_id.substring(0, 6)})`;
+          if (o.user_id.startsWith('guest_')) {
+             displayName = 'Guest Diner';
+          } else {
+             displayName = `Member (${o.user_id.substring(0, 8)})`;
+          }
         }
 
         map[key] = {
@@ -908,6 +912,14 @@ export default function VendorDashboardPage() {
           latestDishes: (o.items || []).map(i => i.name).join(', '),
           orderType: oType || 'dine_in'
         };
+      } else {
+        // If we found a real name/phone in this order, upgrade the anonymous profile
+        if (cName && (map[key].name === 'Guest Diner' || map[key].name.startsWith('Member (') || map[key].name.startsWith('Guest ('))) {
+          map[key].name = cName;
+        }
+        if (cPhone && map[key].phone === 'Dine-In Guest') {
+          map[key].phone = cPhone;
+        }
       }
       
       map[key].totalSpend += Number(o.total || 0);
