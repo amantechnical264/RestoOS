@@ -1000,6 +1000,137 @@ export default function VendorDashboardPage() {
     }
   }, [isStaffMode, vendorTab]);
 
+  const handlePrintBill = React.useCallback((order) => {
+    const customerName = order.contactName || order.contact_name || order.user_id || 'Guest';
+    const printDate = new Date().toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const printTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const restName = currentRestaurant?.name || 'Restaurant';
+
+    const itemsHtml = (order.items || []).map(item => `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+        <span style="flex: 1;">${item.quantity || 1} x ${item.name}</span>
+        <span>${Number(item.price || 0).toFixed(2)}</span>
+      </div>
+    `).join('');
+
+    const totalAmount = (order.total || 0).toFixed(2);
+    const orderNumber = getOrderNumber(order);
+    const serverName = user?.email?.split('@')[0] || 'Staff';
+    const orderTypeStr = order.orderType === 'dine_in' ? '*Dine In*' : '*Carry Out*';
+
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0; padding: 10px; }
+            }
+            body {
+              font-family: monospace;
+              width: 300px;
+              color: #000;
+              background: #fff;
+              padding: 10px;
+              margin: 0;
+            }
+            .header {
+              text-align: center;
+              font-weight: bold;
+              font-size: 16px;
+              margin-bottom: 10px;
+              color: #1a60b9;
+            }
+            .sub-header {
+              text-align: center;
+              font-size: 12px;
+              margin-bottom: 10px;
+            }
+            .info {
+              font-size: 12px;
+              margin-bottom: 10px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .items {
+              border-top: 1px dashed #000;
+              border-bottom: 1px dashed #000;
+              padding: 10px 0;
+              margin-bottom: 10px;
+            }
+            .totals {
+              font-size: 14px;
+              font-weight: bold;
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            }
+            .due {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            ${restName.toUpperCase()}
+          </div>
+          <div class="sub-header">
+            Order Slip<br/>
+            ${orderNumber}<br/>
+            Order: ${order.id.slice(-4)}
+          </div>
+          <div class="info">
+            <div>${printDate} &nbsp; ${printTime}</div>
+            <div>Server: ${serverName.toUpperCase()}</div>
+            <div style="font-weight:bold; font-size:14px; margin-top:5px;">${orderTypeStr}</div>
+            <div style="margin-top:5px; border-bottom: 1px dashed #000; width: 100%; text-align:center; padding-bottom:5px;">
+              ${customerName}
+            </div>
+          </div>
+          <div class="items">
+            ${itemsHtml}
+          </div>
+          <div class="totals">
+            <span>Total</span>
+            <span>${totalAmount}</span>
+          </div>
+          <div class="due">
+            <span>Cash</span>
+            <span>${totalAmount}</span>
+          </div>
+          <div class="due">
+            <span>Due</span>
+            <span>0.00</span>
+          </div>
+          <div style="text-align: center; margin-top: 15px; font-weight: bold; color: #1a60b9;">
+            ${restName.toUpperCase()}
+          </div>
+        </body>
+      </html>
+    `;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(htmlContent);
+    iframe.contentWindow.document.close();
+    
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 1000);
+    }, 250);
+  }, [currentRestaurant, getOrderNumber, user]);
+
   if (isStaffMode) {
     return (
       <StaffDashboard
@@ -1269,11 +1400,19 @@ export default function VendorDashboardPage() {
                 <p className="font-display font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><CheckCircle size={14} /> Completed Today</p>
                 <p className="font-display font-black text-4xl text-emerald-600 dark:text-emerald-400">{completed.length}</p>
                 <p className="text-xs font-bold text-emerald-700/60 dark:text-emerald-500">Revenue: <span className="text-emerald-600 dark:text-emerald-400">₹{todayRevenue.toFixed(2)}</span></p>
-                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 space-y-1.5 max-h-48 overflow-y-auto">
-                  {completed.slice(-5).reverse().map(o => (
-                    <div key={o.id} className="flex justify-between text-xs text-emerald-700/70 dark:text-emerald-500">
-                      <span>{getOrderNumber(o)}</span>
-                      <span className="font-bold">₹{(o.total||0).toFixed(2)}</span>
+                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {completed.slice(-10).reverse().map(o => (
+                    <div key={o.id} className="flex flex-col gap-1 text-xs text-emerald-700/70 dark:text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/20 p-2 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold">{getOrderNumber(o)}</span>
+                        <span className="font-black text-emerald-600 dark:text-emerald-400">₹{(o.total||0).toFixed(2)}</span>
+                      </div>
+                      <button 
+                        onClick={() => handlePrintBill(o)}
+                        className="flex items-center justify-center gap-1 w-full py-1.5 mt-1 bg-white dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 rounded text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-800 transition-colors"
+                      >
+                        <Printer size={12} /> Print Bill
+                      </button>
                     </div>
                   ))}
                 </div>
