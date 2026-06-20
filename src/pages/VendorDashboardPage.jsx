@@ -540,33 +540,7 @@ export default function VendorDashboardPage() {
   const [customerModalSort, setCustomerModalSort] = React.useState('most-came'); // 'most-came', 'most-spend'
   const [selectedCustomerIds, setSelectedCustomerIds] = React.useState([]);
 
-  const handleExportVCF = React.useCallback(() => {
-    // If none selected, export all
-    const targets = selectedCustomerIds.length > 0 
-      ? customerList.filter(c => selectedCustomerIds.includes(c.id))
-      : customerList;
-      
-    let vcfContent = '';
-    targets.forEach(c => {
-      vcfContent += 'BEGIN:VCARD\n';
-      vcfContent += 'VERSION:3.0\n';
-      vcfContent += `FN:${c.name}\n`;
-      if (c.phone && c.phone !== 'Dine-In Guest' && c.phone !== '') {
-        vcfContent += `TEL;TYPE=CELL:${c.phone}\n`;
-      }
-      vcfContent += 'END:VCARD\n';
-    });
 
-    const blob = new Blob([vcfContent], { type: 'text/vcard' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `customers_${new Date().toISOString().split('T')[0]}.vcf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [customerList, selectedCustomerIds]);
 
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
@@ -969,6 +943,34 @@ export default function VendorDashboardPage() {
 
     return Object.values(map).sort((a, b) => b.totalSpend - a.totalSpend);
   }, [restOrders]);
+
+  const handleExportVCF = React.useCallback(() => {
+    // If none selected, export all
+    const targets = selectedCustomerIds.length > 0 
+      ? customerList.filter(c => selectedCustomerIds.includes(c.id))
+      : customerList;
+      
+    let vcfContent = '';
+    targets.forEach(c => {
+      vcfContent += 'BEGIN:VCARD\n';
+      vcfContent += 'VERSION:3.0\n';
+      vcfContent += `FN:${c.name}\n`;
+      if (c.phone && c.phone !== 'Dine-In Guest' && c.phone !== '') {
+        vcfContent += `TEL;TYPE=CELL:${c.phone}\n`;
+      }
+      vcfContent += 'END:VCARD\n';
+    });
+
+    const blob = new Blob([vcfContent], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().split('T')[0]}.vcf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [customerList, selectedCustomerIds]);
 
   const uniqueCustomers = customerList.length;
   const repeatCustomers = customerList.filter(c => c.orderCount > 1).length;
