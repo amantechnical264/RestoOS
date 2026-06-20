@@ -94,11 +94,11 @@ export default function ARCameraOverlay({ modelUrl, dishName, onClose }) {
     mv.setAttribute('camera-controls', '');
     mv.setAttribute('touch-action', 'none');
     mv.setAttribute('interaction-prompt', 'none');
-    mv.setAttribute('camera-orbit', '0deg 65deg 105%');
-    mv.setAttribute('min-camera-orbit', 'auto auto 40%');
-    mv.setAttribute('max-camera-orbit', 'auto auto 250%');
-    mv.setAttribute('shadow-intensity', '0.7');
-    mv.setAttribute('shadow-softness', '1');
+    mv.setAttribute('camera-orbit', '0deg 75deg 150%');
+    mv.setAttribute('min-camera-orbit', 'auto auto 10%');
+    mv.setAttribute('max-camera-orbit', 'auto auto 400%');
+    mv.setAttribute('shadow-intensity', '1.5');
+    mv.setAttribute('shadow-softness', '0.8');
     mv.setAttribute('exposure', '1.2');
     mv.setAttribute('environment-image', 'neutral');
     mv.setAttribute('auto-rotate', '');
@@ -123,27 +123,9 @@ export default function ARCameraOverlay({ modelUrl, dishName, onClose }) {
   const handleTapToPlace = useCallback((e) => {
     if (!showOnboarding && modelPosition) return; // Already placed
 
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    // Get tap coordinates (touch or mouse)
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    // Place model centered on tap, size ~60% of viewport width
-    const modelSize = Math.min(rect.width, rect.height) * 0.6 * modelScale;
-    setModelPosition({
-      x: x - modelSize / 2,
-      y: y - modelSize / 2,
-      size: modelSize,
-      centerX: x,
-      centerY: y,
-    });
+    setModelPosition(true);
     setShowOnboarding(false);
-  }, [showOnboarding, modelPosition, modelScale]);
+  }, [showOnboarding, modelPosition]);
 
   // ── Reset ─────────────────────────────────────────────────────────
   const handleReset = () => {
@@ -274,34 +256,19 @@ export default function ARCameraOverlay({ modelUrl, dishName, onClose }) {
         <AnimatePresence>
           {modelPosition && (
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               ref={modelContainerRef}
-              className="absolute"
+              className="absolute inset-0"
               style={{
-                left: modelPosition.x,
-                top: modelPosition.y,
-                width: modelPosition.size,
-                height: modelPosition.size,
                 zIndex: 10,
-                filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))',
+                filter: 'drop-shadow(0 30px 50px rgba(0,0,0,0.6))',
               }}
               onClick={(e) => e.stopPropagation()}
               onTouchEnd={(e) => e.stopPropagation()}
-            >
-              {/* Shadow circle beneath the dish */}
-              <div
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
-                style={{
-                  width: '70%',
-                  height: '15%',
-                  background: 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%)',
-                  filter: 'blur(8px)',
-                }}
-              />
-            </motion.div>
+            />
           )}
         </AnimatePresence>
       </div>
