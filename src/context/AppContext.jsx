@@ -4,19 +4,33 @@ import { supabase } from '../services/supabase';
 
 const AppContext = createContext();
 
-const mapOrder = (o) => ({
-  ...o,
-  restId: o.rest_id || o.restId,
-  orderType: o.order_type || o.orderType,
-  verificationCode: o.verification_code || o.verificationCode,
-  contactName: o.contact_name || o.contactName,
-  contactPhone: o.contact_phone || o.contactPhone,
-  paymentStatus: o.payment_status || o.paymentStatus,
-  paymentMethod: o.payment_method || o.paymentMethod,
-  scheduledTime: o.scheduled_time || o.scheduledTime,
-  tipAmount: o.tip_amount || o.tipAmount,
-  tableNumber: o.table_number || o.tableNumber,
-});
+const mapOrder = (o) => {
+  let extractedContactName = o.contact_name || o.contactName;
+  let extractedContactPhone = o.contact_phone || o.contactPhone;
+  
+  // Extract from dummy item if it exists
+  const items = Array.isArray(o.items) ? o.items : [];
+  const contactItem = items.find(item => item.id === '__contact_info');
+  if (contactItem) {
+    if (!extractedContactName) extractedContactName = contactItem.name;
+    if (!extractedContactPhone) extractedContactPhone = contactItem.phone;
+  }
+
+  return {
+    ...o,
+    restId: o.rest_id || o.restId,
+    orderType: o.order_type || o.orderType,
+    verificationCode: o.verification_code || o.verificationCode,
+    contactName: extractedContactName,
+    contactPhone: extractedContactPhone,
+    paymentStatus: o.payment_status || o.paymentStatus,
+    paymentMethod: o.payment_method || o.paymentMethod,
+    scheduledTime: o.scheduled_time || o.scheduledTime,
+    tipAmount: o.tip_amount || o.tipAmount,
+    tableNumber: o.table_number || o.tableNumber,
+    items: items.filter(item => item.id !== '__contact_info'), // Hide dummy item
+  };
+};
 
 const mapDish = (d) => ({
   ...d,
@@ -616,13 +630,16 @@ export const AppProvider = ({ children }) => {
       table_number: parseInt(tableNumber) || (orderData?.tableNumber ? parseInt(orderData.tableNumber) : null),
     };
 
+    const contactName = orderData?.contactName || user?.name || dinerProfile?.name || '';
+    const contactPhone = orderData?.contactPhone || user?.phone || dinerProfile?.phone || '';
+
     // Merge extra fields from checkout flow (snake_case for Supabase)
     if (orderData?.orderType)         newOrder.order_type        = orderData.orderType;
     if (orderData?.paymentMethod)     newOrder.payment_method    = orderData.paymentMethod;
     if (orderData?.paymentStatus)     newOrder.payment_status    = orderData.paymentStatus;
     if (orderData?.verificationCode)  newOrder.verification_code = orderData.verificationCode;
-    if (orderData?.contactName)       newOrder.contact_name      = orderData.contactName;
-    if (orderData?.contactPhone)      newOrder.contact_phone     = orderData.contactPhone;
+    if (contactName)                  newOrder.contact_name      = contactName;
+    if (contactPhone)                 newOrder.contact_phone     = contactPhone;
     if (orderData?.scheduledTime)     newOrder.scheduled_time    = orderData.scheduledTime;
     if (orderData?.tipAmount != null) newOrder.tip_amount        = orderData.tipAmount;
     if (orderData?.specialInstructions) newOrder.metadata = { specialInstructions: orderData.specialInstructions };
@@ -646,8 +663,22 @@ export const AppProvider = ({ children }) => {
               status: newOrder.status,
               timestamp: newOrder.timestamp,
             };
+            if (newOrder.contact_name) coreOrder.contact_name = newOrder.contact_name;
+            if (newOrder.contact_phone) coreOrder.contact_phone = newOrder.contact_phone;
+            
             const { error: coreError } = await supabase.from('orders').insert([coreOrder]);
-            if (coreError) throw coreError;
+            if (coreError) {
+              if (coreError.message && (coreError.message.includes('column') || coreError.code === '42703')) {
+                // Remove contact_name/phone and stuff them into items as a dummy item
+                delete coreOrder.contact_name;
+                delete coreOrder.contact_phone;
+                coreOrder.items = [...coreOrder.items, { id: '__contact_info', name: newOrder.contact_name, phone: newOrder.contact_phone, price: 0, quantity: 0, type: 'metadata' }];
+                const { error: finalError } = await supabase.from('orders').insert([coreOrder]);
+                if (finalError) throw finalError;
+              } else {
+                throw coreError;
+              }
+            }
           }
         } else {
           throw error;
