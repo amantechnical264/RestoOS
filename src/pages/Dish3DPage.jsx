@@ -14,6 +14,7 @@ export default function Dish3DPage() {
   const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [showARCamera, setShowARCamera] = useState(false);
+  const [showVariantModal, setShowVariantModal] = useState(false);
   const arContainerRef = useRef(null);
 
   useEffect(() => {
@@ -329,7 +330,14 @@ export default function Dish3DPage() {
           disabled={dish.tags?.includes('sold_out')}
           whileHover={dish.tags?.includes('sold_out') ? undefined : { scale: 1.02 }} 
           whileTap={dish.tags?.includes('sold_out') ? undefined : { scale: 0.98 }}
-          onClick={() => { addToCart(dish); navigate(-1); }}
+          onClick={() => {
+            if (dish.variants && dish.variants.length > 0) {
+              setShowVariantModal(true);
+            } else {
+              addToCart(dish);
+              navigate(-1);
+            }
+          }}
           className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-display font-black text-base transition-all ${
             dish.tags?.includes('sold_out')
               ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
@@ -341,6 +349,37 @@ export default function Dish3DPage() {
         </motion.button>
       </div>
     </motion.div>
+
+    <AnimatePresence>
+      {showVariantModal && (
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-sm" onClick={() => setShowVariantModal(false)}>
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white dark:bg-[#12141D] w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-neutral-200 dark:border-white/10"
+          >
+            <h3 className="font-display font-black text-xl mb-4 text-neutral-900 dark:text-white">Choose Variant</h3>
+            <div className="space-y-3">
+              {dish.variants.map((v, i) => (
+                <button key={i} onClick={() => {
+                  addToCart({ ...dish, selectedVariant: v });
+                  setShowVariantModal(false);
+                  navigate(-1);
+                }} className="w-full flex justify-between items-center p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all text-left">
+                  <span className="font-bold text-sm text-neutral-900 dark:text-white">{v.name}</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{Number(v.price).toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowVariantModal(false)} className="w-full mt-4 py-3 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
+              Cancel
+            </button>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
     </>
   );
 }

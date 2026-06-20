@@ -384,7 +384,7 @@ const ReviewsAnalytics = ({ reviews }) => {
                       </div>
 
                       {/* Stars row */}
-                      <div className="flex items-center gap-0.5 mb-1">
+                      <div className="flex items-center gap-0.5 mb-2">
                         {[1, 2, 3, 4, 5].map(s => (
                           <Star key={s} size={12}
                             style={s <= review.rating ? { fill: STAR_COLORS[review.rating - 1], color: STAR_COLORS[review.rating - 1] } : {}}
@@ -395,6 +395,13 @@ const ReviewsAnalytics = ({ reviews }) => {
                           {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][review.rating]}
                         </span>
                       </div>
+                      
+                      {/* Review Text */}
+                      {review.text && (
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 italic mt-1 leading-relaxed border-l-2 pl-2 border-neutral-200 dark:border-white/10">
+                          "{review.text}"
+                        </p>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -983,7 +990,8 @@ export default function VendorDashboardPage() {
         id: o.id,
         rating: o.review_rating,
         diner_name: o.review_name || o.contactName || o.contact_name || 'Anonymous Diner',
-        created_at: o.reviewed_at || o.timestamp
+        created_at: o.reviewed_at || o.timestamp,
+        text: o.review_text
       }))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [restOrders]);
@@ -1437,11 +1445,20 @@ export default function VendorDashboardPage() {
                             {o.orderType === 'dine_in' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">DINE-IN</span>}
                           </div>
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
-                            {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}
+                            {o.items?.map((item, i) => (
+                              <li key={i} className="flex flex-col">
+                                <span>· {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                {item.specialInstructions && (
+                                  <span className="text-[10px] text-blue-500 font-bold ml-2 pl-2 border-l-2 border-blue-200 dark:border-blue-800">
+                                    Note: {item.specialInstructions}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
                           </ul>
                           {o.metadata?.specialInstructions && (
                             <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
-                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Special Instructions</p>
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
                               <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{o.metadata.specialInstructions}</p>
                             </div>
                           )}
@@ -2670,6 +2687,38 @@ export default function VendorDashboardPage() {
                           placeholder="18"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-neutral-100 dark:border-white/5">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400">Variants & Quantities (Optional)</label>
+                        <button type="button" onClick={() => setEditingDish({...editingDish, variants: [...(editingDish.variants || []), {name: '', price: ''}]})} className="text-xs text-[#D4AF37] font-bold hover:underline flex items-center gap-1">
+                          <Plus size={12} /> Add Variant
+                        </button>
+                      </div>
+                      {(editingDish.variants || []).map((v, i) => (
+                        <div key={i} className="flex gap-2 mb-2 items-center">
+                          <input required type="text" placeholder="e.g. Half / Full / Cup" value={v.name} onChange={e => {
+                            const newV = [...(editingDish.variants || [])];
+                            newV[i].name = e.target.value;
+                            setEditingDish({...editingDish, variants: newV});
+                          }} className="flex-1 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                          <input required type="number" step="0.01" placeholder="Price (₹)" value={v.price} onChange={e => {
+                            const newV = [...(editingDish.variants || [])];
+                            newV[i].price = e.target.value;
+                            setEditingDish({...editingDish, variants: newV});
+                          }} className="w-24 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                          <button type="button" onClick={() => {
+                            const newV = (editingDish.variants || []).filter((_, idx) => idx !== i);
+                            setEditingDish({...editingDish, variants: newV});
+                          }} className="p-2.5 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      {editingDish.variants?.length > 0 && (
+                        <p className="text-[10px] text-neutral-500 mt-1">When variants are added, customers must choose one. The base price will be ignored.</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Description *</label>

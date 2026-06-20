@@ -36,6 +36,7 @@ const mapDish = (d) => ({
   ...d,
   cover: d.macros?.cover || d.cover || '',
   images: d.macros?.images || d.images || [],
+  variants: d.macros?.variants || [],
   modelUrl: d.model_url || d.modelUrl,
   restId: d.rest_id || d.restId
 });
@@ -771,7 +772,7 @@ export const AppProvider = ({ children }) => {
         price: parseFloat(dishData.price) || 0,
         description: dishData.description || '',
         model_url: dishData.modelUrl || '',
-        macros: { ...(dishData.macros || {}), cover: dishData.cover || '', images: dishData.images || [] },
+        macros: { ...(dishData.macros || {}), cover: dishData.cover || '', images: dishData.images || [], variants: dishData.variants || [] },
         tags: dishData.tags || [],
         allergens: dishData.allergens || [],
         ingredients: dishData.ingredients || [],
@@ -786,6 +787,7 @@ export const AppProvider = ({ children }) => {
         ...data[0],
         cover: data[0].macros?.cover || '',
         images: data[0].macros?.images || [],
+        variants: data[0].macros?.variants || [],
         modelUrl: data[0].model_url || data[0].modelUrl,
         restId: data[0].rest_id || data[0].restId
       }]);
@@ -817,6 +819,7 @@ export const AppProvider = ({ children }) => {
       if (updates.macros !== undefined) dbUpdate.macros = { ...dbUpdate.macros, ...updates.macros };
       if (updates.cover !== undefined) dbUpdate.macros.cover = updates.cover;
       if (updates.images !== undefined) dbUpdate.macros.images = updates.images;
+      if (updates.variants !== undefined) dbUpdate.macros.variants = updates.variants;
       
       if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
       if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;
@@ -833,6 +836,7 @@ export const AppProvider = ({ children }) => {
           ...data[0],
           cover: data[0].macros?.cover || '',
           images: data[0].macros?.images || [],
+          variants: data[0].macros?.variants || [],
           modelUrl: data[0].model_url || data[0].modelUrl,
           restId: data[0].rest_id || data[0].restId
         };

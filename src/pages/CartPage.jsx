@@ -26,13 +26,18 @@ export default function CartPage() {
   const total = subtotal * (1 + taxRate);
   
   const groupedCart = Object.values(cart.reduce((acc, item) => {
-    if (!acc[item.id]) {
-      acc[item.id] = { ...item, quantity: 0, cartIds: [] };
+    const groupId = item.id + (item.selectedVariant ? '-' + item.selectedVariant.name : '');
+    if (!acc[groupId]) {
+      acc[groupId] = { ...item, quantity: 0, cartIds: [], groupId };
+      if (item.selectedVariant) {
+        acc[groupId].price = item.selectedVariant.price;
+        acc[groupId].variantName = item.selectedVariant.name;
+      }
     }
-    acc[item.id].quantity += 1;
-    acc[item.id].cartIds.push(item.cartId);
-    if (!acc[item.id].specialInstructions && item.specialInstructions) {
-        acc[item.id].specialInstructions = item.specialInstructions;
+    acc[groupId].quantity += 1;
+    acc[groupId].cartIds.push(item.cartId);
+    if (!acc[groupId].specialInstructions && item.specialInstructions) {
+        acc[groupId].specialInstructions = item.specialInstructions;
     }
     return acc;
   }, {}));
@@ -168,6 +173,9 @@ export default function CartPage() {
                     )}
                     <div>
                       <h3 className="font-bold text-neutral-900 dark:text-white font-sans max-w-[150px] leading-tight mb-1">{item.name}</h3>
+                      {item.variantName && (
+                        <p className="text-xs font-bold text-[#D4AF37] mb-1">{item.variantName}</p>
+                      )}
                       <div className="flex items-center gap-2">
                         {dishes.find(d => d.id === item.id)?.tags?.includes('sold_out') && (
                           <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-[9px] uppercase tracking-wider">
@@ -198,6 +206,19 @@ export default function CartPage() {
                     </div>
                   </div>
                 </div>
+                
+                {/* Per-item instructions */}
+                <div className="mt-1 pt-3 border-t border-neutral-200 dark:border-white/5">
+                  <input
+                    type="text"
+                    value={item.specialInstructions || ''}
+                    onChange={(e) => {
+                      setCart(prev => prev.map(c => item.cartIds.includes(c.cartId) ? { ...c, specialInstructions: e.target.value } : c));
+                    }}
+                    placeholder="Add note (e.g. less spicy)..."
+                    className="w-full bg-transparent text-xs text-neutral-700 dark:text-neutral-300 placeholder:text-neutral-400 focus:outline-none"
+                  />
+                </div>
               </div>
             </motion.div>
           ))}
@@ -205,11 +226,11 @@ export default function CartPage() {
           <p className="text-center text-xs text-neutral-500 py-2">Swipe items left to remove</p>
 
           <div className="mt-6 mb-6 pt-6 border-t border-neutral-200 dark:border-white/5">
-            <h3 className="font-display font-bold text-neutral-900 dark:text-white text-sm mb-3">Special Instructions</h3>
+            <h3 className="font-display font-bold text-neutral-900 dark:text-white text-sm mb-3">Order Note</h3>
             <textarea
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
-              placeholder="e.g. No onions, allergy to peanuts..."
+              placeholder="e.g. Leave at door, call when arrived..."
               className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-2xl p-4 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#D4AF37]/40 transition-all min-h-[100px] resize-none"
             />
           </div>

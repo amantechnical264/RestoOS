@@ -57,6 +57,14 @@ function OrderTimeline({ currentStatus }) {
   );
 }
 
+const SUGGESTIONS = {
+  1: ['Terrible food', 'Cold food', 'Late delivery', 'Missing items'],
+  2: ['Below average', 'Not fresh', 'Small portions', 'Needs improvement'],
+  3: ['Average experience', 'Okay food', 'Nothing special'],
+  4: ['Good food', 'Fast service', 'Tasty', 'Value for money'],
+  5: ['Excellent!', 'Highly recommended', 'Delicious food', 'Perfect portion']
+};
+
 // Zomato style Historical Order Card
 function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview }) {
   const isCancelled = order.status === 'Cancelled';
@@ -74,6 +82,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
 
   const [rating, setRating] = React.useState(persistedRating);
   const [hoverRating, setHoverRating] = React.useState(0);
+  const [reviewText, setReviewText] = React.useState('');
   const [isSubmitted, setIsSubmitted] = React.useState(persistedRating > 0);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -89,7 +98,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
     if (rating > 0 && !isSubmitted && !isSubmitting) {
       setIsSubmitting(true);
       try {
-        await onSubmitReview(order.id, restaurant?.id, rating);
+        await onSubmitReview(order.id, restaurant?.id, rating, reviewText);
         // Persist to localStorage so the submitted state survives a refresh
         // before the Supabase real-time update arrives
         const key = '3dish_submitted_reviews';
@@ -197,20 +206,41 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
             
             <AnimatePresence>
               {rating > 0 && (
-                <motion.button 
+                <motion.div 
                   initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
                   exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  onClick={handleSubmitReview}
-                  disabled={isSubmitting}
-                  className="w-full py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+                  className="flex flex-col gap-3 overflow-hidden"
                 >
-                  {isSubmitting ? (
-                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting…</>
-                  ) : (
-                    `Submit ${rating}-Star Review`
-                  )}
-                </motion.button>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTIONS[rating]?.map(suggestion => (
+                      <button 
+                        key={suggestion}
+                        onClick={() => setReviewText(prev => prev ? `${prev}, ${suggestion}` : suggestion)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-medium bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder="Tell us what you liked or disliked..."
+                    className="w-full p-3 rounded-xl bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-400/50 resize-none h-20"
+                  />
+                  <button 
+                    onClick={handleSubmitReview}
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting…</>
+                    ) : (
+                      `Submit ${rating}-Star Review`
+                    )}
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -397,13 +427,14 @@ export default function DinerOrdersPage() {
     }
   };
 
-  const handleSubmitReview = async (orderId, restId, rating) => {
+  const handleSubmitReview = async (orderId, restId, rating, reviewText) => {
     const dinerName = user?.name || 'Anonymous Diner';
     await reviewService.submitReview({
       orderId,
       restId,
       dinerName,
-      rating
+      rating,
+      reviewText
     });
   };
 

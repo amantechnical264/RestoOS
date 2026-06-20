@@ -6,6 +6,7 @@ import { supabase } from './supabase';
  * Reviews are stored directly on the `orders` table by updating two columns:
  *   - review_rating  (integer 1–5)
  *   - review_name    (string, diner display name)
+ *   - review_text    (string, the text comment)
  *   - reviewed_at    (ISO timestamp)
  *
  * This means no separate `reviews` table is needed and reviews are
@@ -20,9 +21,9 @@ class ReviewService {
 
   /**
    * Submit a review by patching the existing order row.
-   * @param {{ orderId, restId, dinerName, rating }} reviewData
+   * @param {{ orderId, restId, dinerName, rating, reviewText }} reviewData
    */
-  async submitReview({ orderId, restId, dinerName, rating }) {
+  async submitReview({ orderId, restId, dinerName, rating, reviewText }) {
     if (this.useLocalStorage || !supabase) {
       // Fallback: store in localStorage keyed by restId
       const key = '3dish_reviews';
@@ -36,6 +37,7 @@ class ReviewService {
         rest_id: restId,
         diner_name: dinerName,
         rating,
+        review_text: reviewText,
         created_at: new Date().toISOString(),
       });
       localStorage.setItem(key, JSON.stringify(filtered));
@@ -48,6 +50,7 @@ class ReviewService {
       .update({
         review_rating: rating,
         review_name: dinerName,
+        review_text: reviewText,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', orderId);
@@ -65,6 +68,7 @@ class ReviewService {
         rest_id: restId,
         diner_name: dinerName,
         rating,
+        review_text: reviewText,
         created_at: new Date().toISOString(),
       });
       localStorage.setItem(key, JSON.stringify(filtered));
@@ -90,7 +94,7 @@ class ReviewService {
     // Fetch from orders table
     const { data, error } = await supabase
       .from('orders')
-      .select('id, contact_name, review_rating, review_name, reviewed_at, rest_id, timestamp')
+      .select('id, contact_name, review_rating, review_name, review_text, reviewed_at, rest_id, timestamp')
       .eq('rest_id', restId)
       .not('review_rating', 'is', null)
       .order('reviewed_at', { ascending: false });
@@ -112,6 +116,7 @@ class ReviewService {
       id: row.id,
       diner_name: row.review_name || row.contact_name || 'Anonymous Diner',
       rating: row.review_rating,
+      text: row.review_text,
       created_at: row.reviewed_at || row.timestamp,
       rest_id: row.rest_id,
     }));

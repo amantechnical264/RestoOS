@@ -364,6 +364,15 @@ export default function MenuPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
   const scrollDirection = useScrollDirection();
+  const [variantModalDish, setVariantModalDish] = useState(null);
+
+  const handleAddToCart = (dish) => {
+    if (dish.variants && dish.variants.length > 0) {
+      setVariantModalDish(dish);
+    } else {
+      addToCart(dish);
+    }
+  };
 
   // ─── PARSE QR CODE URL PARAMS ─────────────────────────────────────────────
   // Set activeRestId immediately from URL params (no need to wait for data)
@@ -802,11 +811,11 @@ export default function MenuPage() {
                           dish={dish} 
                           isFav={favorites.includes(dish.id)}
                           onToggleFav={() => toggleFavorite(dish.id)}
-                          onAddToCart={() => addToCart(dish)}
+                          onAddToCart={() => handleAddToCart(dish)}
                           onDishClick={() => navigate(`/dish/${dish.id}`)}
                           onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? () => navigate(`/dish/${dish.id}`) : undefined}
                           qty={dishQty}
-                          onAdd={(e) => { if (e) e.stopPropagation(); addToCart(dish); }}
+                          onAdd={(e) => { if (e) e.stopPropagation(); handleAddToCart(dish); }}
                           onRemove={(e) => { if (e) e.stopPropagation(); removeOneFromCart(dish.id); }}
                         />
                       </div>
@@ -1136,6 +1145,37 @@ export default function MenuPage() {
               <ChevronRight size={18} strokeWidth={2.5} className="opacity-90 ml-1" />
             </motion.button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {variantModalDish && (
+          <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-sm" onClick={() => setVariantModalDish(null)}>
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-[#12141D] w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-neutral-200 dark:border-white/10"
+            >
+              <h3 className="font-display font-black text-xl mb-4 text-neutral-900 dark:text-white">Choose Variant</h3>
+              <p className="text-sm text-neutral-500 mb-4">{variantModalDish.name}</p>
+              <div className="space-y-3">
+                {variantModalDish.variants.map((v, i) => (
+                  <button key={i} onClick={() => {
+                    addToCart({ ...variantModalDish, selectedVariant: v });
+                    setVariantModalDish(null);
+                  }} className="w-full flex justify-between items-center p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all text-left">
+                    <span className="font-bold text-sm text-neutral-900 dark:text-white">{v.name}</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{Number(v.price).toFixed(2)}</span>
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setVariantModalDish(null)} className="w-full mt-4 py-3 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
+                Cancel
+              </button>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
