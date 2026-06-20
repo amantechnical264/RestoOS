@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Calendar, MoreVertical, Star } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,9 @@ import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
 import { reviewService } from '../services/ReviewService';
 import { OrderCardSkeleton } from '../components/Skeleton';
+import DishReviewModal from '../components/DishReviewModal';
+import DishRatingBadge from '../components/DishRatingBadge';
+import { DishRatingStore } from '../services/AIReviewService';
 
 const GOLD = '#D4AF37';
 const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
@@ -57,216 +60,217 @@ function OrderTimeline({ currentStatus }) {
   );
 }
 
-const SUGGESTIONS = {
-  1: ['Terrible food', 'Cold food', 'Late delivery', 'Missing items'],
-  2: ['Below average', 'Not fresh', 'Small portions', 'Needs improvement'],
-  3: ['Average experience', 'Okay food', 'Nothing special'],
-  4: ['Good food', 'Fast service', 'Tasty', 'Value for money'],
-  5: ['Excellent!', 'Highly recommended', 'Delicious food', 'Perfect portion']
-};
-
-// Zomato style Historical Order Card
-function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview }) {
+/**
+ * Zomato-style Historical Order Card with per-dish AI review support
+ */
+function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview, dishes, user }) {
   const isCancelled = order.status === 'Cancelled';
 
-  // ── Determine initial state from the order's existing review data ──────────
-  // 1. Prefer the review_rating that came back from Supabase (real-time update)
-  // 2. Fall back to localStorage in case the Supabase update hasn't propagated yet
-  const persistedRating = React.useMemo(() => {
-    if (order.review_rating) return order.review_rating;
+  // Track which dish has the review modal open
+  const [reviewingDish, setReviewingDish] = useState(null);
+  // Track which items in this order have been reviewed {itemId: rating}
+  const [reviewedItems, setReviewedItems] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('3dish_item_reviews') || '{}');
+      return stored[order.id] || {};
+    } catch { return {}; }
+  });
+  // Whether the whole order has been rated (legacy fallback)
+  const [orderReviewed, setOrderReviewed] = useState(() => {
+    if (order.review_rating) return true;
     try {
       const local = JSON.parse(localStorage.getItem('3dish_submitted_reviews') || '{}');
-      return local[order.id] || 0;
-    } catch { return 0; }
-  }, [order.id, order.review_rating]);
+      return !!local[order.id];
+    } catch { return false; }
+  });
 
-  const [rating, setRating] = React.useState(persistedRating);
-  const [hoverRating, setHoverRating] = React.useState(0);
-  const [reviewText, setReviewText] = React.useState('');
-  const [isSubmitted, setIsSubmitted] = React.useState(persistedRating > 0);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  // Keep state in sync if the order object updates (real-time Supabase push)
+  // Keep in sync with realtime Supabase pushes
   React.useEffect(() => {
-    if (order.review_rating && order.review_rating !== rating) {
-      setRating(order.review_rating);
-      setIsSubmitted(true);
-    }
+    if (order.review_rating) setOrderReviewed(true);
   }, [order.review_rating]);
 
-  const handleSubmitReview = async () => {
-    if (rating > 0 && !isSubmitted && !isSubmitting) {
-      setIsSubmitting(true);
-      try {
-        await onSubmitReview(order.id, restaurant?.id, rating, reviewText);
-        // Persist to localStorage so the submitted state survives a refresh
-        // before the Supabase real-time update arrives
-        const key = '3dish_submitted_reviews';
-        const stored = JSON.parse(localStorage.getItem(key) || '{}');
-        stored[order.id] = rating;
-        localStorage.setItem(key, JSON.stringify(stored));
-        setIsSubmitted(true);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
+  // Look up full dish object from the dishes array
+  const getDishObject = (item) => {
+    return dishes?.find(d => d.id === item.id) || {
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      tags: item.tags || [],
+      price: item.price,
+      spiceLevel: item.spiceLevel,
+      dietaryPreference: item.dietaryPreference,
+    };
   };
-  
+
+  const handleItemReviewSubmit = async (orderId, restId, rating, reviewText, dishId) => {
+    await onSubmitReview(orderId, restId, rating, reviewText, dishId);
+    // Track reviewed items
+    setReviewedItems(prev => {
+      const next = { ...prev, [dishId || 'order']: rating };
+      try {
+        const allStored = JSON.parse(localStorage.getItem('3dish_item_reviews') || '{}');
+        allStored[order.id] = next;
+        localStorage.setItem('3dish_item_reviews', JSON.stringify(allStored));
+      } catch {}
+      return next;
+    });
+    setOrderReviewed(true);
+    setReviewingDish(null);
+  };
+
+  const totalReviewed = Object.keys(reviewedItems).length;
+  const totalItems = order.items?.length || 0;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-[#121212] border border-neutral-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden mb-4"
-    >
-      {/* Top Header */}
-      <div className="p-4 flex items-start gap-4">
-        {/* Restaurant Icon */}
-        <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center">
-          {restaurant?.cover ? (
-            <img src={restaurant.cover} alt={restaurant.name} className="w-full h-full object-cover" />
-          ) : (
-            <Store size={20} className="text-neutral-400" />
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-[#121212] border border-neutral-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden mb-4"
+      >
+        {/* Top Header */}
+        <div className="p-4 flex items-start gap-4">
+          {/* Restaurant Icon */}
+          <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center">
+            {restaurant?.cover ? (
+              <img src={restaurant.cover} alt={restaurant.name} className="w-full h-full object-cover" />
+            ) : (
+              <Store size={20} className="text-neutral-400" />
+            )}
+          </div>
+          
+          {/* Restaurant Info */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <h3 className="text-[15px] font-bold text-neutral-900 dark:text-white truncate mb-1">
+              {restaurant?.name || 'Restaurant'}
+            </h3>
+            <button onClick={() => onViewMenu(restaurant?.id)} className="text-[13px] font-semibold text-left w-fit" style={{ color: '#E23744' }}>
+              View menu &rsaquo;
+            </button>
+          </div>
+
+          {/* Review Progress Badge */}
+          {orderReviewed && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/30">
+              <CheckCircle2 size={12} className="text-green-600 dark:text-green-400" />
+              <span className="text-[10px] font-bold text-green-700 dark:text-green-400">Reviewed</span>
+            </div>
           )}
         </div>
-        
-        {/* Restaurant Info */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <h3 className="text-[15px] font-bold text-neutral-900 dark:text-white truncate mb-1">
-            {restaurant?.name || 'Restaurant'}
-          </h3>
-          <button onClick={() => onViewMenu(restaurant?.id)} className="text-[13px] font-semibold text-left w-fit" style={{ color: '#E23744' }}>
-            View menu &rsaquo;
-          </button>
-        </div>
-      </div>
 
-      <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
+        <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
 
-      {/* Items List */}
-      <div className="p-4 space-y-3">
-        {order.items.map((item, i) => {
-          const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
-          const iconColor = isNonVeg ? '#E23744' : '#22c55e';
-          return (
-            <div key={i} className="flex items-start gap-3">
-              <div className="shrink-0 mt-1 flex items-center justify-center w-3 h-3 rounded-sm border" style={{ borderColor: iconColor }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: iconColor }} />
-              </div>
-              <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
-                {item.quantity || item.qty} x {item.name}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
-
-      {/* Order Details & Status */}
-      <div className="p-4 space-y-2">
-        <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
-          Order placed on {formattedDate}, {formattedTime}
-        </p>
-        <div className="flex justify-between items-center">
-          <span className={`text-[14px] font-semibold ${isCancelled ? 'text-red-500' : 'text-neutral-700 dark:text-neutral-300'}`}>
-            {isCancelled ? 'Cancelled' : 'Delivered'}
-          </span>
-          <span className="text-[14px] font-bold text-neutral-900 dark:text-white">
-            ₹{Number(order.total).toFixed(2)} &rsaquo;
-          </span>
-        </div>
-      </div>
-
-      <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
-
-      {/* Footer / Rating */}
-      <div className="p-4 flex justify-between items-center bg-neutral-50/50 dark:bg-white/[0.02]">
-        {!isSubmitted ? (
-          <div className="flex flex-col gap-2 w-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] font-bold text-neutral-900 dark:text-white mr-1">Rate Order</span>
-                <div className="flex gap-1">
-                  {[1,2,3,4,5].map(star => (
-                    <button 
-                      key={star} 
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      className="p-0.5"
-                    >
-                      <Star 
-                        size={20} 
-                        className={`transition-colors ${(hoverRating || rating) >= star ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-600'}`} 
-                      />
-                    </button>
-                  ))}
+        {/* Items List with per-dish review buttons */}
+        <div className="p-4 space-y-3">
+          {order.items.map((item, i) => {
+            const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
+            const iconColor = isNonVeg ? '#E23744' : '#22c55e';
+            const itemRating = reviewedItems[item.id] || reviewedItems['order'] || 0;
+            const isItemReviewed = itemRating > 0;
+            
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <div className="shrink-0 mt-0.5 flex items-center justify-center w-3 h-3 rounded-sm border" style={{ borderColor: iconColor }}>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: iconColor }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
+                      {item.quantity || item.qty} x {item.name}
+                    </span>
+                    {/* Show average rating for this dish */}
+                    {item.id && <DishRatingBadge dishId={item.id} variant="inline" />}
+                  </div>
+                  {/* Per-item review button for completed orders */}
+                  {!isCancelled && (
+                    <div className="mt-1.5">
+                      {!isItemReviewed ? (
+                        <button
+                          onClick={() => setReviewingDish(getDishObject(item))}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.04))',
+                            borderColor: 'rgba(212,175,55,0.3)',
+                            color: GOLD
+                          }}
+                        >
+                          <Sparkles size={9} />
+                          <span>Rate with AI</span>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} size={11}
+                              className={`${s <= itemRating ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-600'}`}
+                            />
+                          ))}
+                          <span className="text-[10px] text-neutral-400 ml-0.5">You rated</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-            
-            <AnimatePresence>
-              {rating > 0 && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  className="flex flex-col gap-3 overflow-hidden"
-                >
-                  <div className="flex flex-wrap gap-2">
-                    {SUGGESTIONS[rating]?.map(suggestion => (
-                      <button 
-                        key={suggestion}
-                        onClick={() => setReviewText(prev => prev ? `${prev}, ${suggestion}` : suggestion)}
-                        className="px-3 py-1.5 rounded-full text-[11px] font-medium bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    placeholder="Tell us what you liked or disliked..."
-                    className="w-full p-3 rounded-xl bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-400/50 resize-none h-20"
-                  />
-                  <button 
-                    onClick={handleSubmitReview}
-                    disabled={isSubmitting}
-                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting…</>
-                    ) : (
-                      `Submit ${rating}-Star Review`
-                    )}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            );
+          })}
+        </div>
+
+        <div className="mx-4 border-t border-dashed border-neutral-200 dark:border-white/10" />
+
+        {/* Order Details & Status */}
+        <div className="p-4 space-y-2">
+          <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
+            Order placed on {formattedDate}, {formattedTime}
+          </p>
+          <div className="flex justify-between items-center">
+            <span className={`text-[14px] font-semibold ${isCancelled ? 'text-red-500' : 'text-neutral-700 dark:text-neutral-300'}`}>
+              {isCancelled ? 'Cancelled' : 'Delivered'}
+            </span>
+            <span className="text-[14px] font-bold text-neutral-900 dark:text-white">
+              ₹{Number(order.total).toFixed(2)} &rsaquo;
+            </span>
           </div>
-        ) : (
-          <div className="flex items-center justify-between w-full">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
-                <CheckCircle2 size={18} className="fill-green-100 dark:fill-green-900 shrink-0" />
-                <span className="text-[14px] font-bold">Your review was submitted</span>
-              </div>
-              {/* Show the submitted star rating */}
-              <div className="flex gap-0.5 ml-7">
-                {[1,2,3,4,5].map(star => (
-                  <Star
-                    key={star}
-                    size={14}
-                    className={rating >= star ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-700'}
-                  />
-                ))}
-                <span className="text-[11px] text-neutral-400 ml-1 font-semibold">{rating}/5 stars</span>
+        </div>
+
+        {/* Review Summary Footer */}
+        {!isCancelled && orderReviewed && totalReviewed > 0 && (
+          <div className="mx-4 mb-4 px-4 py-3 rounded-xl flex items-center gap-2"
+            style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
+            <Sparkles size={13} style={{ color: GOLD }} />
+            <span className="text-xs font-bold" style={{ color: GOLD }}>
+              {totalReviewed}/{totalItems} {totalReviewed === 1 ? 'dish' : 'dishes'} reviewed — Thank you!
+            </span>
+          </div>
+        )}
+
+        {/* Prompt to review if not yet started */}
+        {!isCancelled && !orderReviewed && (
+          <div className="px-4 pb-4">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+              style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
+              <Sparkles size={14} style={{ color: GOLD }} />
+              <div className="flex-1">
+                <p className="text-[12px] font-bold" style={{ color: GOLD }}>Rate your dishes with AI!</p>
+                <p className="text-[11px] text-neutral-500">Tap "Rate with AI" next to any dish above</p>
               </div>
             </div>
           </div>
         )}
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {/* AI Dish Review Modal */}
+      <AnimatePresence>
+        {reviewingDish && (
+          <DishReviewModal
+            dish={reviewingDish}
+            order={order}
+            initialRating={reviewedItems[reviewingDish?.id] || 0}
+            dinerName={user?.name || 'Anonymous Diner'}
+            onClose={() => setReviewingDish(null)}
+            onSubmit={handleItemReviewSubmit}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 // Active Order Card (Legacy UI)
@@ -416,9 +420,16 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
 }
 
 export default function DinerOrdersPage() {
-  const { orders, user, restaurants, tableNumber, setActiveRestId, isDataLoaded } = useAppContext();
+  const { orders, user, restaurants, dishes, tableNumber, setActiveRestId, isDataLoaded } = useAppContext();
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  // Seed per-dish rating store from all orders with reviews
+  React.useEffect(() => {
+    if (orders && orders.length > 0) {
+      DishRatingStore.computeFromOrders(orders);
+    }
+  }, [orders]);
 
   const handleViewMenu = (restId) => {
     if (restId) {
@@ -427,8 +438,12 @@ export default function DinerOrdersPage() {
     }
   };
 
-  const handleSubmitReview = async (orderId, restId, rating, reviewText) => {
+  const handleSubmitReview = async (orderId, restId, rating, reviewText, dishId) => {
     const dinerName = user?.name || 'Anonymous Diner';
+    // Record per-dish rating for the rating badge system
+    if (dishId) {
+      DishRatingStore.recordRating(dishId, rating, restId);
+    }
     await reviewService.submitReview({
       orderId,
       restId,
@@ -531,6 +546,8 @@ export default function DinerOrdersPage() {
                     formattedTime={formattedTime}
                     onViewMenu={handleViewMenu}
                     onSubmitReview={handleSubmitReview}
+                    dishes={dishes}
+                    user={user}
                   />
                 </div>
               );

@@ -8,6 +8,8 @@ import BottomNav from '../components/BottomNav';
 import AIWaiter from '../components/AIWaiter';
 import { MenuPageSkeleton } from '../components/Skeleton';
 import { useScrollDirection } from '../hooks/useScrollDirection';
+import DishRatingBadge from '../components/DishRatingBadge';
+import { DishRatingStore } from '../services/AIReviewService';
 
 // ─── Optimized Image with shimmer → fade-in ──────────────────────────────────
 const OptimizedImage = ({ src, alt, className = '', eager = false, sizes }) => {
@@ -214,6 +216,7 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
       <div className="p-3 flex flex-col gap-2">
         <div>
           <h3 className="font-display font-bold text-[15px] text-neutral-900 dark:text-white leading-snug line-clamp-2">{dish.name}</h3>
+          <DishRatingBadge dishId={dish.id} variant="inline" className="mt-0.5" />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-1 mt-1">
@@ -292,6 +295,9 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
         <h3 className="font-display font-bold text-base text-neutral-900 dark:text-white leading-snug group-hover:text-[#D4AF37] transition-colors">
           {dish.name}
         </h3>
+
+        {/* Aggregate Rating Badge */}
+        <DishRatingBadge dishId={dish.id} variant="compact" className="mt-0.5" />
 
         {/* Price */}
         <div className="font-display font-black text-base text-[#D4AF37] mt-0.5 flex items-center gap-2">
@@ -373,6 +379,14 @@ export default function MenuPage() {
       addToCart(dish);
     }
   };
+
+  // Initialize DishRatingStore from orders data (aggregates ratings per dish from completed reviews)
+  const { orders } = useAppContext();
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      DishRatingStore.computeFromOrders(orders);
+    }
+  }, [orders]);
 
   // ─── PARSE QR CODE URL PARAMS ─────────────────────────────────────────────
   // Set activeRestId immediately from URL params (no need to wait for data)
