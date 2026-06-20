@@ -519,6 +519,7 @@ export default function MenuPage() {
 
   // Memoized: only recomputes when filters/data actually change (not on unrelated re-renders)
   const categoriesWithDishes = useMemo(() => {
+    const vegOnly = activeDietaryFilters.includes('Veg');
     const result = categoriesToRender.map(cat => {
       const catDishes = allDishes.filter(d => {
         const matchSearch = !search
