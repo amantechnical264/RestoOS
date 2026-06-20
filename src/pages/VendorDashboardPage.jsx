@@ -1001,6 +1001,7 @@ export default function VendorDashboardPage() {
   }, [isStaffMode, vendorTab]);
 
   const handlePrintBill = React.useCallback((order) => {
+    // If contactName is empty, fallback to contact_name, user_id, or Guest
     const customerName = order.contactName || order.contact_name || order.user_id || 'Guest';
     const printDate = new Date().toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const printTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -1009,11 +1010,15 @@ export default function VendorDashboardPage() {
     const itemsHtml = (order.items || []).map(item => `
       <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
         <span style="flex: 1;">${item.quantity || 1} x ${item.name}</span>
-        <span>${Number(item.price || 0).toFixed(2)}</span>
+        <span>${(Number(item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
       </div>
     `).join('');
 
-    const totalAmount = (order.total || 0).toFixed(2);
+    const subtotal = (order.items || []).reduce((acc, item) => acc + (Number(item.price || 0) * (item.quantity || 1)), 0);
+    const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
+    const taxAmount = subtotal * taxRate;
+    const totalAmount = (order.total || (subtotal + taxAmount)).toFixed(2);
+
     const orderNumber = getOrderNumber(order);
     const serverName = user?.email?.split('@')[0] || 'Staff';
     const orderTypeStr = order.orderType === 'dine_in' ? '*Dine In*' : '*Carry Out*';
@@ -1071,6 +1076,12 @@ export default function VendorDashboardPage() {
               justify-content: space-between;
               font-size: 12px;
             }
+            .tax-row {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+              margin-bottom: 5px;
+            }
           </style>
         </head>
         <body>
@@ -1092,6 +1103,14 @@ export default function VendorDashboardPage() {
           </div>
           <div class="items">
             ${itemsHtml}
+          </div>
+          <div class="tax-row">
+            <span>Subtotal</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
+          <div class="tax-row">
+            <span>Tax (${Math.round(taxRate * 100)}%)</span>
+            <span>${taxAmount.toFixed(2)}</span>
           </div>
           <div class="totals">
             <span>Total</span>

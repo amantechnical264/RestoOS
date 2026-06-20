@@ -9,7 +9,7 @@ import { supabase } from '../services/supabase';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart, user } = useAppContext();
   const { t } = useTranslation();
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -86,8 +86,8 @@ export default function CartPage() {
       status: status,
       tipAmount: 0,
       verificationCode: code,
-      contactName: '',
-      contactPhone: '',
+      contactName: user?.name || '',
+      contactPhone: user?.phone || '',
       specialInstructions: specialInstructions
     });
     
