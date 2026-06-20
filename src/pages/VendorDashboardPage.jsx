@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ListOrdered, TrendingUp, Utensils, QrCode as QrIcon,
-  Box, Edit2, Plus, X, Upload, AlertTriangle, LogOut, Store, Settings,
+  Box, Edit2, Plus, X as CloseIcon, Upload, AlertTriangle, LogOut, Store, Settings,
   Users, Save, Trash2, RefreshCw, Printer, ChefHat, Sparkles, Crown,
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
@@ -1741,7 +1741,7 @@ export default function VendorDashboardPage() {
                     </div>
                     <button onClick={() => setManagingCategories(false)}
                       className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors">
-                      <X size={18} />
+                      <CloseIcon size={18} />
                     </button>
                   </div>
 
@@ -2248,7 +2248,7 @@ export default function VendorDashboardPage() {
                       <p className="text-xs text-neutral-500 mt-0.5">Click a dish to assign it as parent or recommendation</p>
                     </div>
                     <button onClick={() => setShowComboDialog(false)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors">
-                      <X size={16} />
+                      <CloseIcon size={16} />
                     </button>
                   </div>
 
@@ -2273,7 +2273,7 @@ export default function VendorDashboardPage() {
                                     <p className="text-xs text-neutral-500">₹{Number(comboParent.price).toFixed(2)}</p>
                                   </div>
                                 </div>
-                                <button onClick={() => setComboParent(null)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><X size={14} /></button>
+                                <button onClick={() => setComboParent(null)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><CloseIcon size={14} /></button>
                               </div>
                             ) : (
                               <p className="text-xs text-neutral-400 text-center py-3">Click a dish below to set as parent</p>
@@ -2296,7 +2296,7 @@ export default function VendorDashboardPage() {
                                     </div>
                                     <span className="font-bold text-xs truncate">{rec.name}</span>
                                   </div>
-                                  <button onClick={() => setComboRecs(prev => prev.filter(r => r.id !== rec.id))} className="p-1 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><X size={12} /></button>
+                                  <button onClick={() => setComboRecs(prev => prev.filter(r => r.id !== rec.id))} className="p-1 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><CloseIcon size={12} /></button>
                                 </div>
                               ))
                             )}
@@ -2398,7 +2398,7 @@ export default function VendorDashboardPage() {
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="font-display font-black text-xl">{editingEvent.id ? 'Edit Event' : 'Create New Event'}</h3>
                       <button onClick={() => setEditingEvent(null)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 transition-colors">
-                        <X size={16} />
+                        <CloseIcon size={16} />
                       </button>
                     </div>
 
@@ -2616,7 +2616,7 @@ export default function VendorDashboardPage() {
                   <h2 className="font-display font-black text-xl">{editingDish.id ? 'Edit Dish' : 'Create New Dish'}</h2>
                   <button onClick={() => { setEditingDish(null); setScanState('idle'); setProgress(0); }}
                     className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors">
-                    <X size={18} />
+                    <CloseIcon size={18} />
                   </button>
                 </div>
 
@@ -2726,7 +2726,7 @@ export default function VendorDashboardPage() {
                               const newImgs = (editingDish.images || [editingDish.cover]).filter((_, idx) => idx !== i);
                               setEditingDish({ ...editingDish, images: newImgs, cover: newImgs[0] || '' });
                             }} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white">
-                              <X size={10} />
+                              <CloseIcon size={10} />
                             </button>
                           </div>
                         ))}
@@ -3619,7 +3619,7 @@ export default function VendorDashboardPage() {
                     </div>
                   </div>
                   <button onClick={() => setviewingRsvpsEvent(null)} className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 flex items-center justify-center transition-colors">
-                    <X size={16} />
+                    <CloseIcon size={16} />
                   </button>
                 </div>
                 
@@ -3666,7 +3666,7 @@ export default function VendorDashboardPage() {
                     <Sparkles size={20} /> AI Menu Import
                   </h2>
                   <button onClick={() => setAiImportState('idle')} className="text-neutral-400 hover:text-red-500 transition-colors">
-                    <X size={20} />
+                    <CloseIcon size={20} />
                   </button>
                 </div>
 
@@ -3751,7 +3751,7 @@ export default function VendorDashboardPage() {
                     <p className="text-xs text-neutral-500 mt-1">{customerList.length} total customers</p>
                   </div>
                   <button onClick={() => setShowAllCustomersModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-200/50 dark:bg-white/10 text-neutral-600 dark:text-white hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors">
-                    <X size={18} />
+                    <CloseIcon size={18} />
                   </button>
                 </div>
                 
@@ -3762,7 +3762,7 @@ export default function VendorDashboardPage() {
                   </div>
                   
                   <button onClick={handleExportVCF} className="px-4 py-2 bg-[#D4AF37] text-black font-bold text-xs rounded-xl hover:bg-amber-400 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(212,175,55,0.2)]">
-                    <Download size={14} /> Export Contact{selectedCustomerIds.length > 0 ? `s (${selectedCustomerIds.length})` : 's (All)'}
+                    <ArrowDown size={14} /> Export Contact{selectedCustomerIds.length > 0 ? `s (${selectedCustomerIds.length})` : 's (All)'}
                   </button>
                 </div>
 
