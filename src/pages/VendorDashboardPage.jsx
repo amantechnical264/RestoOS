@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, Download, CheckCircle2, User
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -534,6 +534,39 @@ export default function VendorDashboardPage() {
   const [comboRecs, setComboRecs] = React.useState([]);
   const [categoryToDelete, setCategoryToDelete] = React.useState(null);
   const [customerFilter, setCustomerFilter] = React.useState('top'); // 'top', 'all', 'repeat'
+
+  // Custom Customer Modal State
+  const [showAllCustomersModal, setShowAllCustomersModal] = React.useState(false);
+  const [customerModalSort, setCustomerModalSort] = React.useState('most-came'); // 'most-came', 'most-spend'
+  const [selectedCustomerIds, setSelectedCustomerIds] = React.useState([]);
+
+  const handleExportVCF = React.useCallback(() => {
+    // If none selected, export all
+    const targets = selectedCustomerIds.length > 0 
+      ? customerList.filter(c => selectedCustomerIds.includes(c.id))
+      : customerList;
+      
+    let vcfContent = '';
+    targets.forEach(c => {
+      vcfContent += 'BEGIN:VCARD\n';
+      vcfContent += 'VERSION:3.0\n';
+      vcfContent += `FN:${c.name}\n`;
+      if (c.phone && c.phone !== 'Dine-In Guest' && c.phone !== '') {
+        vcfContent += `TEL;TYPE=CELL:${c.phone}\n`;
+      }
+      vcfContent += 'END:VCARD\n';
+    });
+
+    const blob = new Blob([vcfContent], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().split('T')[0]}.vcf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [customerList, selectedCustomerIds]);
 
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
@@ -3140,9 +3173,14 @@ export default function VendorDashboardPage() {
                 <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl overflow-hidden shadow-sm">
                   <div className="p-5 border-b border-neutral-50 dark:border-white/5 flex justify-between items-center">
                     <h3 className="font-display font-black text-base">{customerFilter === 'repeat' ? 'Repeat Customers' : customerFilter === 'all' ? 'All Customers' : 'Top Customers (by Spend)'}</h3>
-                    <span className="text-xs text-neutral-400 font-bold">
-                      {customerFilter === 'repeat' ? repeatCustomers : customerFilter === 'all' ? uniqueCustomers : Math.min(15, uniqueCustomers)} shown
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-neutral-400 font-bold hidden sm:inline">
+                        {customerFilter === 'repeat' ? repeatCustomers : customerFilter === 'all' ? uniqueCustomers : Math.min(15, uniqueCustomers)} shown
+                      </span>
+                      <button onClick={() => setShowAllCustomersModal(true)} className="px-3 py-1.5 text-xs font-bold bg-[#D4AF37] text-black rounded-lg hover:bg-amber-400 transition-colors shadow-sm">
+                        View All
+                      </button>
+                    </div>
                   </div>
                   <div className="divide-y divide-neutral-50 dark:divide-white/4">
                     {/* Skeleton rows while loading */}
@@ -3697,6 +3735,59 @@ export default function VendorDashboardPage() {
                     </button>
                   </div>
                 )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* All Customers Modal */}
+        <AnimatePresence>
+          {showAllCustomersModal && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white dark:bg-[#12141D] w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-neutral-200 dark:border-white/10 relative">
+                <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-black shrink-0 relative z-10">
+                  <div>
+                    <h2 className="font-display font-black text-xl text-neutral-900 dark:text-white">Customer Database</h2>
+                    <p className="text-xs text-neutral-500 mt-1">{customerList.length} total customers</p>
+                  </div>
+                  <button onClick={() => setShowAllCustomersModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-200/50 dark:bg-white/10 text-neutral-600 dark:text-white hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors">
+                    <X size={18} />
+                  </button>
+                </div>
+                
+                <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-[#12141D] shrink-0 flex flex-wrap gap-4 justify-between items-center">
+                  <div className="flex gap-2 bg-neutral-100 dark:bg-black p-1 rounded-xl">
+                    <button onClick={() => setCustomerModalSort('most-came')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-came' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Came</button>
+                    <button onClick={() => setCustomerModalSort('most-spend')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-spend' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Spend</button>
+                  </div>
+                  
+                  <button onClick={handleExportVCF} className="px-4 py-2 bg-[#D4AF37] text-black font-bold text-xs rounded-xl hover:bg-amber-400 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(212,175,55,0.2)]">
+                    <Download size={14} /> Export Contact{selectedCustomerIds.length > 0 ? `s (${selectedCustomerIds.length})` : 's (All)'}
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-2">
+                  <div className="space-y-1">
+                    {[...customerList].sort((a, b) => customerModalSort === 'most-came' ? b.orderCount - a.orderCount : b.totalSpend - a.totalSpend).map(c => (
+                      <div key={c.id} className="flex items-center gap-3 p-3 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => setSelectedCustomerIds(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id])}>
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${selectedCustomerIds.includes(c.id) ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                          {selectedCustomerIds.includes(c.id) && <CheckCircle2 size={14} className="text-black" />}
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
+                          <User size={18} className="text-neutral-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
+                          <p className="text-xs text-neutral-500 font-mono truncate">{c.phone}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-black text-[#D4AF37] text-sm">₹{c.totalSpend.toFixed(2)}</p>
+                          <p className="text-[10px] text-neutral-500 font-bold">{c.orderCount} visits</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             </motion.div>
           )}
