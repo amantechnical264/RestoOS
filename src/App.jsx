@@ -26,31 +26,35 @@ const AdminDashboardPage  = React.lazy(() => import('./pages/AdminDashboardPage'
 class GlobalErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
   componentDidCatch(error, errorInfo) {
     console.error("Global error caught:", error, errorInfo);
+    this.setState({ errorInfo });
     // If it's a chunk load error (from outdated PWA cache), force a hard reload
-    if (error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to fetch dynamically imported module')) {
+    if (error && (error.name === 'ChunkLoadError' || (error.message && error.message.includes('Failed to fetch dynamically imported module')))) {
       window.location.reload(true);
     }
   }
   render() {
     if (this.state.hasError) {
       return (
-        <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mb-4">
+        <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col items-center justify-center p-6 text-center z-[9999] overflow-auto">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mb-4 shrink-0">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           </div>
-          <h2 className="text-xl font-bold dark:text-white mb-2">Update Available</h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-xs">
-            We've released a new version of the app. Refreshing your session to get the latest features.
+          <h2 className="text-xl font-bold dark:text-white mb-2">Something went wrong</h2>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-2 max-w-md break-all">
+            {this.state.error ? this.state.error.message : 'An unexpected error occurred.'}
           </p>
-          <button onClick={() => window.location.reload(true)} className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-full">
-            Refresh Now
+          <pre className="text-left bg-neutral-100 dark:bg-neutral-900 text-red-600 dark:text-red-400 p-4 rounded text-xs mb-6 max-w-full overflow-auto max-h-48 whitespace-pre-wrap">
+            {this.state.errorInfo ? this.state.errorInfo.componentStack : 'No stack trace available.'}
+          </pre>
+          <button onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.reload(true); }} className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-full mb-4">
+            Clear Cache & Restart
           </button>
         </div>
       );
