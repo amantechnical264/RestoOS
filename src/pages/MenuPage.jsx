@@ -488,7 +488,8 @@ export default function MenuPage() {
   const events = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && !d.tags?.includes('hidden') && d.tags?.includes('event'));
 
   const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
-  const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
+  let rawCategories = metadataRecord?.macros?.categories;
+  let customCategories = Array.isArray(rawCategories) ? rawCategories : ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
 
   const EMOJI_MAP = {
     'All': '🍽',
@@ -539,7 +540,8 @@ export default function MenuPage() {
         return matchSearch && matchCat && matchVeg;
       });
 
-      const orderArray = metadataRecord?.macros?.categoryOrders?.[cat] || [];
+      let orderArray = metadataRecord?.macros?.categoryOrders?.[cat] || [];
+      if (!Array.isArray(orderArray)) orderArray = [];
       if (orderArray.length > 0) {
         catDishes.sort((a, b) => {
           const idxA = orderArray.indexOf(a.id);
@@ -816,7 +818,8 @@ export default function MenuPage() {
               const profile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
               const guestId = profile.guestId || 'anonymous';
               const userPhone = profile.phone || '';
-              const rsvpsList = event.macros?.rsvps || [];
+              let rsvpsList = event.macros?.rsvps || [];
+              if (!Array.isArray(rsvpsList)) rsvpsList = [];
               const isRsvpd = rsvpsList.some(r => {
                 if (typeof r === 'object') {
                   if (userPhone && r.phone === userPhone) return true;
