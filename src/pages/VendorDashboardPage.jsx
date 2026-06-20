@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, Download, User
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -3774,7 +3774,7 @@ export default function VendorDashboardPage() {
                           {selectedCustomerIds.includes(c.id) && <CheckCircle size={14} className="text-black" />}
                         </div>
                         <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
-                          <User size={18} className="text-neutral-400" />
+                          <UserCircle size={18} className="text-neutral-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
