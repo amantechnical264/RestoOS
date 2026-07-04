@@ -2292,7 +2292,7 @@ export default function VendorDashboardPage() {
               {/* ── RIGHT: Combo Panel ── */}
               <div className="w-56 shrink-0 border-l border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
                 <div className="p-4 border-b border-neutral-100 dark:border-white/5">
-                  <h2 className="font-display font-black text-sm">Combos</h2>
+                  <h2 className="font-display font-black text-sm">Edit Suggestions</h2>
                   <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
                 </div>
                 <button
@@ -2300,14 +2300,14 @@ export default function VendorDashboardPage() {
                   className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
                 >
-                  <Gift size={13} /> Make Combos
+                  <Gift size={13} /> Edit Suggestions
                 </button>
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
                   {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).length === 0 && (
                     <div className="text-center py-8 text-neutral-400">
                       <Gift size={28} className="mx-auto mb-2 opacity-20" />
-                      <p className="text-[11px] font-semibold">No combos yet</p>
-                      <p className="text-[10px] mt-0.5">Click "Make Combos" to pair dishes</p>
+                      <p className="text-[11px] font-semibold">No suggestions yet</p>
+                      <p className="text-[10px] mt-0.5">Click "Edit Suggestions" to pair dishes</p>
                     </div>
                   )}
                   {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).map(parentDish => {
@@ -2332,10 +2332,10 @@ export default function VendorDashboardPage() {
                             <button
                               onClick={async () => {
                                 await updateDish(parentDish.id, { macros: { ...(parentDish.macros || {}), comboRecommendations: undefined } });
-                                showNotification('Combo deleted.');
+                                showNotification('Suggestions deleted.');
                               }}
                               className="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                              title="Delete combo"
+                              title="Delete suggestions"
                             >
                               <Trash2 size={11} />
                             </button>
@@ -2375,7 +2375,7 @@ export default function VendorDashboardPage() {
                   {/* Dialog Header */}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/5">
                     <div>
-                      <h2 className="font-display font-black text-xl">Combo Builder</h2>
+                      <h2 className="font-display font-black text-xl">Suggestion Builder</h2>
                       <p className="text-xs text-neutral-500 mt-0.5">Click a dish to assign it as parent or recommendation</p>
                     </div>
                     <button onClick={() => setShowComboDialog(false)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors">
@@ -2450,7 +2450,7 @@ export default function VendorDashboardPage() {
                           className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
                         >
-                          <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Combo</span>
+                          <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Suggestions</span>
                         </button>
                       </div>
 
@@ -2472,7 +2472,7 @@ export default function VendorDashboardPage() {
                                   if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
                                   if (!comboParent) {
                                     if (d.macros?.comboRecommendations?.length > 0) {
-                                      showNotification(`${d.name} is already a parent of another combo.`);
+                                      showNotification(`${d.name} is already a parent of another suggestion.`);
                                       return;
                                     }
                                     setComboParent(d);
