@@ -26,19 +26,20 @@ const DietIcon = ({ type }) => {
   if (!type || type === 'None') return null;
   const t = type.toLowerCase();
   let color = '';
-  if (t === 'vegetarian') color = 'border-green-600';
-  else if (t === 'non-vegetarian') color = 'border-red-600';
-  else if (t === 'eggitarian') color = 'border-yellow-500';
+  if (t === 'vegetarian') color = 'border-green-700 text-green-700';
+  else if (t === 'non-vegetarian') color = 'border-red-700 text-red-700';
+  else if (t === 'eggitarian') color = 'border-[#E5A900] text-[#E5A900]';
   else return null;
 
-  const dotColor = color.replace('border-', 'bg-');
+  const bColor = color.split(' ')[0];
+  const bgColor = color.split(' ')[1].replace('text-', 'bg-');
+
   return (
-    <span className={`inline-flex items-center justify-center w-[11px] h-[11px] border-[1.5px] ${color} rounded-[2px] p-[1px] mr-1.5 align-middle`}>
-      {t === 'non-vegetarian' ? (
-        <span className={`w-[6px] h-[6px] rounded-full ${dotColor}`}></span>
-      ) : (
-        <span className={`w-[5px] h-[5px] rounded-full ${dotColor}`}></span>
-      )}
+    <span 
+      className={`inline-flex items-center justify-center w-[14px] h-[14px] border-[1.5px] ${bColor} bg-white rounded-[2px] mr-1.5 align-middle shrink-0`} 
+      title={type}
+    >
+      <span className={`w-[6px] h-[6px] rounded-full ${bgColor}`}></span>
     </span>
   );
 };
