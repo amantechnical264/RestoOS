@@ -359,11 +359,14 @@ export const AppProvider = ({ children }) => {
         if (data) {
           const newPromos = {};
           data.forEach(r => {
+            let promoObj = null;
             if (r.promo) {
-              if (r.promo.flash !== undefined || r.promo.happyHour !== undefined) {
-                newPromos[r.id] = r.promo;
+              promoObj = typeof r.promo === 'string' ? JSON.parse(r.promo) : r.promo;
+              r.promo = promoObj; // Update the reference for later use
+              if (promoObj.flash !== undefined || promoObj.happyHour !== undefined) {
+                newPromos[r.id] = promoObj;
               } else {
-                newPromos[r.id] = { flash: r.promo, happyHour: null };
+                newPromos[r.id] = { flash: promoObj, happyHour: null };
               }
             } else {
               newPromos[r.id] = { flash: null, happyHour: null };
@@ -728,7 +731,10 @@ export const AppProvider = ({ children }) => {
 
       if (updateData.requireVerificationCode !== undefined) {
         const { data: curr } = await supabase.from('restaurants').select('promo').eq('id', restId).single();
-        const promoData = curr?.promo || {};
+        let promoData = {};
+        if (curr?.promo) {
+          promoData = typeof curr.promo === 'string' ? JSON.parse(curr.promo) : curr.promo;
+        }
         promoData.requireVerificationCode = updateData.requireVerificationCode;
         updatePayload.promo = promoData;
       }

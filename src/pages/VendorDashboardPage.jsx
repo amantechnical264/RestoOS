@@ -3454,7 +3454,11 @@ export default function VendorDashboardPage() {
                       </div>
                       <button 
                         type="button" 
-                        onClick={() => setSettingsForm({...settingsForm, requireVerificationCode: !settingsForm.requireVerificationCode})}
+                        onClick={async () => {
+                          const newValue = !settingsForm.requireVerificationCode;
+                          setSettingsForm({...settingsForm, requireVerificationCode: newValue});
+                          await updateRestaurant(activeRestId, { requireVerificationCode: newValue });
+                        }}
                         className={`w-12 h-6 rounded-full transition-all relative ${settingsForm.requireVerificationCode ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
                         style={settingsForm.requireVerificationCode ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
                       >
