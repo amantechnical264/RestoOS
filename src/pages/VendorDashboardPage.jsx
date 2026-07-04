@@ -470,11 +470,14 @@ export default function VendorDashboardPage() {
   React.useEffect(() => {
     if (isInitializing) return;
     if (!supabaseUser) { navigate('/vendor-auth', { replace: true }); return; }
+    // Don't redirect to onboarding until data has fully loaded from Supabase 
+    // (prevents false redirect on fresh device where localStorage cache is empty)
+    if (!isDataLoaded) return;
     const myRest = restaurants.find(r => r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id);
     if (!myRest && restaurants.length === 0) return;
     if (!myRest) { navigate('/vendor-onboard', { replace: true }); }
     else if (!activeRestId) { setActiveRestId(myRest.id); }
-  }, [supabaseUser, restaurants, activeRestId, navigate, setActiveRestId, isInitializing]);
+  }, [supabaseUser, restaurants, activeRestId, navigate, setActiveRestId, isInitializing, isDataLoaded]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

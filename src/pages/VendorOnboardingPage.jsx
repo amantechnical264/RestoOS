@@ -24,11 +24,10 @@ export default function VendorOnboardingPage() {
       return;
     }
 
-    // Check if user already has a restaurant
-    if (user && restaurants && restaurants.length > 0) {
-      const uid = user.uid || user.phone;
+    // Check if user already has a restaurant — use supabaseUser.id as the authoritative ID
+    if (supabaseUser && restaurants && restaurants.length > 0) {
       const existing = restaurants.find(r => 
-        r.vendor_id === uid || r.vendorId === uid
+        r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id
       );
       if (existing) {
         setActiveRestId(existing.id);
