@@ -37,6 +37,10 @@ const mapDish = (d) => ({
   cover: d.macros?.cover || d.cover || '',
   images: d.macros?.images || d.images || [],
   variants: d.macros?.variants || [],
+  prepTime: d.macros?.prepTime || d.prepTime,
+  serves: d.macros?.serves || d.serves,
+  spiceLevel: d.macros?.spiceLevel || d.spiceLevel,
+  dietaryPreference: d.macros?.dietaryPreference || d.dietaryPreference,
   modelUrl: d.model_url || d.modelUrl,
   restId: d.rest_id || d.restId
 });
@@ -778,7 +782,16 @@ export const AppProvider = ({ children }) => {
         price: parseFloat(dishData.price) || (dishData.variants?.length > 0 ? parseFloat(dishData.variants[0].price) : 0),
         description: dishData.description || '',
         model_url: dishData.modelUrl || '',
-        macros: { ...(dishData.macros || {}), cover: dishData.cover || '', images: dishData.images || [], variants: dishData.variants || [] },
+        macros: { 
+          ...(dishData.macros || {}), 
+          cover: dishData.cover || '', 
+          images: dishData.images || [], 
+          variants: dishData.variants || [],
+          prepTime: dishData.prepTime,
+          serves: dishData.serves,
+          spiceLevel: dishData.spiceLevel,
+          dietaryPreference: dishData.dietaryPreference
+        },
         tags: dishData.tags || [],
         allergens: dishData.allergens || [],
         ingredients: dishData.ingredients || [],
@@ -819,13 +832,17 @@ export const AppProvider = ({ children }) => {
       if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
       if (updates.modelUrl !== undefined) dbUpdate.model_url = updates.modelUrl;
       
-      // Handle macros JSONB column for custom data (like cover, images)
+      // Handle macros JSONB column for custom data (like cover, images, extra UI fields)
       const currentDish = dishes.find(d => d.id === dishId);
       dbUpdate.macros = { ...(currentDish?.macros || {}) };
       if (updates.macros !== undefined) dbUpdate.macros = { ...dbUpdate.macros, ...updates.macros };
       if (updates.cover !== undefined) dbUpdate.macros.cover = updates.cover;
       if (updates.images !== undefined) dbUpdate.macros.images = updates.images;
       if (updates.variants !== undefined) dbUpdate.macros.variants = updates.variants;
+      if (updates.prepTime !== undefined) dbUpdate.macros.prepTime = updates.prepTime;
+      if (updates.serves !== undefined) dbUpdate.macros.serves = updates.serves;
+      if (updates.spiceLevel !== undefined) dbUpdate.macros.spiceLevel = updates.spiceLevel;
+      if (updates.dietaryPreference !== undefined) dbUpdate.macros.dietaryPreference = updates.dietaryPreference;
       
       if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
       if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;
@@ -838,14 +855,7 @@ export const AppProvider = ({ children }) => {
       if (error) throw error;
       
       if (data && data[0]) {
-        const mappedDish = {
-          ...data[0],
-          cover: data[0].macros?.cover || '',
-          images: data[0].macros?.images || [],
-          variants: data[0].macros?.variants || [],
-          modelUrl: data[0].model_url || data[0].modelUrl,
-          restId: data[0].rest_id || data[0].restId
-        };
+        const mappedDish = mapDish(data[0]);
         setDishes(prev => prev.map(d => d.id === dishId ? mappedDish : d));
       }
       showNotification('Dish updated successfully.');
