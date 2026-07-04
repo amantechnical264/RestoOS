@@ -1034,6 +1034,62 @@ export default function VendorDashboardPage() {
   const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
   const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
 
+  const handleEditCategory = async (oldCat) => {
+    const newName = window.prompt(`Enter new name for category "${oldCat}":`, oldCat);
+    if (!newName) return;
+    const trimmed = newName.trim();
+    if (trimmed === oldCat || !trimmed) return;
+    
+    // Check if new name already exists
+    if (customCategories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      showNotification('A category with this name already exists.');
+      return;
+    }
+
+    // Update metadata record
+    const updatedCategories = customCategories.map(c => c === oldCat ? trimmed : c);
+    const newCategoryOrders = { ...(metadataRecord?.macros?.categoryOrders || {}) };
+    if (newCategoryOrders[oldCat]) {
+      newCategoryOrders[trimmed] = newCategoryOrders[oldCat];
+      delete newCategoryOrders[oldCat];
+    }
+
+    const payload = {
+      name: "_categories_metadata",
+      price: 0,
+      description: "Metadata for custom categories",
+      tags: ["_categories_metadata"],
+      macros: { categories: updatedCategories, categoryOrders: newCategoryOrders }
+    };
+
+    let metadataSuccess = false;
+    if (metadataRecord?.id) {
+      const res = await updateDish(metadataRecord.id, payload);
+      metadataSuccess = res !== null;
+    } else {
+      const res = await addDish({ ...payload, restId: activeRestId });
+      metadataSuccess = res !== null;
+    }
+
+    if (!metadataSuccess) {
+      showNotification('Failed to rename category metadata.');
+      return;
+    }
+
+    // Update dishes that have this category tag
+    const dishesToUpdate = vendDishes.filter(d => d.tags?.includes(oldCat));
+    let successCount = 0;
+    
+    for (const d of dishesToUpdate) {
+      const updatedTags = d.tags.map(t => t === oldCat ? trimmed : t);
+      const res = await updateDish(d.id, { tags: updatedTags });
+      if (res !== null) successCount++;
+    }
+
+    showNotification(`Renamed category to "${trimmed}". Updated ${successCount} dish(es).`);
+  };
+
+
   const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
 
   React.useEffect(() => {
@@ -1867,18 +1923,26 @@ export default function VendorDashboardPage() {
                                 <h4 className="font-bold text-lg text-neutral-900 dark:text-white">{cat}</h4>
                                 <p className="text-xs text-neutral-500">{catDishes.length} dishes in this category</p>
                               </div>
-                              <button
-                                onClick={() => {
-                                  if (catDishes.length > 0) {
-                                    setCategoryToDelete({ name: cat, dishesCount: catDishes.length, error: true });
-                                  } else {
-                                    setCategoryToDelete({ name: cat, dishesCount: 0, error: false });
-                                  }
-                                }}
-                                className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/20 transition-colors"
-                              >
-                                <Trash2 size={13} /> Delete Filter
-                              </button>
+                              <div className="flex gap-2 items-center">
+                                <button
+                                  onClick={() => handleEditCategory(cat)}
+                                  className="text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1 px-3 py-2 rounded-xl bg-neutral-100 dark:bg-white/5 transition-colors"
+                                >
+                                  <Edit2 size={13} /> Edit Name
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (catDishes.length > 0) {
+                                      setCategoryToDelete({ name: cat, dishesCount: catDishes.length, error: true });
+                                    } else {
+                                      setCategoryToDelete({ name: cat, dishesCount: 0, error: false });
+                                    }
+                                  }}
+                                  className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/20 transition-colors"
+                                >
+                                  <Trash2 size={13} /> Delete Filter
+                                </button>
+                              </div>
                             </div>
 
                             {catDishes.length === 0 ? (
