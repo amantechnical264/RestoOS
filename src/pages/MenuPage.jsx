@@ -232,12 +232,16 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
             )}
           </div>
           {dish.variants && dish.variants.length > 0 ? (
-            <span className="font-display font-black text-base text-[#D4AF37]">
-              {dish.variants.length === 1
-                ? `₹${Number(dish.variants[0].price).toFixed(2)}`
-                : `₹${Math.min(...dish.variants.map(v => Number(v.price))).toFixed(2)} – ₹${Math.max(...dish.variants.map(v => Number(v.price))).toFixed(2)}`
-              }
-            </span>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {dish.variants.map((v, i) => (
+                <span key={i} className="inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-lg"
+                  style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>
+                  <span className="opacity-70 font-medium">{v.name}</span>
+                  <span className="mx-0.5 opacity-40">·</span>
+                  ₹{Number(v.price).toFixed(0)}
+                </span>
+              ))}
+            </div>
           ) : (
             <span className="font-display font-black text-base text-[#D4AF37] flex items-center gap-1.5">
               {dish.originalPrice && dish.originalPrice > dish.price && (
@@ -308,23 +312,28 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
         {/* Aggregate Rating Badge */}
         <DishRatingBadge dishId={dish.id} variant="compact" className="mt-0.5" />
 
-        {/* Price */}
-        <div className="font-display font-black text-base text-[#D4AF37] mt-0.5 flex items-center gap-2">
-          {dish.variants && dish.variants.length > 0 ? (
-            dish.variants.length === 1
-              ? `₹${Number(dish.variants[0].price).toFixed(2)}`
-              : `₹${Math.min(...dish.variants.map(v => Number(v.price))).toFixed(2)} – ₹${Math.max(...dish.variants.map(v => Number(v.price))).toFixed(2)}`
-          ) : (
-            <>
-              {dish.originalPrice && dish.originalPrice > dish.price && (
-                <span className="text-neutral-400 dark:text-neutral-500 line-through text-sm font-medium">
-                  ₹{Number(dish.originalPrice).toFixed(2)}
-                </span>
-              )}
-              ₹{Number(dish.price).toFixed(2)}
-            </>
-          )}
-        </div>
+        {/* Price / Variants */}
+        {dish.variants && dish.variants.length > 0 ? (
+          <div className="flex flex-wrap gap-1 mt-0.5">
+            {dish.variants.map((v, i) => (
+              <span key={i} className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-lg"
+                style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>
+                <span className="opacity-70 font-medium">{v.name}</span>
+                <span className="mx-0.5 opacity-40">·</span>
+                ₹{Number(v.price).toFixed(0)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="font-display font-black text-base text-[#D4AF37] mt-0.5 flex items-center gap-2">
+            {dish.originalPrice && dish.originalPrice > dish.price && (
+              <span className="text-neutral-400 dark:text-neutral-500 line-through text-sm font-medium">
+                ₹{Number(dish.originalPrice).toFixed(2)}
+              </span>
+            )}
+            ₹{Number(dish.price).toFixed(2)}
+          </div>
+        )}
 
         {/* Chef / Prep Details */}
         <div className="flex items-center gap-3 text-[11px] text-neutral-500 font-sans">
