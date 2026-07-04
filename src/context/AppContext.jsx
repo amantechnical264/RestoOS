@@ -392,7 +392,8 @@ export const AppProvider = ({ children }) => {
             const mapped = data.map(r => ({
               ...r,
               vendorId: r.vendor_id || r.vendorId,
-              cover: r.cover || ''
+              cover: r.cover || '',
+              requireVerificationCode: r.promo?.requireVerificationCode !== false
             }));
             if (fastArrayEquals(prev, mapped)) return prev;
             try {
@@ -734,6 +735,13 @@ export const AppProvider = ({ children }) => {
       if (updateData.taxRate !== undefined) updatePayload.tax_rate = updateData.taxRate;
       if (updateData.acceptCash !== undefined) updatePayload.accept_cash = updateData.acceptCash;
 
+      if (updateData.requireVerificationCode !== undefined) {
+        const { data: curr } = await supabase.from('restaurants').select('promo').eq('id', restId).single();
+        const promoData = curr?.promo || {};
+        promoData.requireVerificationCode = updateData.requireVerificationCode;
+        updatePayload.promo = promoData;
+      }
+
       const { error } = await supabase.from('restaurants')
         .update(updatePayload)
         .eq('id', restId);
@@ -747,6 +755,7 @@ export const AppProvider = ({ children }) => {
           cover: updateData.cover !== undefined ? updateData.cover : r.cover,
           taxRate: updateData.taxRate !== undefined ? updateData.taxRate : r.taxRate,
           acceptCash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.acceptCash,
+          requireVerificationCode: updateData.requireVerificationCode !== undefined ? updateData.requireVerificationCode : r.requireVerificationCode
         } : r)
       );
       

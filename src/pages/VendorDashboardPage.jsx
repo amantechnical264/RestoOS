@@ -571,7 +571,7 @@ export default function VendorDashboardPage() {
   };
 
   const [settingsForm, setSettingsForm] = React.useState({
-    name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00'
+    name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00', requireVerificationCode: true
   });
 
 
@@ -582,6 +582,7 @@ export default function VendorDashboardPage() {
         cover: currentRestaurant.cover || '',
         taxRate: currentRestaurant.taxRate !== undefined ? currentRestaurant.taxRate : 8,
         acceptCash: currentRestaurant.acceptCash !== undefined ? currentRestaurant.acceptCash : true,
+        requireVerificationCode: currentRestaurant.requireVerificationCode !== undefined ? currentRestaurant.requireVerificationCode : true,
         phone: currentRestaurant.phone || '',
         hours: currentRestaurant.hours || '10:00 - 22:00',
       });
@@ -3442,6 +3443,15 @@ export default function VendorDashboardPage() {
                           <option value="true">✓ Yes — Cash Accepted</option>
                           <option value="false">✗ No — Digital Only</option>
                         </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Customer Verification Code</label>
+                        <select value={String(settingsForm.requireVerificationCode)} onChange={e => setSettingsForm({...settingsForm, requireVerificationCode: e.target.value === 'true'})}
+                          className="w-full rounded-xl p-3 text-sm">
+                          <option value="true">✓ Yes — Require 4-digit code</option>
+                          <option value="false">✗ No — Accept/Reject directly</option>
+                        </select>
+                        <p className="text-xs text-neutral-500 mt-2">If disabled, you can directly accept or reject new orders without asking the customer for a code.</p>
                       </div>
                     </div>
                   </div>
