@@ -769,7 +769,7 @@ export const AppProvider = ({ children }) => {
     try {
       const formattedDish = { 
         name: dishData.name,
-        price: parseFloat(dishData.price) || 0,
+        price: parseFloat(dishData.price) || (dishData.variants?.length > 0 ? parseFloat(dishData.variants[0].price) : 0),
         description: dishData.description || '',
         model_url: dishData.modelUrl || '',
         macros: { ...(dishData.macros || {}), cover: dishData.cover || '', images: dishData.images || [], variants: dishData.variants || [] },
