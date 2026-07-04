@@ -46,7 +46,7 @@ Rules:
 - Return ONLY the JSON array, nothing else`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const result = await model.generateContent([
       prompt,
       {
@@ -93,7 +93,7 @@ export async function getConciergeResponse(userMessage, dishes, restaurantName, 
   const prompt = `${systemPrompt}\n\nMENU:\n${menuContext}\n\nCUSTOMER: ${userMessage}\n\nCONCIERGE:`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text().trim() || "I'd love to help! Could you be a bit more specific about what you're looking for?";
