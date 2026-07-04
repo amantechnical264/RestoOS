@@ -1136,6 +1136,7 @@ export default function VendorDashboardPage() {
     { key: 'customers', icon: Users,        label: 'Customers' },
     { key: 'events',    icon: Calendar,     label: 'Events' },
     { key: 'editmenu',  icon: BookOpen,     label: 'Edit Menu' },
+    { key: 'combos',    icon: Gift,         label: 'Combos' },
     { key: 'qr',        icon: QrIcon,       label: 'Tables' },
     { key: 'settings',  icon: Settings,     label: 'Settings' },
   ];
@@ -1997,11 +1998,6 @@ export default function VendorDashboardPage() {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
                         <Plus size={16} /> Add Dish
                       </button>
-                      <button onClick={() => { setComboDraft({ name: '', description: '', price: '', dishes: [] }); setShowComboCreator(true); }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-black text-sm font-bold hover:opacity-90 transition-opacity"
-                        style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 4px 15px rgba(212,175,55,0.2)' }}>
-                        <Gift size={16} /> Add Combo
-                      </button>
                     </div>
                   </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2313,21 +2309,13 @@ export default function VendorDashboardPage() {
                   <h2 className="font-display font-black text-sm">Edit Suggestions</h2>
                   <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
                 </div>
-                <div className="px-3 mt-3 mb-2 flex flex-col gap-2">
                   <button
                     onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
-                    className="flex w-full items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+                    className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
                     style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
                   >
                     <Gift size={13} /> Edit Suggestions
                   </button>
-                  <button
-                    onClick={() => { setComboDraft({ name: '', description: '', price: '', dishes: [] }); setShowComboCreator(true); }}
-                    className="flex w-full items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90 bg-neutral-900 dark:bg-white text-white dark:text-black border border-transparent shadow-sm"
-                  >
-                    <Plus size={13} /> Add Combo
-                  </button>
-                </div>
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
                   {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).length === 0 && (
                     <div className="text-center py-8 text-neutral-400">
@@ -2675,6 +2663,101 @@ export default function VendorDashboardPage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* ── COMBOS TAB ── */}
+          {vendorTab === 'combos' && (
+            <motion.div key="combos" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-0 overflow-y-auto p-6 bg-[#fafafa] dark:bg-black">
+              <div className="flex justify-between items-end mb-8">
+                <div>
+                  <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white">Combos</h2>
+                  <p className="text-neutral-500 mt-1">Bundle dishes together for a discounted price.</p>
+                </div>
+                <button
+                  onClick={() => { setComboDraft({ name: '', description: '', price: '', dishes: [] }); setShowComboCreator(true); }}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl text-black text-sm font-bold hover:opacity-90 transition-opacity"
+                  style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 4px 15px rgba(212,175,55,0.2)' }}
+                >
+                  <Gift size={16} /> Add Combo
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {vendDishes.filter(d => d.macros?.isCombo).length === 0 ? (
+                  <div className="col-span-full py-20 text-center flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-3xl">
+                    <Gift size={48} className="text-neutral-300 dark:text-white/20 mb-4" />
+                    <h3 className="font-bold text-lg text-neutral-700 dark:text-white mb-2">No Combos Yet</h3>
+                    <p className="text-neutral-500 max-w-sm mx-auto mb-6">Create combo meals to offer your customers bundled dishes at a discounted price.</p>
+                    <button onClick={() => { setComboDraft({ name: '', description: '', price: '', dishes: [] }); setShowComboCreator(true); }} className="px-6 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm">Create First Combo</button>
+                  </div>
+                ) : (
+                  vendDishes.filter(d => d.macros?.isCombo).map(combo => {
+                    const comboChildren = combo.macros?.comboDishes?.map(id => vendDishes.find(d => d.id === id)).filter(Boolean) || [];
+                    const originalTotal = comboChildren.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
+                    return (
+                      <div key={combo.id} className="bg-white dark:bg-[#111115] rounded-3xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col">
+                        <div className="relative aspect-[4/3] bg-neutral-100 dark:bg-black/50">
+                          {combo.cover ? (
+                            <img src={combo.cover} alt={combo.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                              <Gift size={32} className="opacity-20" />
+                            </div>
+                          )}
+                          <div className="absolute top-3 right-3 flex items-center gap-2">
+                            <button onClick={async () => {
+                              if (confirm(`Delete combo "${combo.name}"?`)) {
+                                const { error } = await supabase.from('dishes').delete().eq('id', combo.id);
+                                if (!error) {
+                                  setDishes(prev => prev.filter(d => d.id !== combo.id));
+                                  showNotification('Combo deleted.');
+                                }
+                              }
+                            }} className="w-8 h-8 bg-black/50 backdrop-blur-md rounded-full text-white flex items-center justify-center hover:bg-red-500 transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-5 flex-1 flex flex-col">
+                          <h3 className="font-display font-black text-lg mb-1 line-clamp-1">{combo.name}</h3>
+                          <p className="text-xs text-neutral-500 line-clamp-2 mb-4">{combo.description}</p>
+                          
+                          <div className="flex -space-x-2 mb-4">
+                            {comboChildren.slice(0, 4).map((child, idx) => (
+                              <div key={idx} className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-100 dark:bg-black overflow-hidden flex shrink-0" title={child.name}>
+                                {child.cover || child.images?.[0] ? (
+                                  <img src={child.cover || child.images[0]} alt={child.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[10px]">🍽</div>
+                                )}
+                              </div>
+                            ))}
+                            {comboChildren.length > 4 && (
+                              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-200 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold z-10">
+                                +{comboChildren.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-white/5 flex items-end justify-between">
+                            <div>
+                              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Combo Price</p>
+                              <div className="flex items-end gap-2">
+                                <span className="font-black text-xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(combo.price).toFixed(2)}</span>
+                                {originalTotal > Number(combo.price) && (
+                                  <span className="text-xs font-bold text-neutral-400 line-through mb-0.5">₹{originalTotal.toFixed(2)}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          )}
+
 
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
