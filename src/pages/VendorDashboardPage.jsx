@@ -575,8 +575,10 @@ export default function VendorDashboardPage() {
   });
 
 
+  const [formInitializedFor, setFormInitializedFor] = React.useState(null);
+
   React.useEffect(() => {
-    if (currentRestaurant) {
+    if (currentRestaurant && formInitializedFor !== currentRestaurant.id) {
       setSettingsForm({
         name: currentRestaurant.name || '',
         cover: currentRestaurant.cover || '',
@@ -586,8 +588,9 @@ export default function VendorDashboardPage() {
         phone: currentRestaurant.phone || '',
         hours: currentRestaurant.hours || '10:00 - 22:00',
       });
+      setFormInitializedFor(currentRestaurant.id);
     }
-  }, [currentRestaurant]);
+  }, [currentRestaurant, formInitializedFor]);
 
   const handleSettingsSave = async (e) => {
     e.preventDefault();
