@@ -1288,31 +1288,36 @@ export default function MenuPage() {
               {/* Content */}
               <div className="overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                 <div className="p-5">
-                  <p className="text-sm text-neutral-500 mb-6">{selectedComboDish.description}</p>
+                  {selectedComboDish.description && (
+                    <p className="text-sm text-neutral-500 mb-6">{selectedComboDish.description}</p>
+                  )}
                   
                   {/* Photo Slider */}
-                  <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
-                    {(() => {
-                      const childIds = selectedComboDish.macros?.comboDishes || [];
-                      const children = dishes.filter(d => childIds.includes(d.id));
-                      return children.map(child => (
-                        <div key={child.id} className="min-w-[80%] sm:min-w-[200px] shrink-0 snap-center flex flex-col gap-2">
-                          <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#1a1a1f]">
-                            {(child.cover || child.images?.[0]) ? (
-                              <img src={child.cover || child.images[0]} alt={child.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                                <span className="text-xs">No Image</span>
-                              </div>
-                            )}
+                  <div className="flex flex-col gap-4 pb-2">
+                    <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Includes {selectedComboDish.macros?.comboDishes?.length || 0} items</h4>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+                      {(() => {
+                        const childIds = selectedComboDish.macros?.comboDishes || [];
+                        const children = allDishes.filter(d => childIds.includes(d.id));
+                        return children.map(child => (
+                          <div key={child.id} className="w-[220px] shrink-0 snap-center flex flex-col gap-3 p-3 rounded-2xl bg-neutral-50 dark:bg-white/[0.02] border border-neutral-100 dark:border-white/5">
+                            <div className="w-full h-32 rounded-xl overflow-hidden bg-neutral-200 dark:bg-[#1a1a1f] shrink-0">
+                              {(child.cover || child.images?.[0]) ? (
+                                <img src={child.cover || child.images[0]} alt={child.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                                  <span className="text-[10px] uppercase font-bold tracking-widest">No Image</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 flex flex-col">
+                              <p className="font-bold text-sm text-neutral-900 dark:text-white line-clamp-1">{child.name}</p>
+                              {child.description && <p className="text-[11px] text-neutral-500 line-clamp-2 mt-1 leading-tight">{child.description}</p>}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-sm text-neutral-900 dark:text-white truncate">{child.name}</p>
-                            <p className="text-xs text-neutral-500 line-clamp-2 leading-tight">{child.description}</p>
-                          </div>
-                        </div>
-                      ));
-                    })()}
+                        ));
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1326,7 +1331,7 @@ export default function MenuPage() {
                       <span className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(selectedComboDish.price).toFixed(2)}</span>
                       {(() => {
                         const childIds = selectedComboDish.macros?.comboDishes || [];
-                        const children = dishes.filter(d => childIds.includes(d.id));
+                        const children = allDishes.filter(d => childIds.includes(d.id));
                         const oldTotal = children.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
                         if (oldTotal > Number(selectedComboDish.price)) {
                           return <span className="text-sm font-bold text-neutral-400 line-through mb-0.5">₹{oldTotal.toFixed(2)}</span>;
