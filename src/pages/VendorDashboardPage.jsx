@@ -21,6 +21,27 @@ import StaffDashboard from '../components/StaffDashboard';
 import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
 import { extractMenuFromImage } from '../services/geminiService';
 import { generateMeshyModel } from '../services/meshyService';
+// Helper for Dietary Icons
+const DietIcon = ({ type }) => {
+  if (!type || type === 'None') return null;
+  const t = type.toLowerCase();
+  let color = '';
+  if (t === 'vegetarian') color = 'border-green-600';
+  else if (t === 'non-vegetarian') color = 'border-red-600';
+  else if (t === 'eggitarian') color = 'border-yellow-500';
+  else return null;
+
+  const dotColor = color.replace('border-', 'bg-');
+  return (
+    <span className={`inline-flex items-center justify-center w-[11px] h-[11px] border-[1.5px] ${color} rounded-[2px] p-[1px] mr-1.5 align-middle`}>
+      {t === 'non-vegetarian' ? (
+        <span className={`w-[6px] h-[6px] rounded-full ${dotColor}`}></span>
+      ) : (
+        <span className={`w-[5px] h-[5px] rounded-full ${dotColor}`}></span>
+      )}
+    </span>
+  );
+};
 
 // ── Design Tokens ─────────────────────────────────────────────────────
 const GOLD = '#D4AF37';
@@ -1927,7 +1948,10 @@ export default function VendorDashboardPage() {
                         <div className="p-4">
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex-1 pr-2">
-                              <h3 className="font-bold text-sm leading-tight">{dish.name}</h3>
+                              <h3 className="font-bold text-sm leading-tight flex items-center">
+                                <DietIcon type={dish.dietaryPreference} />
+                                <span className="truncate">{dish.name}</span>
+                              </h3>
                               <p className="text-xs text-neutral-500 mt-0.5">{dish.chef || 'Chef of House'}</p>
                             </div>
                             {dish.variants && dish.variants.length > 0 ? (
@@ -2878,9 +2902,8 @@ export default function VendorDashboardPage() {
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 dark:text-white transition-all cursor-pointer">
                           <option value="">None</option>
                           <option value="Vegetarian">Vegetarian</option>
-                          <option value="Vegan">Vegan</option>
-                          <option value="Gluten-Free">Gluten-Free</option>
-                          <option value="Halal">Halal</option>
+                          <option value="Non-Vegetarian">Non-Vegetarian</option>
+                          <option value="Eggitarian">Eggitarian</option>
                         </select>
                       </div>
                     </div>

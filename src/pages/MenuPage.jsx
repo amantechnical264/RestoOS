@@ -11,6 +11,28 @@ import { useScrollDirection } from '../hooks/useScrollDirection';
 import DishRatingBadge from '../components/DishRatingBadge';
 import { DishRatingStore } from '../services/AIReviewService';
 
+// Helper for Dietary Icons
+const DietIcon = ({ type }) => {
+  if (!type || type === 'None') return null;
+  const t = type.toLowerCase();
+  let color = '';
+  if (t === 'vegetarian') color = 'border-green-600';
+  else if (t === 'non-vegetarian') color = 'border-red-600';
+  else if (t === 'eggitarian') color = 'border-yellow-500';
+  else return null;
+
+  const dotColor = color.replace('border-', 'bg-');
+  return (
+    <span className={`inline-flex items-center justify-center w-[11px] h-[11px] border-[1.5px] ${color} rounded-[2px] p-[1px] mr-1.5 align-middle`}>
+      {t === 'non-vegetarian' ? (
+        <span className={`w-[6px] h-[6px] rounded-full ${dotColor}`}></span>
+      ) : (
+        <span className={`w-[5px] h-[5px] rounded-full ${dotColor}`}></span>
+      )}
+    </span>
+  );
+};
+
 // ─── Optimized Image with shimmer → fade-in ──────────────────────────────────
 const OptimizedImage = ({ src, alt, className = '', eager = false, sizes }) => {
   const [loaded, setLoaded] = useState(false);
@@ -215,7 +237,10 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
       {/* Card Body */}
       <div className="p-3 flex flex-col gap-2">
         <div>
-          <h3 className="font-display font-bold text-[15px] text-neutral-900 dark:text-white leading-snug line-clamp-2">{dish.name}</h3>
+          <h3 className="font-display font-bold text-[15px] text-neutral-900 dark:text-white leading-snug line-clamp-2">
+            <DietIcon type={dish.dietaryPreference} />
+            {dish.name}
+          </h3>
           <DishRatingBadge dishId={dish.id} variant="inline" className="mt-0.5" />
         </div>
 
@@ -306,6 +331,7 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
         {/* Dish Name */}
         <h3 className="font-display font-bold text-base text-neutral-900 dark:text-white leading-snug group-hover:text-[#D4AF37] transition-colors">
+          <DietIcon type={dish.dietaryPreference} />
           {dish.name}
         </h3>
 
