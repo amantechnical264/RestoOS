@@ -39,7 +39,8 @@ export default function Dish3DPage() {
 
   if (!dish) return null;
 
-  const modelUrl = dish.modelUrl || dish.model_url;
+  const rawModelUrl = dish.modelUrl || dish.model_url;
+  const modelUrl = (typeof rawModelUrl === 'string' && rawModelUrl.trim() !== '' && rawModelUrl !== 'null' && rawModelUrl !== 'undefined') ? rawModelUrl : null;
   const primaryBadge = dish.tags?.find(t => ["Chef's Pick", 'Signature', 'Popular', 'Bestseller', 'Seasonal', 'Vegan'].includes(t));
   const macroPercent = (val, max) => Math.min(100, Math.round((parseInt(val) || 0) / max * 100));
 
@@ -149,10 +150,19 @@ export default function Dish3DPage() {
             <div className="flex-1 pr-4">
               <h1 className="font-display font-black text-[28px] text-neutral-900 dark:text-white leading-tight tracking-tight">{dish.name}</h1>
             </div>
-            <div className="shrink-0 mt-1">
-              <span className="inline-block px-4 py-2 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 font-display font-black text-xl text-[#D4AF37]">
-                ₹{Number(dish.price).toFixed(2)}
-              </span>
+            <div className="shrink-0 mt-1 flex flex-col gap-2 items-end">
+              {dish.variants && dish.variants.length > 0 ? (
+                dish.variants.map((v, i) => (
+                  <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 font-display font-black text-lg text-[#D4AF37]">
+                    <span className="text-xs font-sans font-bold opacity-80 mr-2 uppercase tracking-wider">{v.name}</span>
+                    ₹{Number(v.price).toFixed(2)}
+                  </span>
+                ))
+              ) : (
+                <span className="inline-block px-4 py-2 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 font-display font-black text-xl text-[#D4AF37]">
+                  ₹{Number(dish.price).toFixed(2)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -345,7 +355,7 @@ export default function Dish3DPage() {
           }`}
           style={dish.tags?.includes('sold_out') ? {} : { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 10px 40px rgba(212,175,55,0.35)' }}>
           <ShoppingCart size={19} />
-          {dish.tags?.includes('sold_out') ? 'Sold Out' : `Add to Order — ₹${Number(dish.price).toFixed(2)}`}
+          {dish.tags?.includes('sold_out') ? 'Sold Out' : (dish.variants && dish.variants.length > 0 ? 'Choose Variant' : `Add to Order — ₹${Number(dish.price).toFixed(2)}`)}
         </motion.button>
       </div>
     </motion.div>
