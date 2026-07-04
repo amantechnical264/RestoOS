@@ -432,6 +432,15 @@ export default function MenuPage() {
   const [promoIndex, setPromoIndex] = useState(0);
   const scrollDirection = useScrollDirection();
   const [variantModalDish, setVariantModalDish] = useState(null);
+  const [selectedComboDish, setSelectedComboDish] = useState(null);
+
+  const handleDishClick = (dish) => {
+    if (dish.macros?.isCombo) {
+      setSelectedComboDish(dish);
+    } else {
+      navigate(`/dish/${dish.id}`);
+    }
+  };
 
   const handleAddToCart = (dish) => {
     if (dish.variants && dish.variants.length > 0) {
@@ -583,9 +592,13 @@ export default function MenuPage() {
   const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
   let rawCategories = metadataRecord?.macros?.categories;
   let customCategories = Array.isArray(rawCategories) ? rawCategories : ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
+  if (allDishes.some(d => d.macros?.isCombo) && !customCategories.includes('Combos')) {
+    customCategories = ['Combos', ...customCategories];
+  }
 
   const EMOJI_MAP = {
     'All': '🍽',
+    'Combos': '🎁',
     'Starters': '🥗',
     'Mains': '🍖',
     'Desserts': '🍮',
@@ -887,7 +900,7 @@ export default function MenuPage() {
                           isFav={favorites.includes(dish.id)}
                           onToggleFav={() => toggleFavorite(dish.id)}
                           onAddToCart={() => handleAddToCart(dish)}
-                          onDishClick={() => navigate(`/dish/${dish.id}`)}
+                          onDishClick={() => handleDishClick(dish)}
                           onARClick={hasEnterprise && (dish.modelUrl || dish.model_url) ? () => navigate(`/dish/${dish.id}`) : undefined}
                           qty={dishQty}
                           onAdd={(e) => { if (e) e.stopPropagation(); handleAddToCart(dish); }}
@@ -1249,6 +1262,92 @@ export default function MenuPage() {
               <button onClick={() => setVariantModalDish(null)} className="w-full mt-4 py-3 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
                 Cancel
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedComboDish && (
+          <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedComboDish(null)}>
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-[#12141D] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center p-5 border-b border-neutral-100 dark:border-white/5 shrink-0">
+                <h3 className="font-display font-black text-xl text-neutral-900 dark:text-white">{selectedComboDish.name}</h3>
+                <button onClick={() => setSelectedComboDish(null)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                <div className="p-5">
+                  <p className="text-sm text-neutral-500 mb-6">{selectedComboDish.description}</p>
+                  
+                  {/* Photo Slider */}
+                  <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+                    {(() => {
+                      const childIds = selectedComboDish.macros?.comboDishes || [];
+                      const children = dishes.filter(d => childIds.includes(d.id));
+                      return children.map(child => (
+                        <div key={child.id} className="min-w-[80%] sm:min-w-[200px] shrink-0 snap-center flex flex-col gap-2">
+                          <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#1a1a1f]">
+                            {(child.cover || child.images?.[0]) ? (
+                              <img src={child.cover || child.images[0]} alt={child.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                                <span className="text-xs">No Image</span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-neutral-900 dark:text-white truncate">{child.name}</p>
+                            <p className="text-xs text-neutral-500 line-clamp-2 leading-tight">{child.description}</p>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-5 border-t border-neutral-100 dark:border-white/5 bg-neutral-50 dark:bg-white/[0.02] shrink-0">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Combo Price</p>
+                    <div className="flex items-end gap-2">
+                      <span className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(selectedComboDish.price).toFixed(2)}</span>
+                      {(() => {
+                        const childIds = selectedComboDish.macros?.comboDishes || [];
+                        const children = dishes.filter(d => childIds.includes(d.id));
+                        const oldTotal = children.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
+                        if (oldTotal > Number(selectedComboDish.price)) {
+                          return <span className="text-sm font-bold text-neutral-400 line-through mb-0.5">₹{oldTotal.toFixed(2)}</span>;
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    handleAddToCart(selectedComboDish);
+                    setSelectedComboDish(null);
+                  }}
+                  className="w-full py-4 rounded-xl font-black text-white text-lg transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                >
+                  <span>Add Combo to Order</span>
+                  <Plus size={20} strokeWidth={3} />
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

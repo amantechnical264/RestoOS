@@ -569,6 +569,11 @@ export default function VendorDashboardPage() {
   const [showComboDialog, setShowComboDialog] = React.useState(false);
   const [comboParent, setComboParent] = React.useState(null);
   const [comboRecs, setComboRecs] = React.useState([]);
+  
+  // Custom Combo Creator State
+  const [showComboCreator, setShowComboCreator] = React.useState(false);
+  const [comboDraft, setComboDraft] = React.useState({ name: '', description: '', price: '', dishes: [] });
+
   const [categoryToDelete, setCategoryToDelete] = React.useState(null);
   const [customerFilter, setCustomerFilter] = React.useState('top'); // 'top', 'all', 'repeat'
 
@@ -1992,6 +1997,11 @@ export default function VendorDashboardPage() {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
                         <Plus size={16} /> Add Dish
                       </button>
+                      <button onClick={() => { setComboDraft({ name: '', description: '', price: '', dishes: [] }); setShowComboCreator(true); }}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-black text-sm font-bold hover:opacity-90 transition-opacity"
+                        style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 4px 15px rgba(212,175,55,0.2)' }}>
+                        <Gift size={16} /> Add Combo
+                      </button>
                     </div>
                   </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2522,6 +2532,136 @@ export default function VendorDashboardPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* ── COMBO CREATOR DIALOG ── */}
+          <AnimatePresence>
+            {showComboCreator && (
+              <motion.div
+                key="combo-creator-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setShowComboCreator(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  onClick={e => e.stopPropagation()}
+                  className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh] overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/5">
+                    <div>
+                      <h2 className="font-display font-black text-xl">Create Combo</h2>
+                      <p className="text-xs text-neutral-500 mt-0.5">Bundle dishes together for a discounted price</p>
+                    </div>
+                    <button onClick={() => setShowComboCreator(false)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors">
+                      <CloseIcon size={16} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 mb-1">Combo Name</label>
+                      <input 
+                        type="text" 
+                        value={comboDraft.name} 
+                        onChange={e => setComboDraft(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full bg-neutral-100 dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#D4AF37] outline-none"
+                        placeholder="e.g. Burger Meal"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-500 mb-1">Combo Price (₹)</label>
+                        <input 
+                          type="number" 
+                          value={comboDraft.price} 
+                          onChange={e => setComboDraft(prev => ({ ...prev, price: e.target.value }))}
+                          className="w-full bg-neutral-100 dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#D4AF37] outline-none"
+                          placeholder="e.g. 299"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 mb-1">Description</label>
+                      <textarea 
+                        value={comboDraft.description} 
+                        onChange={e => setComboDraft(prev => ({ ...prev, description: e.target.value }))}
+                        className="w-full bg-neutral-100 dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none min-h-[80px]"
+                        placeholder="Describe what's included..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 mb-2">Select Dishes ({comboDraft.dishes.length} selected)</label>
+                      <div className="space-y-1.5 max-h-[30vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                        {vendDishes.map(d => {
+                          const isSelected = comboDraft.dishes.includes(d.id);
+                          return (
+                            <button
+                              key={d.id}
+                              onClick={() => {
+                                setComboDraft(prev => ({
+                                  ...prev,
+                                  dishes: isSelected ? prev.dishes.filter(id => id !== d.id) : [...prev.dishes, d.id]
+                                }));
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
+                                isSelected ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                              } border`}
+                            >
+                              <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={12} className="text-neutral-400" /></div>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-xs truncate">{d.name}</p>
+                                <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(2)}</p>
+                              </div>
+                              {isSelected && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600">ADDED</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 border-t border-neutral-100 dark:border-white/5 bg-neutral-50 dark:bg-white/[0.02]">
+                    <button
+                      disabled={!comboDraft.name || !comboDraft.price || comboDraft.dishes.length === 0}
+                      onClick={async () => {
+                        const firstChildId = comboDraft.dishes[0];
+                        const firstChild = vendDishes.find(d => d.id === firstChildId);
+                        
+                        const payload = {
+                          name: comboDraft.name,
+                          price: parseFloat(comboDraft.price) || 0,
+                          description: comboDraft.description,
+                          restId: activeRestId,
+                          cover: firstChild?.cover || firstChild?.images?.[0] || null,
+                          tags: ['combo', 'Combos'],
+                          macros: {
+                            isCombo: true,
+                            comboDishes: comboDraft.dishes
+                          }
+                        };
+                        const res = await addDish(payload);
+                        if (res) {
+                          showNotification('Combo created successfully!');
+                          setShowComboCreator(false);
+                          setComboDraft({ name: '', description: '', price: '', dishes: [] });
+                        }
+                      }}
+                      className="w-full py-3 rounded-xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={comboDraft.name && comboDraft.price && comboDraft.dishes.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 15px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
+                    >
+                      <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Combo</span>
+                    </button>
                   </div>
                 </motion.div>
               </motion.div>
