@@ -25,14 +25,22 @@ import { generateMeshyModel } from '../services/meshyService';
 const DietIcon = ({ type }) => {
   if (!type || type === 'None') return null;
   const t = type.toLowerCase();
-  let color = '';
-  if (t === 'vegetarian') color = 'border-green-700 text-green-700';
-  else if (t === 'non-vegetarian') color = 'border-red-700 text-red-700';
-  else if (t === 'eggitarian') color = 'border-[#E5A900] text-[#E5A900]';
-  else return null;
-
-  const bColor = color.split(' ')[0];
-  const bgColor = color.split(' ')[1].replace('text-', 'bg-');
+  
+  let bColor = '';
+  let bgColor = '';
+  
+  if (t === 'vegetarian') {
+    bColor = 'border-green-700';
+    bgColor = 'bg-green-700';
+  } else if (t === 'non-vegetarian') {
+    bColor = 'border-red-700';
+    bgColor = 'bg-red-700';
+  } else if (t === 'eggitarian') {
+    bColor = 'border-[#E5A900]';
+    bgColor = 'bg-[#E5A900]';
+  } else {
+    return null;
+  }
 
   return (
     <span 
