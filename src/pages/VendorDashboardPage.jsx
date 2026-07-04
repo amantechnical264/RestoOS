@@ -2313,13 +2313,21 @@ export default function VendorDashboardPage() {
                   <h2 className="font-display font-black text-sm">Edit Suggestions</h2>
                   <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
                 </div>
-                <button
-                  onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
-                  className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
-                >
-                  <Gift size={13} /> Edit Suggestions
-                </button>
+                <div className="px-3 mt-3 mb-2 flex flex-col gap-2">
+                  <button
+                    onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
+                    className="flex w-full items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+                    style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
+                  >
+                    <Gift size={13} /> Edit Suggestions
+                  </button>
+                  <button
+                    onClick={() => { setComboDraft({ name: '', description: '', price: '', dishes: [] }); setShowComboCreator(true); }}
+                    className="flex w-full items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90 bg-neutral-900 dark:bg-white text-white dark:text-black border border-transparent shadow-sm"
+                  >
+                    <Plus size={13} /> Add Combo
+                  </button>
+                </div>
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
                   {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).length === 0 && (
                     <div className="text-center py-8 text-neutral-400">
