@@ -231,14 +231,23 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
               <span className="flex items-center gap-0.5">⏱ {dish.prepTime}m</span>
             )}
           </div>
-          <span className="font-display font-black text-base text-[#D4AF37] flex items-center gap-1.5">
-            {dish.originalPrice && dish.originalPrice > dish.price && (
-              <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
-                ₹{Number(dish.originalPrice).toFixed(2)}
-              </span>
-            )}
-            ₹{Number(dish.price).toFixed(2)}
-          </span>
+          {dish.variants && dish.variants.length > 0 ? (
+            <span className="font-display font-black text-base text-[#D4AF37]">
+              {dish.variants.length === 1
+                ? `₹${Number(dish.variants[0].price).toFixed(2)}`
+                : `₹${Math.min(...dish.variants.map(v => Number(v.price))).toFixed(2)} – ₹${Math.max(...dish.variants.map(v => Number(v.price))).toFixed(2)}`
+              }
+            </span>
+          ) : (
+            <span className="font-display font-black text-base text-[#D4AF37] flex items-center gap-1.5">
+              {dish.originalPrice && dish.originalPrice > dish.price && (
+                <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
+                  ₹{Number(dish.originalPrice).toFixed(2)}
+                </span>
+              )}
+              ₹{Number(dish.price).toFixed(2)}
+            </span>
+          )}
         </div>
 
         {/* Blinkit-style Add / Stepper button */}
@@ -301,12 +310,20 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
         {/* Price */}
         <div className="font-display font-black text-base text-[#D4AF37] mt-0.5 flex items-center gap-2">
-          {dish.originalPrice && dish.originalPrice > dish.price && (
-            <span className="text-neutral-400 dark:text-neutral-500 line-through text-sm font-medium">
-              ₹{Number(dish.originalPrice).toFixed(2)}
-            </span>
+          {dish.variants && dish.variants.length > 0 ? (
+            dish.variants.length === 1
+              ? `₹${Number(dish.variants[0].price).toFixed(2)}`
+              : `₹${Math.min(...dish.variants.map(v => Number(v.price))).toFixed(2)} – ₹${Math.max(...dish.variants.map(v => Number(v.price))).toFixed(2)}`
+          ) : (
+            <>
+              {dish.originalPrice && dish.originalPrice > dish.price && (
+                <span className="text-neutral-400 dark:text-neutral-500 line-through text-sm font-medium">
+                  ₹{Number(dish.originalPrice).toFixed(2)}
+                </span>
+              )}
+              ₹{Number(dish.price).toFixed(2)}
+            </>
           )}
-          ₹{Number(dish.price).toFixed(2)}
         </div>
 
         {/* Chef / Prep Details */}
