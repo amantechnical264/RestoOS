@@ -170,16 +170,18 @@ export default function Dish3DPage() {
           <p className="text-sm text-neutral-500 dark:text-neutral-300 leading-relaxed mb-5">{dish.description || 'A carefully crafted dish made with the finest seasonal ingredients.'}</p>
 
           {/* ── Stats Row: Calories + Prep Time ── */}
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
-              <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
-                <Flame size={18} className="text-orange-500" />
+          <div className={`grid ${dish.macros?.calories ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-5`}>
+            {dish.macros?.calories && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#1a1a1f] border border-neutral-100 dark:border-[#D4AF37]/10">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
+                  <Flame size={18} className="text-orange-500" />
+                </div>
+                <div>
+                  <p className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-none">{dish.macros.calories}</p>
+                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Calories</p>
+                </div>
               </div>
-              <div>
-                <p className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-none">{dish.macros?.calories || '—'}</p>
-                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Calories</p>
-              </div>
-            </div>
+            )}
             <div className="flex items-center gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-100 dark:border-[#D4AF37]/15">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
                 <Clock size={18} style={{ color: '#D4AF37' }} />
@@ -341,8 +343,11 @@ export default function Dish3DPage() {
           whileHover={dish.tags?.includes('sold_out') ? undefined : { scale: 1.02 }} 
           whileTap={dish.tags?.includes('sold_out') ? undefined : { scale: 0.98 }}
           onClick={() => {
-            if (dish.variants && dish.variants.length > 0) {
+            if (dish.variants && dish.variants.length > 1) {
               setShowVariantModal(true);
+            } else if (dish.variants && dish.variants.length === 1) {
+              addToCart({ ...dish, selectedVariant: dish.variants[0] });
+              navigate(-1);
             } else {
               addToCart(dish);
               navigate(-1);
@@ -355,7 +360,7 @@ export default function Dish3DPage() {
           }`}
           style={dish.tags?.includes('sold_out') ? {} : { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 10px 40px rgba(212,175,55,0.35)' }}>
           <ShoppingCart size={19} />
-          {dish.tags?.includes('sold_out') ? 'Sold Out' : (dish.variants && dish.variants.length > 0 ? 'Choose Variant' : `Add to Order — ₹${Number(dish.price).toFixed(2)}`)}
+          {dish.tags?.includes('sold_out') ? 'Sold Out' : (dish.variants && dish.variants.length > 1 ? 'Choose Variant' : `Order Now — ₹${Number(dish.variants?.length === 1 ? dish.variants[0].price : dish.price).toFixed(2)}`)}
         </motion.button>
       </div>
     </motion.div>
