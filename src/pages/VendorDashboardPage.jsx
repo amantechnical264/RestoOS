@@ -1930,7 +1930,18 @@ export default function VendorDashboardPage() {
                               <h3 className="font-bold text-sm leading-tight">{dish.name}</h3>
                               <p className="text-xs text-neutral-500 mt-0.5">{dish.chef || 'Chef of House'}</p>
                             </div>
-                            <span className="font-display font-black text-base text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
+                            {dish.variants && dish.variants.length > 0 ? (
+                              <div className="flex flex-col items-end gap-1">
+                                {dish.variants.map((v, idx) => (
+                                  <div key={idx} className="flex items-center gap-1.5">
+                                    <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{v.name}</span>
+                                    <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(v.price || 0).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="font-display font-black text-base text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-4">
                             {dish.tags?.filter(t => t !== 'sold_out' && t !== 'hidden').slice(0,3).map(t => (
