@@ -41,25 +41,12 @@ const mapDish = (d) => ({
   restId: d.rest_id || d.restId
 });
 
-// Fast comparison using IDs + count instead of full JSON serialization
+// Accurate deep comparison to prevent missed updates in polling
 const fastArrayEquals = (prev, next) => {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
   if (prev.length !== next.length) return false;
-  if (prev.length === 0 && next.length === 0) return true;
-  // Compare by IDs and a few key fields rather than full JSON
-  for (let i = 0; i < next.length; i++) {
-    if (prev[i]?.id !== next[i]?.id) return false;
-  }
-  // Quick hash: check first, last, and middle item for field changes
-  const checkIdx = [0, Math.floor(next.length / 2), next.length - 1];
-  for (const idx of checkIdx) {
-    const p = prev[idx];
-    const n = next[idx];
-    if (!p || !n) return false;
-    if (p.status !== n.status || p.name !== n.name || p.price !== n.price || p.total !== n.total) return false;
-    // Check cover/model_url for dish image changes
-    if (p.cover !== n.cover || p.model_url !== n.model_url) return false;
-  }
-  return true;
+  return JSON.stringify(prev) === JSON.stringify(next);
 };
 
 // Preload images into browser cache for instant rendering

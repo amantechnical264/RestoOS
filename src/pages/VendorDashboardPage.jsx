@@ -2705,12 +2705,12 @@ export default function VendorDashboardPage() {
                         <div key={i} className="flex gap-2 mb-2 items-center">
                           <input required type="text" placeholder="e.g. Half / Full / Cup" value={v.name} onChange={e => {
                             const newV = [...(editingDish.variants || [])];
-                            newV[i].name = e.target.value;
+                            newV[i] = { ...newV[i], name: e.target.value };
                             setEditingDish({...editingDish, variants: newV});
                           }} className="flex-1 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                           <input required type="number" step="0.01" placeholder="Price (₹)" value={v.price} onChange={e => {
                             const newV = [...(editingDish.variants || [])];
-                            newV[i].price = e.target.value;
+                            newV[i] = { ...newV[i], price: e.target.value };
                             setEditingDish({...editingDish, variants: newV});
                           }} className="w-24 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                           <button type="button" onClick={() => {
