@@ -3444,15 +3444,26 @@ export default function VendorDashboardPage() {
                           <option value="false">✗ No — Digital Only</option>
                         </select>
                       </div>
-                      <div className="col-span-2">
-                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Customer Verification Code</label>
-                        <select value={String(settingsForm.requireVerificationCode)} onChange={e => setSettingsForm({...settingsForm, requireVerificationCode: e.target.value === 'true'})}
-                          className="w-full rounded-xl p-3 text-sm">
-                          <option value="true">✓ Yes — Require 4-digit code</option>
-                          <option value="false">✗ No — Accept/Reject directly</option>
-                        </select>
-                        <p className="text-xs text-neutral-500 mt-2">If disabled, you can directly accept or reject new orders without asking the customer for a code.</p>
+                    <div className="col-span-2 mt-4 pt-4 border-t border-neutral-200 dark:border-[rgba(212,175,55,0.15)] flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-neutral-900 dark:text-white">Customer Verification Code</p>
+                        <p className="text-xs text-neutral-500 mt-0.5 max-w-[280px]">Require customers to provide a 4-digit code. Disable to directly accept/reject orders.</p>
                       </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setSettingsForm({...settingsForm, requireVerificationCode: !settingsForm.requireVerificationCode})}
+                        className={`w-12 h-6 rounded-full transition-all relative ${settingsForm.requireVerificationCode ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
+                        style={settingsForm.requireVerificationCode ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
+                      >
+                        <span 
+                          className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
+                          style={{ 
+                            left: settingsForm.requireVerificationCode ? '26px' : '4px',
+                            background: settingsForm.requireVerificationCode ? '#000' : '#fff'
+                          }}
+                        />
+                      </button>
+                    </div>
                     </div>
                   </div>
 
