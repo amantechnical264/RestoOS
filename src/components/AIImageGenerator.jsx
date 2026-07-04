@@ -193,6 +193,7 @@ export default function AIImageGenerator({
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
           >
@@ -310,6 +311,7 @@ export default function AIImageGenerator({
               <div className="flex gap-2">
                 {/* Confirm */}
                 <motion.button
+                  type="button"
                   whileTap={{ scale: 0.95 }}
                   onClick={handleConfirm}
                   className="flex-1 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 text-white"
@@ -324,6 +326,7 @@ export default function AIImageGenerator({
 
                 {/* Regenerate */}
                 <motion.button
+                  type="button"
                   whileTap={{ scale: 0.95 }}
                   onClick={handleRegenerate}
                   className="px-4 py-3 rounded-xl font-bold text-xs text-purple-300 flex items-center gap-1.5 hover:bg-white/5 transition-colors"
@@ -335,6 +338,7 @@ export default function AIImageGenerator({
 
                 {/* Discard */}
                 <motion.button
+                  type="button"
                   whileTap={{ scale: 0.95 }}
                   onClick={handleClose}
                   className="px-4 py-3 rounded-xl font-bold text-xs text-white/40 flex items-center gap-1.5 hover:bg-white/5 transition-colors"
@@ -362,12 +366,14 @@ export default function AIImageGenerator({
               <p className="text-[11px] text-red-400/50 mb-4">The AI service may be temporarily unavailable</p>
               <div className="flex gap-2 justify-center">
                 <button
+                  type="button"
                   onClick={generateImage}
                   className="px-4 py-2 rounded-xl bg-red-500/15 border border-red-500/20 text-red-300 text-xs font-bold flex items-center gap-1.5 hover:bg-red-500/25 transition-colors"
                 >
                   <RefreshCw size={12} /> Retry
                 </button>
                 <button
+                  type="button"
                   onClick={handleClose}
                   className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-xs font-bold hover:bg-white/10 transition-colors"
                 >

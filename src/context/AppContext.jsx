@@ -851,6 +851,24 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const deleteDish = async (dishId) => {
+    if (!supabaseUser) {
+      showNotification('You must be logged in to delete a dish.');
+      return false;
+    }
+    try {
+      const { error } = await supabase.from('dishes').delete().eq('id', dishId);
+      if (error) throw error;
+      setDishes(prev => prev.filter(d => d.id !== dishId));
+      showNotification('Dish deleted successfully.');
+      return true;
+    } catch (error) {
+      console.error('Delete dish error:', error);
+      showNotification(`Failed to delete dish: ${error.message}`);
+      return false;
+    }
+  };
+
   const rsvpToEvent = async (eventId, updatedMacros) => {
     try {
       const dbUpdate = { macros: updatedMacros };
@@ -970,7 +988,7 @@ export const AppProvider = ({ children }) => {
     restaurants, setRestaurants, addRestaurant, updateRestaurant,
     cart, setCart,
     orders, setOrders,
-    dishes: processedDishes, setDishes, addDish, updateDish, rsvpToEvent,
+    dishes: processedDishes, setDishes, addDish, updateDish, deleteDish, rsvpToEvent,
     promos, updateMarketingCampaign, currentTime,
     notification, showNotification,
     plans, planFor, upgradePlan,

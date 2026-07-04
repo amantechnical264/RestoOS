@@ -421,7 +421,7 @@ export default function VendorDashboardPage() {
   const [vendorTab, setVendorTab] = React.useState('orders');
   const {
     orders, activeRestId, updateOrderStatus,
-    dishes, setDishes, restaurants, addDish, updateDish, user, setUser,
+    dishes, setDishes, restaurants, addDish, updateDish, deleteDish, user, setUser,
     updateRestaurant, supabaseUser, setActiveRestId, isInitializing,
     theme, toggleTheme, showNotification, serviceAlerts, setServiceAlerts,
     planFor, upgradePlan, isDataLoaded,
@@ -1933,7 +1933,7 @@ export default function VendorDashboardPage() {
                               <span key={t} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">{t}</span>
                             ))}
                           </div>
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                             <button onClick={() => setEditingDish(dish)}
                               className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
                               <Edit2 size={11} /> Edit
@@ -1956,6 +1956,14 @@ export default function VendorDashboardPage() {
                               className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isHidden ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
                               {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
                               {isHidden ? 'Hidden' : 'Visible'}
+                            </button>
+                            <button onClick={async () => {
+                              if(window.confirm('Are you sure you want to delete this dish?')) {
+                                await deleteDish(dish.id);
+                              }
+                            }}
+                              className="py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 hover:opacity-80">
+                              <Trash2 size={11} /> Delete
                             </button>
                           </div>
                         </div>
