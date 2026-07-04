@@ -309,11 +309,18 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(212,175,55,0.1)' }}>
               <ShieldCheck size={24} style={{ color: GOLD }} />
             </div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
-            {order.verificationCode && (
-              <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
+            {order.verificationCode ? (
+              <>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Verification Code</p>
+                <p className="text-4xl font-black tracking-[0.4em] font-mono mb-2 text-center" style={{ color: GOLD }}>{order.verificationCode}</p>
+                <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2 text-center" style={{ color: GOLD }}>Awaiting Confirmation</p>
+                <p className="text-sm text-neutral-500 text-center mt-2">The restaurant is reviewing your order. No code is required.</p>
+              </>
             )}
-            <p className="text-sm text-neutral-500 text-center">Show this code to the waiter to confirm your table.</p>
         </motion.div>
       )}
 

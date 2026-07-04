@@ -639,7 +639,11 @@ export const AppProvider = ({ children }) => {
     if (orderData?.orderType)         newOrder.order_type        = orderData.orderType;
     if (orderData?.paymentMethod)     newOrder.payment_method    = orderData.paymentMethod;
     if (orderData?.paymentStatus)     newOrder.payment_status    = orderData.paymentStatus;
-    if (orderData?.verificationCode)  newOrder.verification_code = orderData.verificationCode;
+    
+    if (orderData?.verificationCode !== undefined) {
+      newOrder.verification_code = orderData.verificationCode;
+    }
+
     if (contactName)                  newOrder.contact_name      = contactName;
     if (contactPhone)                 newOrder.contact_phone     = contactPhone;
     if (orderData?.scheduledTime)     newOrder.scheduled_time    = orderData.scheduledTime;

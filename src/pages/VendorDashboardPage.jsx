@@ -1338,7 +1338,7 @@ export default function VendorDashboardPage() {
               {/* Pending Verification */}
               <div className="w-72 shrink-0 bg-white dark:bg-[#12141D] rounded-2xl border border-amber-200 dark:border-amber-900/40 flex flex-col max-h-full overflow-hidden shadow-sm">
                 <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-900/30 flex justify-between items-center">
-                  <span className="font-display font-black text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2"><Clock size={14} /> Verify Table</span>
+                  <span className="font-display font-black text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2"><Clock size={14} /> Awaiting Approval</span>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">{pendingVerification.length}</span>
                 </div>
                 <div className="p-3 space-y-3 overflow-y-auto flex-1">
@@ -1365,7 +1365,7 @@ export default function VendorDashboardPage() {
                         
                         <div className="mb-3 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 rounded-xl p-3">
                           <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">
-                            {o.verificationCode ? "Enter Customer Code" : "Verification Status"}
+                            {o.verificationCode ? "Enter Customer Code" : "Action Required"}
                           </p>
                           {o.verificationCode ? (
                             <div className="space-y-2">
@@ -1389,8 +1389,8 @@ export default function VendorDashboardPage() {
                               </p>
                             </div>
                           ) : (
-                            <p className="text-xs font-bold text-amber-500">
-                              ⚠️ No code generated. Tap Approve to bypass verification.
+                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-500">
+                              ✓ Direct Approval Enabled. Review the items and tap Approve to accept the order.
                             </p>
                           )}
                         </div>
