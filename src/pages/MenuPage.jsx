@@ -494,6 +494,7 @@ export default function MenuPage() {
   const [dinerPhone, setDinerPhone] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
+  const scrollDirection = useScrollDirection();
   const [variantModalDish, setVariantModalDish] = useState(null);
   const [selectedComboDish, setSelectedComboDish] = useState(null);
 
