@@ -10,12 +10,16 @@ import { registerSW } from 'virtual:pwa-register'
 const updateSW = registerSW({
   onNeedRefresh() {
     console.log("New version available! Force reloading to clear cache...");
-    updateSW(true); // Tell the service worker to skipWaiting
     
-    // We give the service worker a tiny fraction of a second to activate, then reload the page
-    setTimeout(() => {
-      window.location.reload(true);
-    }, 500);
+    // Wait for the new service worker to fully activate and take control
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+    
+    // Tell the new service worker to skipWaiting and take over
+    updateSW(true);
   },
   onOfflineReady() {
     console.log('App is ready for offline use.')
