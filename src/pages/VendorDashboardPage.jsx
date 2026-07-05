@@ -1799,10 +1799,33 @@ export default function VendorDashboardPage() {
                   ) : (
                     <div className="grid gap-4">
                       {deliveryOrders.map(order => {
-                        const loc = order.metadata?.location || {};
-                        const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
+                        const loc = order.metadata?.location 
+                          || order.items?.find(i => i.type === 'location_meta') 
+                          || {};\n                        const savedAddress = order.metadata?.address 
+                          || order.items?.find(i => i.type === 'location_meta')?.address 
+                          || '';\n                        const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
                         
-                        const waMessage = `*New Delivery Order!*\n\nOrder ID: ${order.verificationCode || order.id.slice(0,6)}\nCustomer: ${order.contactName || 'Guest'}${order.contactPhone ? ` (${order.contactPhone})` : ''}\n\n*Items:*\n${order.items.map(i => `- ${i.quantity || 1}x ${i.name} ${i.selectedVariant ? `(${i.selectedVariant.name})` : ''}`).join('\n')}\n\n*Total: ₹${parseFloat(order.total).toFixed(2)}*\n\n${mapUrl ? `*Navigation:* ${mapUrl}` : ''}`;
+                        const itemsList = order.items
+                          .filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location')
+                          .map(i => `  • ${i.quantity || 1}x ${i.name}${i.selectedVariant ? ` (${i.selectedVariant.name})` : ''}`)
+                          .join('\n');
+
+                        const waMessage = [
+                          `🛵 *New Delivery Order!*`,
+                          ``,
+                          `🪪 *Order Code:* ${order.verificationCode || order.id.slice(0,6)}`,
+                          `👤 *Customer:* ${order.contactName || 'Guest'}`,
+                          order.contactPhone ? `📞 *Phone:* ${order.contactPhone}` : null,
+                          ``,
+                          `🍽️ *Items:*`,
+                          itemsList,
+                          ``,
+                          `💰 *Total:* ₹${parseFloat(order.total).toFixed(2)}`,
+                          savedAddress ? `📍 *Address:* ${savedAddress}` : null,
+                          ``,
+                          mapUrl ? `🗺️ *Navigate to Customer:*\n${mapUrl}` : `⚠️ No GPS location provided. Call customer for address.`,
+                        ].filter(l => l !== null).join('\n');
+
                         const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
 
                         return (
@@ -1827,15 +1850,15 @@ export default function VendorDashboardPage() {
                                 </div>
                               </div>
 
-                              {(order.metadata?.address || mapUrl) && (
+                              {(savedAddress || mapUrl) && (
                                 <div className="bg-neutral-50 dark:bg-[#0a0a0a] rounded-xl p-3 border border-neutral-200 dark:border-white/5 flex gap-3 items-start">
                                   <MapPin className="text-blue-500 shrink-0 mt-0.5" size={16} />
                                   <div className="flex-1">
                                     <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">Delivery Address</p>
-                                    <p className="text-xs text-neutral-500 mb-2">{order.metadata.address || 'GPS Location Provided'}</p>
+                                    <p className="text-xs text-neutral-500 mb-2">{savedAddress || 'GPS Location Provided'}</p>
                                     {mapUrl && (
                                       <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                                        <ArrowUpRight size={12} /> Open in Maps
+                                        <ArrowUpRight size={12} /> Navigate in Google Maps
                                       </a>
                                     )}
                                   </div>
@@ -1845,7 +1868,7 @@ export default function VendorDashboardPage() {
                               <div className="pt-2 border-t border-neutral-100 dark:border-white/5">
                                 <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Order Items</p>
                                 <ul className="space-y-1">
-                                  {order.items.map((item, idx) => (
+                                  {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location').map((item, idx) => (
                                     <li key={idx} className="flex justify-between text-sm">
                                       <span className="font-medium text-neutral-700 dark:text-neutral-300"><span className="text-neutral-400 mr-2">{item.quantity || 1}x</span>{item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
                                       <span className="font-bold text-neutral-500">₹{parseFloat(item.price).toFixed(2)}</span>

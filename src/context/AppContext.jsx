@@ -623,6 +623,15 @@ export const AppProvider = ({ children }) => {
       };
     }
 
+    // Always encode location into items as a resilient fallback (survives metadata column being absent)
+    if (orderData?.metadata?.location) {
+      const { lat, lng } = orderData.metadata.location;
+      newOrder.items = [
+        ...newOrder.items,
+        { id: '__location', lat, lng, address: orderData.metadata.address || '', price: 0, quantity: 0, type: 'location_meta' }
+      ];
+    }
+
     try {
       const { error } = await supabase.from('orders').insert([newOrder]);
       if (error) {
