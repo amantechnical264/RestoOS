@@ -3,17 +3,42 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-// Use stable, available model
-const VISION_MODEL = "gemini-2.0-flash";
-const TEXT_MODEL   = "gemini-2.0-flash";
+// Use 1.5-flash as it has generous free tier quotas (2.0-flash often has limit: 0 on free tier)
+const VISION_MODEL = "gemini-1.5-flash";
+const TEXT_MODEL   = "gemini-1.5-flash";
 
-// Utility: Convert a File/Blob to base64 string
-async function fileToBase64(file) {
+// Utility: Compress and resize image before converting to base64
+async function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(',')[1];
-      resolve(base64);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Max dimension 1536px to save tokens and speed up OCR
+        const MAX_SIZE = 1536;
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG with 0.8 quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(dataUrl.split(',')[1]); // return just the base64 part
+      };
+      img.onerror = reject;
+      img.src = event.target.result;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -24,8 +49,9 @@ async function fileToBase64(file) {
 export async function extractMenuFromImage(file) {
   if (!genAI) throw new Error('GEMINI_API_KEY_MISSING');
 
-  const base64Data = await fileToBase64(file);
-  const mimeType = file.type || 'image/jpeg';
+  // Compress image before sending to Gemini
+  const base64Data = await compressImage(file);
+  const mimeType = 'image/jpeg';
 
   const prompt = `You are an expert restaurant menu digitizer and culinary AI assistant.
 Carefully analyse this menu image and extract EVERY SINGLE dish you can find.
@@ -132,6 +158,7 @@ Return ONLY valid JSON (no markdown, no explanation):
     return JSON.parse(cleaned);
   } catch (err) {
     console.error('Gemini Enrich Error:', err);
+    if (err.message.includes('429')) throw new Error('Rate limit exceeded. Please wait a moment.');
     throw new Error(err.message || 'Failed to enrich dish details.');
   }
 }
