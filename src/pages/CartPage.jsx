@@ -151,9 +151,15 @@ export default function CartPage() {
       },
       (error) => {
         console.warn('Geolocation error:', error);
-        showNotification("Failed to detect location. Please enter your address manually.");
+        let errorMsg = "Failed to detect location. Please enter your address manually.";
+        if (error.code === 1) errorMsg = "Location permission denied. Please allow location access in your browser settings.";
+        else if (error.code === 2) errorMsg = "Location information is currently unavailable. Please check your device GPS.";
+        else if (error.code === 3) errorMsg = "Location request timed out. Please try again or type manually.";
+        
+        showNotification(errorMsg);
         setIsFetchingLocation(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
 
