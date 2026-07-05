@@ -3,6 +3,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
+// Use stable, available model
+const VISION_MODEL = "gemini-2.0-flash";
+const TEXT_MODEL   = "gemini-2.0-flash";
+
 // Utility: Convert a File/Blob to base64 string
 async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -16,58 +20,82 @@ async function fileToBase64(file) {
   });
 }
 
-// 1. Menu OCR
+// ── 1. Menu OCR — extract ALL dishes with full metadata from image ──────────
 export async function extractMenuFromImage(file) {
-  if (!genAI) {
-    throw new Error('GEMINI_API_KEY_MISSING');
-  }
+  if (!genAI) throw new Error('GEMINI_API_KEY_MISSING');
 
   const base64Data = await fileToBase64(file);
   const mimeType = file.type || 'image/jpeg';
 
-  const prompt = `You are a professional menu digitizer. 
-Analyze this restaurant menu image carefully and extract ALL dishes you can see.
+  const prompt = `You are an expert restaurant menu digitizer and culinary AI assistant.
+Carefully analyse this menu image and extract EVERY SINGLE dish you can find.
 
-Return ONLY a valid JSON array (no markdown, no explanation) in this exact format:
+For each dish, also use your culinary knowledge to enrich the data where the menu doesn't provide it.
+
+Return ONLY a valid JSON array (no markdown fences, no explanation) with this exact schema:
 [
   {
-    "name": "Dish Name",
-    "price": 12.50,
-    "category": "Category (e.g. Starters, Mains, Desserts, Beverages)",
-    "description": "Brief description of the dish"
+    "name": "Exact dish name from menu",
+    "category": "Category (Starters | Mains | Desserts | Beverages | Soups | Salads | Breads | Rice | Biryani | etc.)",
+    "price": 120,
+    "halfPrice": null,
+    "description": "A single enticing sentence describing the dish flavour, texture and key ingredients.",
+    "ingredients": ["Ingredient 1", "Ingredient 2"],
+    "allergens": ["Gluten" | "Nuts" | "Dairy" | "Eggs" | "Shellfish" | "Soy" | "Fish"],
+    "macros": {
+      "calories": 350,
+      "protein": 18,
+      "carbs": 40,
+      "fat": 12
+    },
+    "dietaryPreference": "Vegetarian" | "Non-Vegetarian" | "Vegan" | "Eggitarian",
+    "spiceLevel": "Mild" | "Medium" | "Hot" | "Extra Hot",
+    "prepTime": "15 mins",
+    "serves": "1-2",
+    "tags": []
   }
 ]
 
 Rules:
-- Extract every single dish you can see
-- If price is unclear, use 0
-- Guess the category if not explicitly labeled
-- Keep descriptions concise (1 sentence max)
-- Return ONLY the JSON array, nothing else`;
+- Extract EVERY dish visible — miss nothing.
+- price: number in ₹ (use 0 if truly unreadable).
+- halfPrice: number if half-plate exists, else null.
+- Use your culinary knowledge to fill macros/ingredients/allergens where not shown.
+- Estimate macros (calories, protein g, carbs g, fat g) realistically for a restaurant portion.
+- dietaryPreference: infer from dish name/ingredients (veg indicator dots, etc.).
+- Return ONLY the JSON array, absolutely nothing else.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: VISION_MODEL });
     const result = await model.generateContent([
       prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: mimeType
-        }
-      }
+      { inlineData: { data: base64Data, mimeType } }
     ]);
-    const response = await result.response;
-    const text = response.text();
-
+    const text = result.response.text();
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const dishes = JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
 
-    return dishes.map((d, i) => ({
+    return parsed.map((d, i) => ({
       id: `ocr_${Date.now()}_${i}`,
       name: d.name || 'Unknown Dish',
-      price: Number(d.price) || 0,
       category: d.category || 'Uncategorized',
+      price: Number(d.price) || 0,
+      halfPrice: d.halfPrice ? Number(d.halfPrice) : null,
       description: d.description || '',
+      ingredients: Array.isArray(d.ingredients) ? d.ingredients : [],
+      allergens: Array.isArray(d.allergens) ? d.allergens : [],
+      macros: {
+        calories: d.macros?.calories || '',
+        protein:  d.macros?.protein  || '',
+        carbs:    d.macros?.carbs    || '',
+        fat:      d.macros?.fat      || '',
+      },
+      dietaryPreference: d.dietaryPreference || 'None',
+      spiceLevel: d.spiceLevel || 'Mild',
+      prepTime: d.prepTime || '',
+      serves: d.serves || '1',
+      tags: Array.isArray(d.tags) ? d.tags : [],
+      aiEnriched: true,
     }));
   } catch (error) {
     console.error("Gemini OCR Error:", error);
@@ -75,7 +103,40 @@ Rules:
   }
 }
 
-// 2. AI Concierge Chat
+// ── 2. Enrich a single dish with AI (for manually added or partial entries) ──
+export async function enrichDishWithAI(dishName, category = '') {
+  if (!genAI) throw new Error('GEMINI_API_KEY_MISSING');
+
+  const prompt = `You are a professional culinary data specialist.
+Generate rich, accurate, restaurant-quality metadata for this dish:
+Dish: "${dishName}"${category ? `\nCategory: ${category}` : ''}
+
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "description": "One enticing sentence (max 20 words) for a restaurant menu.",
+  "ingredients": ["key ingredient 1", "key ingredient 2", "...up to 8"],
+  "allergens": ["only from: Gluten, Nuts, Dairy, Eggs, Shellfish, Soy, Fish"],
+  "macros": { "calories": 350, "protein": 18, "carbs": 40, "fat": 12 },
+  "dietaryPreference": "Vegetarian OR Non-Vegetarian OR Vegan OR Eggitarian",
+  "spiceLevel": "Mild OR Medium OR Hot OR Extra Hot",
+  "prepTime": "e.g. 20 mins",
+  "serves": "e.g. 1-2",
+  "tags": ["Chef's Pick", "Signature", "Bestseller", "New", "Seasonal"]
+}`;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: TEXT_MODEL });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (err) {
+    console.error('Gemini Enrich Error:', err);
+    throw new Error(err.message || 'Failed to enrich dish details.');
+  }
+}
+
+// ── 3. AI Concierge Chat ─────────────────────────────────────────────────────
 export async function getConciergeResponse(userMessage, dishes, restaurantName, customPersonality) {
   if (!genAI) {
     return getFallbackResponse(userMessage, dishes);
@@ -93,7 +154,7 @@ export async function getConciergeResponse(userMessage, dishes, restaurantName, 
   const prompt = `${systemPrompt}\n\nMENU:\n${menuContext}\n\nCUSTOMER: ${userMessage}\n\nCONCIERGE:`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: TEXT_MODEL });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text().trim() || "I'd love to help! Could you be a bit more specific about what you're looking for?";

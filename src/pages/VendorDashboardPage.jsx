@@ -19,7 +19,7 @@ import ModelViewer from '../components/ModelViewer';
 import AIImageGenerator from '../components/AIImageGenerator';
 import StaffDashboard from '../components/StaffDashboard';
 import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
-import { extractMenuFromImage } from '../services/geminiService';
+import { extractMenuFromImage, enrichDishWithAI } from '../services/geminiService';
 import { generateMeshyModel } from '../services/meshyService';
 // Helper for Dietary Icons
 const DietIcon = ({ type }) => {
@@ -671,9 +671,15 @@ export default function VendorDashboardPage() {
   const [progress, setProgress]       = React.useState(0);
   const glbInputRef = React.useRef(null);
   const [isStaffMode, setIsStaffMode] = React.useState(false);
-  const [aiImportState, setAiImportState] = React.useState('idle');
+  const [aiImportState, setAiImportState] = React.useState('idle'); // 'idle' | 'chooser' | 'analyzing' | 'enriching' | 'reviewing'
   const [extractedDishes, setExtractedDishes] = React.useState([]);
   const [importProgress, setImportProgress] = React.useState(0);
+  const [importEnrichProgress, setImportEnrichProgress] = React.useState({ current: 0, total: 0 });
+  const [importCaptureMode, setImportCaptureMode] = React.useState('gallery'); // 'gallery' | 'camera'
+  const [importMenuPreview, setImportMenuPreview] = React.useState(null); // data URL of uploaded image
+  const [importSelectedDishes, setImportSelectedDishes] = React.useState(new Set()); // which dishes to import
+  const cameraInputRef = React.useRef(null);
+  const galleryInputRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
   const [tableCount, setTableCount]   = React.useState(5);
   const [activePromo, setActivePromo] = React.useState(null);
@@ -808,35 +814,89 @@ export default function VendorDashboardPage() {
   const handleOCRUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset the input so the same file can be re-uploaded
     e.target.value = '';
+
+    // Show image preview
+    const reader = new FileReader();
+    reader.onload = ev => setImportMenuPreview(ev.target.result);
+    reader.readAsDataURL(file);
 
     setAiImportState('analyzing');
     setImportProgress(0);
 
     try {
-      // Animate progress bar while waiting for API
+      // Phase 1: OCR + initial extraction
       let fakeP = 0;
       const progressInterval = setInterval(() => {
-        fakeP = Math.min(fakeP + 8, 85); // goes up to 85%, then jump to 100 on success
+        fakeP = Math.min(fakeP + 6, 80);
         setImportProgress(fakeP);
-      }, 500);
+      }, 400);
 
       const dishes = await extractMenuFromImage(file);
       clearInterval(progressInterval);
       setImportProgress(100);
+
+      // Select all dishes by default
+      setImportSelectedDishes(new Set(dishes.map(d => d.id)));
       setExtractedDishes(dishes);
       setAiImportState('reviewing');
-      showNotification(`✨ Extracted ${dishes.length} dishes from your menu!`);
+      showNotification(`✨ AI detected ${dishes.length} dishes from your menu!`);
     } catch (err) {
       console.error('OCR error:', err);
-      setAiImportState('idle');
+      setAiImportState('chooser');
+      setImportMenuPreview(null);
       if (err.message === 'GEMINI_API_KEY_MISSING') {
         showNotification('⚠️ Add VITE_GEMINI_API_KEY to your .env file to enable AI menu import.');
       } else {
         showNotification(`Import failed: ${err.message}`);
       }
     }
+  };
+
+  const handleImportSaveAll = async () => {
+    const toSave = extractedDishes.filter(d => importSelectedDishes.has(d.id));
+    if (toSave.length === 0) {
+      showNotification('Please select at least one dish to import.');
+      return;
+    }
+    setAiImportState('enriching');
+    setImportEnrichProgress({ current: 0, total: toSave.length });
+
+    let saved = 0;
+    for (const d of toSave) {
+      const variants = [];
+      if (d.halfPrice) variants.push({ label: 'Half', price: d.halfPrice });
+      variants.push({ label: 'Full', price: d.price });
+
+      await addDish({
+        name: d.name,
+        price: d.price,
+        description: d.description,
+        category: d.category,
+        ingredients: d.ingredients,
+        allergens: d.allergens,
+        macros: {
+          calories: d.macros?.calories || '',
+          protein: d.macros?.protein || '',
+          carbs: d.macros?.carbs || '',
+          fat: d.macros?.fat || '',
+          dietaryPreference: d.dietaryPreference,
+          spiceLevel: d.spiceLevel,
+          prepTime: d.prepTime,
+          serves: d.serves,
+        },
+        tags: d.tags || [],
+        variants: variants.length > 1 ? variants : [],
+        restId: activeRestId,
+      });
+      saved++;
+      setImportEnrichProgress({ current: saved, total: toSave.length });
+    }
+
+    setAiImportState('idle');
+    setExtractedDishes([]);
+    setImportMenuPreview(null);
+    showNotification(`🎉 Successfully imported ${saved} dishes to your menu!`);
   };
 
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy', 'Fish'];
@@ -2343,10 +2403,12 @@ export default function VendorDashboardPage() {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/10 transition-colors">
                         <Filter size={16} /> Manage Categories
                       </button>
-                      <input type="file" accept="image/*,.pdf" capture="environment" className="hidden" id="ai-menu-upload" onChange={handleOCRUpload} />
-                      <label htmlFor="ai-menu-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-black hover:bg-[#D4AF37]/20 transition-colors shadow-[0_0_15px_rgba(212,175,55,0.15)]">
+                      <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={handleOCRUpload} />
+                      <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleOCRUpload} />
+                      <button onClick={() => setAiImportState('chooser')}
+                        className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-black hover:bg-[#D4AF37]/20 transition-colors shadow-[0_0_15px_rgba(212,175,55,0.15)]">
                         <Sparkles size={16} /> Import Menu (AI)
-                      </label>
+                      </button>
                       <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', images: [], tags: [], variants: [], macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
                         <Plus size={16} /> Add Dish
@@ -4539,83 +4601,311 @@ export default function VendorDashboardPage() {
         <AnimatePresence>
           {aiImportState !== 'idle' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-md">
-              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-                className="w-full max-w-lg bg-white dark:bg-[#12141D] rounded-3xl border border-neutral-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-                
-                <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-[#1a1a1f]">
-                  <h2 className="font-display font-black text-xl flex items-center gap-2 text-[#D4AF37]">
-                    <Sparkles size={20} /> AI Menu Import
-                  </h2>
-                  <button onClick={() => setAiImportState('idle')} className="text-neutral-400 hover:text-red-500 transition-colors">
-                    <CloseIcon size={20} />
-                  </button>
-                </div>
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/85 backdrop-blur-lg">
+              <motion.div initial={{ scale: 0.92, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 24 }}
+                className="w-full max-w-2xl bg-white dark:bg-[#0E1018] rounded-3xl border border-neutral-200 dark:border-white/8 shadow-2xl overflow-hidden flex flex-col"
+                style={{ maxHeight: '92vh' }}>
 
-                <div className="p-6 overflow-y-auto">
-                  {aiImportState === 'analyzing' && (
-                    <div className="flex flex-col items-center justify-center py-10">
-                      <div className="relative w-24 h-24 mb-6">
-                        <div className="absolute inset-0 border-4 border-[#D4AF37]/20 rounded-full"></div>
-                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-0 border-4 border-t-[#D4AF37] rounded-full"></motion.div>
-                        <BrainCircuit size={40} className="absolute inset-0 m-auto text-[#D4AF37] animate-pulse" />
-                      </div>
-                      <h3 className="font-black text-lg mb-2">Analyzing Image/PDF...</h3>
-                      <p className="text-neutral-500 text-sm text-center mb-6 max-w-[250px]">Our AI is magically extracting dishes, prices, and descriptions.</p>
-                      <div className="w-full h-2 bg-neutral-200 dark:bg-white/10 rounded-full overflow-hidden">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${importProgress}%` }} className="h-full bg-[#D4AF37] rounded-full" />
-                      </div>
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-neutral-100 dark:border-white/8 flex justify-between items-center shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #0E1018 0%, #1a1520 100%)' }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)' }}>
+                      <Sparkles size={18} className="text-black" />
                     </div>
-                  )}
-
-                  {aiImportState === 'reviewing' && (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-end mb-4">
-                        <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm flex items-center gap-1.5"><CheckCircle size={16}/> Extraction Complete</p>
-                        <span className="text-xs font-black uppercase tracking-widest text-neutral-500">{extractedDishes.length} Items Found</span>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        {extractedDishes.map((dish, i) => (
-                          <div key={dish.id} className="bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl p-4">
-                            <input value={dish.name} onChange={e => {
-                              const newD = [...extractedDishes]; newD[i].name = e.target.value; setExtractedDishes(newD);
-                            }} className="w-full bg-transparent text-lg font-black text-neutral-900 dark:text-white border-none focus:ring-0 p-0 mb-2 placeholder:text-neutral-500" placeholder="Dish Name" />
-                            
-                            <div className="flex gap-3 mb-3">
-                              <div className="relative w-1/3">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-bold">₹</span>
-                                <input value={dish.price} onChange={e => {
-                                  const newD = [...extractedDishes]; newD[i].price = e.target.value; setExtractedDishes(newD);
-                                }} className="w-full bg-white dark:bg-[#1a1a1f] pl-7 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-[#D4AF37]/50 transition-colors" placeholder="0.00" />
-                              </div>
-                              <input value={dish.category} onChange={e => {
-                                const newD = [...extractedDishes]; newD[i].category = e.target.value; setExtractedDishes(newD);
-                              }} className="w-2/3 bg-white dark:bg-[#1a1a1f] px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-bold text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-[#D4AF37]/50 transition-colors" placeholder="Category" />
-                            </div>
-                            
-                            <textarea value={dish.description} onChange={e => {
-                              const newD = [...extractedDishes]; newD[i].description = e.target.value; setExtractedDishes(newD);
-                            }} className="w-full bg-white dark:bg-[#1a1a1f] px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 text-xs text-neutral-600 dark:text-neutral-400 resize-none h-16 focus:outline-none focus:border-[#D4AF37]/50 transition-colors" placeholder="Description..." />
-                          </div>
-                        ))}
-                      </div>
+                    <div>
+                      <h2 className="font-display font-black text-lg text-white">AI Menu Import</h2>
+                      <p className="text-[11px] text-neutral-400 font-medium">
+                        {aiImportState === 'chooser' && 'Upload your paper menu — AI does the rest'}
+                        {aiImportState === 'analyzing' && 'Scanning & detecting dishes...'}
+                        {aiImportState === 'enriching' && 'Saving dishes to your digital menu...'}
+                        {aiImportState === 'reviewing' && `${extractedDishes.length} dishes detected — review & import`}
+                      </p>
                     </div>
-                  )}
-                </div>
-
-                {aiImportState === 'reviewing' && (
-                  <div className="p-5 border-t border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#1a1a1f] shrink-0">
-                    <button onClick={async () => {
-                      for (const d of extractedDishes) {
-                        await addDish({ name: d.name, price: Number(d.price), category: d.category, description: d.description, restId: activeRestId });
-                      }
-                      setAiImportState('idle');
-                      showNotification(`Successfully imported ${extractedDishes.length} dishes!`);
-                    }} className="w-full py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_4px_20px_rgba(212,175,55,0.3)] text-black" style={{ background: goldGradient }}>
-                      <CheckCircle size={20}/> Save All Items to Menu
-                    </button>
                   </div>
+                  {(aiImportState === 'chooser' || aiImportState === 'reviewing') && (
+                    <button onClick={() => { setAiImportState('idle'); setImportMenuPreview(null); setExtractedDishes([]); }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-red-500/20 text-neutral-400 hover:text-red-400 transition-colors">
+                      <CloseIcon size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* ── CHOOSER STATE ── */}
+                {aiImportState === 'chooser' && (
+                  <div className="flex flex-col p-6 gap-5 overflow-y-auto">
+                    <div className="text-center mb-2">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/20 mb-4">
+                        <BrainCircuit size={14} className="text-[#D4AF37]" />
+                        <span className="text-xs font-black text-[#D4AF37] uppercase tracking-wider">Powered by Gemini AI</span>
+                      </div>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                        Take a photo or upload an image of your paper menu. Our AI will automatically detect all categories, dishes, prices, ingredients, nutritional info and more.
+                      </p>
+                    </div>
+
+                    {/* Upload Options */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/60 hover:bg-[#D4AF37]/5 transition-all duration-200 cursor-pointer">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-black text-sm text-neutral-900 dark:text-white">Live Camera</p>
+                          <p className="text-xs text-neutral-400 mt-0.5">Take photo now</p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/60 hover:bg-[#D4AF37]/5 transition-all duration-200 cursor-pointer">
+                        <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-black text-sm text-neutral-900 dark:text-white">Upload Photo</p>
+                          <p className="text-xs text-neutral-400 mt-0.5">From gallery / files</p>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Tips */}
+                    <div className="bg-[#D4AF37]/8 border border-[#D4AF37]/20 rounded-2xl p-4">
+                      <p className="text-xs font-black text-[#D4AF37] mb-2 flex items-center gap-1.5"><Sparkles size={12} /> Tips for best results</p>
+                      <ul className="space-y-1">
+                        {['Ensure the full menu is visible and well-lit', 'Flatten the menu to avoid wrinkles/shadows', 'Take close-up shots for multi-page menus', 'Any language works — AI translates automatically'].map(tip => (
+                          <li key={tip} className="text-xs text-neutral-500 dark:text-neutral-400 flex items-start gap-2">
+                            <CheckCircle size={11} className="text-[#D4AF37] mt-0.5 shrink-0" /> {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── ANALYZING STATE ── */}
+                {aiImportState === 'analyzing' && (
+                  <div className="flex flex-col items-center justify-center py-16 px-8 gap-6">
+                    {importMenuPreview && (
+                      <div className="w-40 h-28 rounded-2xl overflow-hidden border-2 border-[#D4AF37]/30 shadow-xl mb-2">
+                        <img src={importMenuPreview} alt="Menu" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="relative w-20 h-20">
+                      <div className="absolute inset-0 border-4 border-[#D4AF37]/15 rounded-full" />
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                        className="absolute inset-0 border-4 border-t-[#D4AF37] border-r-[#D4AF37]/40 rounded-full" />
+                      <BrainCircuit size={32} className="absolute inset-0 m-auto text-[#D4AF37]" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-black text-xl text-white mb-1">Reading Your Menu...</h3>
+                      <p className="text-sm text-neutral-400 max-w-[260px]">AI is identifying dishes, prices, categories and writing descriptions</p>
+                    </div>
+                    <div className="w-full max-w-sm">
+                      <div className="flex justify-between text-xs text-neutral-500 mb-2">
+                        <span>Analysing image</span>
+                        <span className="font-black text-[#D4AF37]">{Math.round(importProgress)}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${importProgress}%` }}
+                          transition={{ ease: 'easeOut' }} className="h-full rounded-full"
+                          style={{ background: 'linear-gradient(90deg,#D4AF37,#AA8C2C)' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── ENRICHING / SAVING STATE ── */}
+                {aiImportState === 'enriching' && (
+                  <div className="flex flex-col items-center justify-center py-16 px-8 gap-6">
+                    <div className="relative w-20 h-20">
+                      <div className="absolute inset-0 border-4 border-emerald-500/15 rounded-full" />
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                        className="absolute inset-0 border-4 border-t-emerald-500 border-r-emerald-500/30 rounded-full" />
+                      <CheckCircle size={32} className="absolute inset-0 m-auto text-emerald-500" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-black text-xl text-white mb-1">Saving to Menu...</h3>
+                      <p className="text-sm text-neutral-400">
+                        {importEnrichProgress.current} of {importEnrichProgress.total} dishes saved
+                      </p>
+                    </div>
+                    <div className="w-full max-w-sm">
+                      <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div
+                          animate={{ width: `${importEnrichProgress.total > 0 ? (importEnrichProgress.current / importEnrichProgress.total) * 100 : 0}%` }}
+                          className="h-full rounded-full bg-emerald-500" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── REVIEWING STATE ── */}
+                {aiImportState === 'reviewing' && (
+                  <>
+                    {/* Review toolbar */}
+                    <div className="px-6 py-3 border-b border-neutral-100 dark:border-white/8 flex items-center justify-between shrink-0 bg-neutral-50 dark:bg-[#0a0c12]">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-black text-emerald-500 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+                          <CheckCircle size={12} /> {extractedDishes.length} Dishes Detected
+                        </span>
+                        {importMenuPreview && (
+                          <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/10">
+                            <img src={importMenuPreview} alt="Preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setImportSelectedDishes(new Set(extractedDishes.map(d => d.id)))}
+                          className="text-xs font-bold text-[#D4AF37] hover:underline">Select All</button>
+                        <span className="text-neutral-600">·</span>
+                        <button onClick={() => setImportSelectedDishes(new Set())}
+                          className="text-xs font-bold text-neutral-500 hover:underline">None</button>
+                        <span className="ml-2 text-xs font-black text-neutral-400">{importSelectedDishes.size} selected</span>
+                      </div>
+                    </div>
+
+                    {/* Dish Cards — Scrollable */}
+                    <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                      {extractedDishes.map((dish, i) => {
+                        const selected = importSelectedDishes.has(dish.id);
+                        return (
+                          <motion.div key={dish.id}
+                            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                            className={`rounded-2xl border-2 overflow-hidden transition-all duration-200 ${
+                              selected
+                                ? 'border-[#D4AF37]/60 bg-[#D4AF37]/4 dark:bg-[#D4AF37]/5'
+                                : 'border-neutral-200 dark:border-white/6 bg-white dark:bg-[#12141D] opacity-50'
+                            }`}>
+
+                            {/* Card Header — toggle + name */}
+                            <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                              <button
+                                onClick={() => setImportSelectedDishes(prev => {
+                                  const next = new Set(prev);
+                                  next.has(dish.id) ? next.delete(dish.id) : next.add(dish.id);
+                                  return next;
+                                })}
+                                className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                                  selected ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-300 dark:border-white/20'
+                                }`}>
+                                {selected && <CheckCircle size={12} className="text-black" />}
+                              </button>
+                              <input
+                                value={dish.name}
+                                onChange={e => { const n = [...extractedDishes]; n[i].name = e.target.value; setExtractedDishes(n); }}
+                                className="flex-1 bg-transparent text-base font-black text-neutral-900 dark:text-white border-none focus:ring-0 p-0 placeholder:text-neutral-400"
+                                placeholder="Dish name"
+                              />
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                dish.dietaryPreference === 'Vegetarian' || dish.dietaryPreference === 'Vegan'
+                                  ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                                  : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                              }`}>{dish.dietaryPreference || 'N/A'}</span>
+                            </div>
+
+                            {/* Price + Category row */}
+                            <div className="flex gap-2 px-4 pb-3">
+                              <div className="relative w-28 shrink-0">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#D4AF37] font-black text-xs">₹</span>
+                                <input
+                                  value={dish.price}
+                                  onChange={e => { const n = [...extractedDishes]; n[i].price = e.target.value; setExtractedDishes(n); }}
+                                  className="w-full bg-neutral-50 dark:bg-black/40 pl-7 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-white/8 text-sm font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-[#D4AF37]/50 transition-colors"
+                                  placeholder="Price"
+                                />
+                              </div>
+                              {dish.halfPrice && (
+                                <div className="relative w-28 shrink-0">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-black text-xs">½₹</span>
+                                  <input
+                                    value={dish.halfPrice}
+                                    onChange={e => { const n = [...extractedDishes]; n[i].halfPrice = e.target.value; setExtractedDishes(n); }}
+                                    className="w-full bg-neutral-50 dark:bg-black/40 pl-8 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-white/8 text-sm font-bold text-neutral-600 dark:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 transition-colors"
+                                    placeholder="Half"
+                                  />
+                                </div>
+                              )}
+                              <input
+                                value={dish.category}
+                                onChange={e => { const n = [...extractedDishes]; n[i].category = e.target.value; setExtractedDishes(n); }}
+                                className="flex-1 bg-neutral-50 dark:bg-black/40 px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/8 text-xs font-bold text-neutral-600 dark:text-neutral-300 focus:outline-none focus:border-[#D4AF37]/50 transition-colors"
+                                placeholder="Category"
+                              />
+                            </div>
+
+                            {/* Description */}
+                            <div className="px-4 pb-3">
+                              <textarea
+                                value={dish.description}
+                                onChange={e => { const n = [...extractedDishes]; n[i].description = e.target.value; setExtractedDishes(n); }}
+                                rows={2}
+                                className="w-full bg-neutral-50 dark:bg-black/40 px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/8 text-xs text-neutral-600 dark:text-neutral-400 resize-none focus:outline-none focus:border-[#D4AF37]/50 transition-colors"
+                                placeholder="Description..."
+                              />
+                            </div>
+
+                            {/* AI-enriched details pills */}
+                            <div className="px-4 pb-4 flex flex-wrap gap-1.5">
+                              {dish.macros?.calories && (
+                                <span className="px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/15 text-orange-600 dark:text-orange-400 text-[10px] font-black">
+                                  🔥 {dish.macros.calories} kcal
+                                </span>
+                              )}
+                              {dish.macros?.protein && (
+                                <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/15 text-blue-600 dark:text-blue-400 text-[10px] font-black">
+                                  💪 {dish.macros.protein}g protein
+                                </span>
+                              )}
+                              {dish.spiceLevel && dish.spiceLevel !== 'Mild' && (
+                                <span className="px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-900/15 text-red-600 dark:text-red-400 text-[10px] font-black">
+                                  🌶 {dish.spiceLevel}
+                                </span>
+                              )}
+                              {dish.prepTime && (
+                                <span className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-white/5 text-neutral-500 text-[10px] font-bold">
+                                  ⏱ {dish.prepTime}
+                                </span>
+                              )}
+                              {dish.allergens?.slice(0, 3).map(a => (
+                                <span key={a} className="px-2.5 py-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/15 text-yellow-600 dark:text-yellow-400 text-[10px] font-bold">
+                                  ⚠ {a}
+                                </span>
+                              ))}
+                              {dish.ingredients?.slice(0, 3).map(ing => (
+                                <span key={ing} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-white/5 text-neutral-500 text-[10px]">
+                                  {ing}
+                                </span>
+                              ))}
+                              {dish.aiEnriched && (
+                                <span className="px-2.5 py-1 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] text-[10px] font-black flex items-center gap-1">
+                                  <Sparkles size={9} /> AI Enriched
+                                </span>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="px-6 py-4 border-t border-neutral-100 dark:border-white/8 bg-neutral-50 dark:bg-[#0a0c12] shrink-0 flex gap-3">
+                      <button
+                        onClick={() => { setAiImportState('chooser'); setImportMenuPreview(null); setExtractedDishes([]); }}
+                        className="px-5 py-3 rounded-2xl border border-neutral-200 dark:border-white/10 text-sm font-bold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
+                        ← Re-scan
+                      </button>
+                      <button
+                        onClick={handleImportSaveAll}
+                        disabled={importSelectedDishes.size === 0}
+                        className="flex-1 py-3 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_4px_24px_rgba(212,175,55,0.3)] text-black"
+                        style={{ background: goldGradient }}>
+                        <CheckCircle size={18} /> Import {importSelectedDishes.size} Dish{importSelectedDishes.size !== 1 ? 'es' : ''} to Menu
+                      </button>
+                    </div>
+                  </>
                 )}
               </motion.div>
             </motion.div>
