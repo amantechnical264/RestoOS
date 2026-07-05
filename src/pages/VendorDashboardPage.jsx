@@ -131,7 +131,7 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
     if (!allImages || allImages.length <= 1) return;
     const interval = setInterval(() => {
       setImgIdx(prev => (prev + 1) % allImages.length);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [allImages]);
 
@@ -2891,11 +2891,18 @@ export default function VendorDashboardPage() {
                             comboDishes: comboDraft.dishes
                           }
                         };
-                        const res = await addDish(payload);
-                        if (res) {
-                          showNotification('Combo created successfully!');
+                        if (comboDraft.id) {
+                          await updateDish(comboDraft.id, payload);
+                          showNotification('Combo updated successfully!');
                           setShowComboCreator(false);
                           setComboDraft({ name: '', description: '', price: '', dishes: [] });
+                        } else {
+                          const res = await addDish(payload);
+                          if (res) {
+                            showNotification('Combo created successfully!');
+                            setShowComboCreator(false);
+                            setComboDraft({ name: '', description: '', price: '', dishes: [] });
+                          }
                         }
                       }}
                       className="w-full py-3 rounded-xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
