@@ -1799,16 +1799,19 @@ export default function VendorDashboardPage() {
                   ) : (
                     <div className="grid gap-4">
                       {deliveryOrders.map(order => {
-                        // Triple fallback: metadata > items array > GPS string in specialInstructions
+                        // 4-layer GPS fallback: metadata > items > specialInstructions > address string [GPS:lat,lng]
                         const _locFromMeta = order.metadata?.location;
                         const _locFromItems = order.items?.find(i => i.type === 'location_meta');
-                        const _locFromSI = (() => {
-                          const si = order.metadata?.specialInstructions || '';
-                          const m = si.match(/GPS:([\d.\-]+),([\d.\-]+)/);
+                        const _parseGPS = (str) => {
+                          if (!str) return null;
+                          const m = String(str).match(/[\[\s]GPS:([\d.\-]+),([\d.\-]+)/);
                           return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
-                        })();
-                        const loc = _locFromMeta || _locFromItems || _locFromSI || {};
-                        const savedAddress = order.metadata?.address || _locFromItems?.address || '';
+                        };
+                        const _locFromSI = _parseGPS(order.metadata?.specialInstructions);
+                        const _rawAddr = order.metadata?.address || _locFromItems?.address || '';
+                        const _locFromAddr = _parseGPS(_rawAddr);
+                        const loc = _locFromMeta || _locFromItems || _locFromSI || _locFromAddr || {};
+                        const savedAddress = _rawAddr.replace(/\s*\[GPS:[\d.,\-]+\]/, '').trim();
                         const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
                         
                         const itemsList = order.items

@@ -144,24 +144,42 @@ export default function CartPage() {
     }
     setIsFetchingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocationCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
-        showNotification("Location detected successfully!");
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLocationCoords({ lat, lng });
+
+        // Reverse geocode via Nominatim (OpenStreetMap) - no API key needed
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en', 'User-Agent': '3Dish-DeliveryApp/1.0' } }
+          );
+          const data = await res.json();
+          const readableAddr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          // Embed GPS tag in address string — survives even if metadata column is absent
+          setTempAddress(`${readableAddr} [GPS:${lat},${lng}]`);
+          showNotification("📍 Location detected: " + (data.address?.suburb || data.address?.village || data.address?.city || 'Address found'));
+        } catch (geoErr) {
+          // Nominatim failed — fallback to raw coords still embedded in address
+          setTempAddress(`GPS Location [GPS:${lat},${lng}]`);
+          showNotification("Location detected successfully!");
+        }
         setIsFetchingLocation(false);
       },
       (error) => {
         console.warn('Geolocation error:', error);
         let errorMsg = "Failed to detect location. Please enter your address manually.";
         if (error.code === 1) errorMsg = "Location permission denied. Please allow location access in your browser settings.";
-        else if (error.code === 2) errorMsg = "Location information is currently unavailable. Please check your device GPS.";
+        else if (error.code === 2) errorMsg = "Location unavailable. Please check your device GPS.";
         else if (error.code === 3) errorMsg = "Location request timed out. Please try again or type manually.";
-        
         showNotification(errorMsg);
         setIsFetchingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
+
 
   const handleBack = () => {
     navigate(-1);
