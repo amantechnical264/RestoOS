@@ -113,6 +113,157 @@ const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
   );
 });
 
+// ─── Combo Card Item ───────────────────────────────────────────────────
+const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateDish, deleteDish, setComboDraft, setShowComboCreator }) => {
+  const [imgIdx, setImgIdx] = React.useState(0);
+  
+  const allImages = React.useMemo(() => {
+    const imgs = [];
+    if (combo.cover) imgs.push(combo.cover);
+    comboChildren.forEach(child => {
+      if (child.cover) imgs.push(child.cover);
+      else if (child.images?.[0]) imgs.push(child.images[0]);
+    });
+    return imgs.length > 0 ? imgs : null;
+  }, [combo, comboChildren]);
+
+  React.useEffect(() => {
+    if (!allImages || allImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setImgIdx(prev => (prev + 1) % allImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [allImages]);
+
+  const isSoldOut = combo.tags?.includes('sold_out');
+  const isHidden = combo.tags?.includes('hidden');
+
+  return (
+    <div className={`bg-white dark:bg-[#111115] rounded-3xl border overflow-hidden flex flex-col transition-opacity ${isHidden ? 'opacity-50' : ''} border-neutral-200 dark:border-white/10`}>
+      <div className="relative aspect-[4/3] bg-neutral-100 dark:bg-black/50 overflow-hidden">
+        {allImages ? (
+          <AnimatePresence mode="popLayout">
+            <motion.img
+              key={imgIdx}
+              src={allImages[imgIdx]}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+              className="absolute inset-0 w-full h-full object-cover"
+              alt={combo.name}
+            />
+          </AnimatePresence>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-neutral-400">
+            <Gift size={32} className="opacity-20" />
+          </div>
+        )}
+        
+        {isSoldOut && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+            <span className="font-display font-black text-white text-lg tracking-wider">SOLD OUT</span>
+          </div>
+        )}
+
+        <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
+          {allImages && allImages.length > 1 && (
+            <div className="bg-black/50 backdrop-blur-md rounded-full px-2 py-1 flex gap-1 items-center">
+              {allImages.map((_, i) => (
+                <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIdx ? 'bg-white' : 'bg-white/30'}`} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="p-5 flex-1 flex flex-col">
+        <h3 className="font-display font-black text-lg mb-1 line-clamp-1">{combo.name}</h3>
+        <p className="text-xs text-neutral-500 line-clamp-2 mb-4">{combo.description}</p>
+        
+        <div className="flex -space-x-2 mb-4">
+          {comboChildren.slice(0, 4).map((child, idx) => (
+            <div key={idx} className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-100 dark:bg-black overflow-hidden flex shrink-0" title={child.name}>
+              {child.cover || child.images?.[0] ? (
+                <img src={child.cover || child.images[0]} alt={child.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[10px]">🍽</div>
+              )}
+            </div>
+          ))}
+          {comboChildren.length > 4 && (
+            <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-200 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold z-10">
+              +{comboChildren.length - 4}
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-white/5 flex flex-col gap-4">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Combo Price</p>
+              <div className="flex items-end gap-2">
+                <span className="font-black text-xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(combo.price).toFixed(2)}</span>
+                {originalTotal > Number(combo.price) && (
+                  <span className="text-xs font-bold text-neutral-400 line-through mb-0.5">₹{originalTotal.toFixed(2)}</span>
+                )}
+              </div>
+            </div>
+            {originalTotal > Number(combo.price) && (
+              <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 px-2 py-1 rounded-lg">
+                <span className="text-[10px] font-black uppercase tracking-wider">Save ₹{(originalTotal - Number(combo.price)).toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <button onClick={() => {
+                setComboDraft({
+                  id: combo.id,
+                  name: combo.name,
+                  description: combo.description || '',
+                  price: combo.price,
+                  dishes: combo.macros?.comboDishes || []
+                });
+                setShowComboCreator(true);
+              }}
+              className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
+              <Edit2 size={11} /> Edit
+            </button>
+            <button onClick={async () => {
+                const newTags = isSoldOut
+                  ? (combo.tags || []).filter(t => t !== 'sold_out')
+                  : [...(combo.tags || []), 'sold_out'];
+                await updateDish(combo.id, { tags: newTags });
+              }}
+              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isSoldOut ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
+              <Package size={11} /> {isSoldOut ? 'Restore' : 'Sold Out'}
+            </button>
+            <button onClick={async () => {
+                const newTags = isHidden
+                  ? (combo.tags || []).filter(t => t !== 'hidden')
+                  : [...(combo.tags || []), 'hidden'];
+                await updateDish(combo.id, { tags: newTags });
+              }}
+              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isHidden ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
+              {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
+              {isHidden ? 'Hidden' : 'Visible'}
+            </button>
+            <button onClick={async () => {
+                if(window.confirm(`Are you sure you want to delete combo "${combo.name}"?`)) {
+                  await deleteDish(combo.id);
+                }
+              }}
+              className="py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 hover:opacity-80">
+              <Trash2 size={11} /> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 // ─── KPI Card ─────────────────────────────────────────────────────────
 const KpiCard = React.memo(({ icon: Icon, label, value, sub, color, trend, onClick }) => (
   <div
@@ -2797,63 +2948,16 @@ export default function VendorDashboardPage() {
                     }).filter(Boolean) || [];
                     const originalTotal = comboChildren.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
                     return (
-                      <div key={combo.id} className="bg-white dark:bg-[#111115] rounded-3xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col">
-                        <div className="relative aspect-[4/3] bg-neutral-100 dark:bg-black/50">
-                          {combo.cover ? (
-                            <img src={combo.cover} alt={combo.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                              <Gift size={32} className="opacity-20" />
-                            </div>
-                          )}
-                          <div className="absolute top-3 right-3 flex items-center gap-2">
-                            <button onClick={async () => {
-                              if (confirm(`Delete combo "${combo.name}"?`)) {
-                                const { error } = await supabase.from('dishes').delete().eq('id', combo.id);
-                                if (!error) {
-                                  setDishes(prev => prev.filter(d => d.id !== combo.id));
-                                  showNotification('Combo deleted.');
-                                }
-                              }
-                            }} className="w-8 h-8 bg-black/50 backdrop-blur-md rounded-full text-white flex items-center justify-center hover:bg-red-500 transition-colors">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="p-5 flex-1 flex flex-col">
-                          <h3 className="font-display font-black text-lg mb-1 line-clamp-1">{combo.name}</h3>
-                          <p className="text-xs text-neutral-500 line-clamp-2 mb-4">{combo.description}</p>
-                          
-                          <div className="flex -space-x-2 mb-4">
-                            {comboChildren.slice(0, 4).map((child, idx) => (
-                              <div key={idx} className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-100 dark:bg-black overflow-hidden flex shrink-0" title={child.name}>
-                                {child.cover || child.images?.[0] ? (
-                                  <img src={child.cover || child.images[0]} alt={child.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[10px]">🍽</div>
-                                )}
-                              </div>
-                            ))}
-                            {comboChildren.length > 4 && (
-                              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-200 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold z-10">
-                                +{comboChildren.length - 4}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-white/5 flex items-end justify-between">
-                            <div>
-                              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Combo Price</p>
-                              <div className="flex items-end gap-2">
-                                <span className="font-black text-xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(combo.price).toFixed(2)}</span>
-                                {originalTotal > Number(combo.price) && (
-                                  <span className="text-xs font-bold text-neutral-400 line-through mb-0.5">₹{originalTotal.toFixed(2)}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <ComboCardItem
+                        key={combo.id}
+                        combo={combo}
+                        comboChildren={comboChildren}
+                        originalTotal={originalTotal}
+                        updateDish={updateDish}
+                        deleteDish={deleteDish}
+                        setComboDraft={setComboDraft}
+                        setShowComboCreator={setShowComboCreator}
+                      />
                     );
                   })
                 )}
