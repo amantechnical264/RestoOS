@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      selfDestroying: true,
       // We removed skipWaiting and clientsClaim because we are handling updates manually via prompt in main.jsx
       workbox: {
         // Never cache Supabase API calls — always go to network
