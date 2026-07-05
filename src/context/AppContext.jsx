@@ -188,20 +188,12 @@ export const AppProvider = ({ children }) => {
   });
 
   const updateMarketingCampaign = async (restId, type, campaignData) => {
+    // Promos are stored only in localStorage (no 'promo' column in DB)
     setPromos(prev => {
       const current = prev[restId] || { flash: null, happyHour: null };
       const nextPromoState = { ...current, [type]: campaignData };
       const next = { ...prev, [restId]: nextPromoState };
       localStorage.setItem('3dish_promos', JSON.stringify(next));
-
-      supabase
-        .from('restaurants')
-        .update({ promo: nextPromoState })
-        .eq('id', restId)
-        .then(({ error }) => {
-          if (error) console.error("Error syncing promo to Supabase:", error);
-        });
-
       return next;
     });
   };
@@ -357,33 +349,12 @@ export const AppProvider = ({ children }) => {
         );
         if (error) { console.warn('Restaurants fetch error:', error.message); return; }
         if (data) {
-          const newPromos = {};
-          data.forEach(r => {
-            let promoObj = null;
-            if (r.promo) {
-              promoObj = typeof r.promo === 'string' ? JSON.parse(r.promo) : r.promo;
-              r.promo = promoObj; // Update the reference for later use
-              if (promoObj.flash !== undefined || promoObj.happyHour !== undefined) {
-                newPromos[r.id] = promoObj;
-              } else {
-                newPromos[r.id] = { flash: promoObj, happyHour: null };
-              }
-            } else {
-              newPromos[r.id] = { flash: null, happyHour: null };
-            }
-          });
-          setPromos(prev => {
-            const merged = { ...prev, ...newPromos };
-            try { localStorage.setItem('3dish_promos', JSON.stringify(merged)); } catch {}
-            return merged;
-          });
-
           setRestaurants(prev => {
             const mapped = data.map(r => ({
               ...r,
               vendorId: r.vendor_id || r.vendorId,
               cover: r.cover || '',
-              requireVerificationCode: r.promo?.requireVerificationCode !== false
+              requireVerificationCode: true // default
             }));
             if (fastArrayEquals(prev, mapped)) return prev;
             try {
@@ -537,11 +508,23 @@ export const AppProvider = ({ children }) => {
 
   // Auto-set activeRestId for logged-in vendor on mount or when restaurants list updates
   useEffect(() => {
-    if (supabaseUser && restaurants.length > 0 && !activeRestId) {
-      const myRest = restaurants.find(r => r.vendorId === supabaseUser.id || r.vendor_id === supabaseUser.id);
-      if (myRest) {
-        setActiveRestId(myRest.id);
-      }
+    if (!supabaseUser || restaurants.length === 0) return;
+    
+    // If we have a stored activeRestId, verify it still belongs to this vendor
+    if (activeRestId) {
+      const stillValid = restaurants.some(
+        r => r.id === activeRestId && (r.vendorId === supabaseUser.id || r.vendor_id === supabaseUser.id)
+      );
+      if (stillValid) return; // Already pointing to a valid restaurant
+    }
+    
+    // Find the most recently created restaurant for this vendor
+    const myRests = restaurants
+      .filter(r => r.vendorId === supabaseUser.id || r.vendor_id === supabaseUser.id)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    
+    if (myRests.length > 0) {
+      setActiveRestId(myRests[0].id);
     }
   }, [restaurants, supabaseUser, activeRestId]);
 
@@ -731,35 +714,33 @@ export const AppProvider = ({ children }) => {
       return;
     }
     try {
+      // Only include columns that actually exist in the DB schema
       const updatePayload = {};
       if (updateData.name !== undefined) updatePayload.name = updateData.name;
       if (updateData.cover !== undefined) updatePayload.cover = updateData.cover;
       if (updateData.taxRate !== undefined) updatePayload.tax_rate = updateData.taxRate;
       if (updateData.acceptCash !== undefined) updatePayload.accept_cash = updateData.acceptCash;
+      // NOTE: 'promo' column does not exist in the DB — stored in localStorage only
+      // requireVerificationCode is kept in local state only
 
-      if (updateData.requireVerificationCode !== undefined) {
-        const { data: curr } = await supabase.from('restaurants').select('promo').eq('id', restId).single();
-        let promoData = {};
-        if (curr?.promo) {
-          promoData = typeof curr.promo === 'string' ? JSON.parse(curr.promo) : curr.promo;
-        }
-        promoData.requireVerificationCode = updateData.requireVerificationCode;
-        updatePayload.promo = promoData;
+      // Only call DB update if there's something to update
+      if (Object.keys(updatePayload).length > 0) {
+        const { error } = await supabase.from('restaurants')
+          .update(updatePayload)
+          .eq('id', restId);
+        if (error) throw error;
       }
-
-      const { error } = await supabase.from('restaurants')
-        .update(updatePayload)
-        .eq('id', restId);
-      if (error) throw error;
       
-      // Update local state immediately to avoid waiting for polling
+      // Update local state immediately
       setRestaurants(prev =>
         prev.map(r => r.id === restId ? { 
           ...r, 
           name: updateData.name !== undefined ? updateData.name : r.name,
           cover: updateData.cover !== undefined ? updateData.cover : r.cover,
           taxRate: updateData.taxRate !== undefined ? updateData.taxRate : r.taxRate,
+          tax_rate: updateData.taxRate !== undefined ? updateData.taxRate : r.tax_rate,
           acceptCash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.acceptCash,
+          accept_cash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.accept_cash,
           requireVerificationCode: updateData.requireVerificationCode !== undefined ? updateData.requireVerificationCode : r.requireVerificationCode
         } : r)
       );
