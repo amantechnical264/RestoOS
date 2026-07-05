@@ -443,8 +443,10 @@ export default function MenuPage() {
   };
 
   const handleAddToCart = (dish) => {
-    if (dish.variants && dish.variants.length > 0) {
+    if (dish.variants && dish.variants.length > 1) {
       setVariantModalDish(dish);
+    } else if (dish.variants && dish.variants.length === 1) {
+      addToCart({ ...dish, selectedVariant: dish.variants[0] });
     } else {
       addToCart(dish);
     }
