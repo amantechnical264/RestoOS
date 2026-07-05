@@ -2613,7 +2613,39 @@ export default function VendorDashboardPage() {
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-2">Select Dishes ({comboDraft.dishes.length} selected)</label>
                       <div className="space-y-1.5 max-h-[30vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                        {vendDishes.map(d => {
+                        {vendDishes.filter(d => !d.tags?.includes('combo') && !d.macros?.isCombo).flatMap(d => {
+                          // If dish has variants, show each variant as a selectable option
+                          if (d.variants && d.variants.length > 0) {
+                            return d.variants.map((v, idx) => {
+                              const uniqueId = `${d.id}::${v.name}`;
+                              const isSelected = comboDraft.dishes.includes(uniqueId);
+                              return (
+                                <button
+                                  key={uniqueId}
+                                  onClick={() => {
+                                    setComboDraft(prev => ({
+                                      ...prev,
+                                      dishes: isSelected ? prev.dishes.filter(id => id !== uniqueId) : [...prev.dishes, uniqueId]
+                                    }));
+                                  }}
+                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
+                                    isSelected ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                  } border`}
+                                >
+                                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                    {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={12} className="text-neutral-400" /></div>}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-xs truncate">{d.name} <span className="text-neutral-500 font-normal">({v.name})</span></p>
+                                    <p className="text-[10px] text-neutral-500">₹{Number(v.price || 0).toFixed(2)}</p>
+                                  </div>
+                                  {isSelected && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600">ADDED</span>}
+                                </button>
+                              );
+                            });
+                          }
+                          
+                          // Regular dish without variants
                           const isSelected = comboDraft.dishes.includes(d.id);
                           return (
                             <button
@@ -2633,7 +2665,7 @@ export default function VendorDashboardPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-xs truncate">{d.name}</p>
-                                <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(2)}</p>
+                                <p className="text-[10px] text-neutral-500">₹{Number(d.price || 0).toFixed(2)}</p>
                               </div>
                               {isSelected && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600">ADDED</span>}
                             </button>
@@ -2707,7 +2739,16 @@ export default function VendorDashboardPage() {
                   </div>
                 ) : (
                   vendDishes.filter(d => d.macros?.isCombo).map(combo => {
-                    const comboChildren = combo.macros?.comboDishes?.map(id => vendDishes.find(d => d.id === id)).filter(Boolean) || [];
+                    const comboChildren = combo.macros?.comboDishes?.map(idStr => {
+                      const [dishId, variantName] = (typeof idStr === 'string' ? idStr : '').split('::');
+                      const d = vendDishes.find(d => d.id === (dishId || idStr));
+                      if (!d) return null;
+                      if (variantName) {
+                        const v = d.variants?.find(v => v.name === variantName);
+                        return { ...d, name: `${d.name} (${variantName})`, price: v?.price || d.price || 0 };
+                      }
+                      return d;
+                    }).filter(Boolean) || [];
                     const originalTotal = comboChildren.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
                     return (
                       <div key={combo.id} className="bg-white dark:bg-[#111115] rounded-3xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col">

@@ -1297,8 +1297,17 @@ export default function MenuPage() {
                     <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Includes {selectedComboDish.macros?.comboDishes?.length || 0} items</h4>
                     <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
                       {(() => {
-                        const childIds = selectedComboDish.macros?.comboDishes || [];
-                        const children = allDishes.filter(d => childIds.includes(d.id));
+                        const childIdsStr = selectedComboDish.macros?.comboDishes || [];
+                        const children = childIdsStr.map(idStr => {
+                          const [dishId, variantName] = (typeof idStr === 'string' ? idStr : '').split('::');
+                          const d = allDishes.find(d => d.id === (dishId || idStr));
+                          if (!d) return null;
+                          if (variantName) {
+                            const v = d.variants?.find(v => v.name === variantName);
+                            return { ...d, name: `${d.name} (${variantName})`, price: v?.price || d.price || 0 };
+                          }
+                          return d;
+                        }).filter(Boolean);
                         return children.map(child => (
                           <div key={child.id} className="w-[220px] shrink-0 snap-center flex flex-col gap-3 p-3 rounded-2xl bg-neutral-50 dark:bg-white/[0.02] border border-neutral-100 dark:border-white/5">
                             <div className="w-full h-32 rounded-xl overflow-hidden bg-neutral-200 dark:bg-[#1a1a1f] shrink-0">
@@ -1330,8 +1339,17 @@ export default function MenuPage() {
                     <div className="flex items-end gap-2">
                       <span className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(selectedComboDish.price).toFixed(2)}</span>
                       {(() => {
-                        const childIds = selectedComboDish.macros?.comboDishes || [];
-                        const children = allDishes.filter(d => childIds.includes(d.id));
+                        const childIdsStr = selectedComboDish.macros?.comboDishes || [];
+                        const children = childIdsStr.map(idStr => {
+                          const [dishId, variantName] = (typeof idStr === 'string' ? idStr : '').split('::');
+                          const d = allDishes.find(d => d.id === (dishId || idStr));
+                          if (!d) return null;
+                          if (variantName) {
+                            const v = d.variants?.find(v => v.name === variantName);
+                            return { ...d, name: `${d.name} (${variantName})`, price: v?.price || d.price || 0 };
+                          }
+                          return d;
+                        }).filter(Boolean);
                         const oldTotal = children.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
                         if (oldTotal > Number(selectedComboDish.price)) {
                           return <span className="text-sm font-bold text-neutral-400 line-through mb-0.5">₹{oldTotal.toFixed(2)}</span>;
