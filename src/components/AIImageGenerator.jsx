@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Check, RefreshCw, X, Wand2, ImageIcon, AlertTriangle } from 'lucide-react';
-import { supabase } from '../services/supabase';
 
 /**
  * AIImageGenerator — Inline panel for AI-powered dish image generation.
@@ -106,40 +105,13 @@ export default function AIImageGenerator({
     setTimeout(generateImage, 50);
   };
 
-  // ── Confirm: upload to Supabase & pass URL back ───────────────────
-  const handleConfirm = async () => {
-    if (!imageBlobUrl) return;
-    setState('uploading');
-
-    try {
-      // Fetch the blob from the blob URL
-      const res = await fetch(imageBlobUrl);
-      const blob = await res.blob();
-
-      // Upload to Supabase Storage
-      const fileName = `ai_${Date.now()}_${dishName.replace(/\s+/g, '_').slice(0, 30)}.jpg`;
-      const filePath = `${activeRestId || 'general'}/${fileName}`;
-
-      const { error } = await supabase.storage
-        .from('models')
-        .upload(filePath, blob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (error) throw error;
-
-      const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
-
-      if (onImageConfirmed) onImageConfirmed(pub.publicUrl);
-      setState('idle');
-      onClose?.();
-    } catch (err) {
-      console.error('Upload failed:', err);
-      setErrorMsg('Failed to upload image. Check your Supabase storage settings.');
-      setState('error');
-    }
+  // ── Confirm: use the Pollinations URL directly ────────────────────
+  const handleConfirm = () => {
+    if (!imageUrl) return;
+    // Pollinations.ai URLs are public and permanent — no upload needed
+    if (onImageConfirmed) onImageConfirmed(imageUrl);
+    setState('idle');
+    onClose?.();
   };
 
   // ── Cancel / close ────────────────────────────────────────────────
