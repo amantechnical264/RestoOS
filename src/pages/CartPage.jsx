@@ -18,6 +18,11 @@ export default function CartPage() {
   const [tempAddress, setTempAddress] = useState('');
   const [locationCoords, setLocationCoords] = useState(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [showOtpPrompt, setShowOtpPrompt] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const { t } = useTranslation();
 
   const isDelivery = tableNumber === 'delivery';
