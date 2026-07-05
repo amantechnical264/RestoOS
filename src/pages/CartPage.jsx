@@ -200,6 +200,7 @@ export default function CartPage() {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible'
       });
+      window.recaptchaVerifier.render().catch(console.error);
     }
   }, [isDelivery]);
 
@@ -225,6 +226,18 @@ export default function CartPage() {
     } catch (error) {
       console.error("Error sending OTP:", error);
       showNotification(error.message || "Failed to send OTP. Please check the number or try again.");
+      
+      // Reset ReCaptcha so the user can try again!
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+      
+      // Re-initialize for next attempt
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible'
+      });
+      window.recaptchaVerifier.render().catch(console.error);
     }
     setIsSendingOtp(false);
   };
@@ -599,8 +612,9 @@ export default function CartPage() {
       </AnimatePresence>
 
       {/* Floating Action Button Footer */}
-      <div className="fixed bottom-0 left-0 w-full p-6 pt-10 pb-24 z-30 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(9,10,15,1) 30%, rgba(9,10,15,0.8) 70%, transparent 100%)' }}>
+      {!showNamePrompt && (
+        <div className="fixed bottom-0 left-0 w-full p-6 pt-10 pb-24 z-30 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, rgba(9,10,15,1) 30%, rgba(9,10,15,0.8) 70%, transparent 100%)' }}>
         
         <div className="pointer-events-auto flex flex-col gap-3">
           <motion.button 
@@ -620,6 +634,7 @@ export default function CartPage() {
           </motion.button>
         </div>
       </div>
+      )}
 
       <div id="recaptcha-container"></div>
       <BottomNav />

@@ -915,19 +915,23 @@ export default function VendorDashboardPage() {
 
   // ── Order helpers ─────────────────────────────────────────────────
   const restOrders = React.useMemo(() => orders.filter(o => o.restId === activeRestId || o.rest_id === activeRestId), [orders, activeRestId]);
-  const pendingVerification = React.useMemo(() => restOrders.filter(o => o.status === 'Pending Verification'), [restOrders]);
-  const pending   = React.useMemo(() => restOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled'), [restOrders]);
-  const prep      = React.useMemo(() => restOrders.filter(o => o.status === 'Preparing'), [restOrders]);
-  const ready     = React.useMemo(() => restOrders.filter(o => o.status === 'Ready'), [restOrders]);
+  
+  // Kitchen/Live Orders should not include delivery orders. They are managed in the Delivery tab.
+  const kitchenOrders = React.useMemo(() => restOrders.filter(o => o.orderType !== 'delivery' && o.order_type !== 'delivery'), [restOrders]);
+  
+  const pendingVerification = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Pending Verification'), [kitchenOrders]);
+  const pending   = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled'), [kitchenOrders]);
+  const prep      = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Preparing'), [kitchenOrders]);
+  const ready     = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Ready'), [kitchenOrders]);
   const completed = React.useMemo(() => {
     const todayStr = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" in local time
-    return restOrders.filter(o => {
+    return kitchenOrders.filter(o => {
       if (o.status !== 'Completed') return false;
       if (!o.timestamp) return false;
       const orderDate = new Date(o.timestamp).toLocaleDateString('en-CA');
       return orderDate === todayStr;
     });
-  }, [restOrders]);
+  }, [kitchenOrders]);
   const cancelled = React.useMemo(() => restOrders.filter(o => o.status === 'Cancelled'), [restOrders]);
 
   const getOrderNumber = React.useCallback((order) => {
