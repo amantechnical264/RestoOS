@@ -664,6 +664,8 @@ export default function VendorDashboardPage() {
   const [managingCategories, setManagingCategories] = React.useState(false);
   const [newCategoryName, setNewCategoryName] = React.useState('');
   const [selectedEditCategory, setSelectedEditCategory] = React.useState('All');
+  const [showVendorSidebar, setShowVendorSidebar] = React.useState(false);
+  const [vendorActiveCategory, setVendorActiveCategory] = React.useState('All');
   const [scanState, setScanState]     = React.useState('idle');
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]       = React.useState(0);
@@ -2352,28 +2354,75 @@ export default function VendorDashboardPage() {
                     </div>
                   </div>
 
-                  {/* 🔍 Dish Search Bar */}
-                  <div className="relative mb-6">
-                    <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                    <input
-                      id="dish-search-input"
-                      type="text"
-                      value={dishSearch}
-                      onChange={e => setDishSearch(e.target.value)}
-                      placeholder="Search dishes by name..."
-                      className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/8 text-sm font-medium placeholder:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 focus:ring-2 focus:ring-[#D4AF37]/20 transition-all"
-                    />
-                    {dishSearch && (
-                      <button
-                        onClick={() => setDishSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral-200 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
-                      >
-                        <CloseIcon size={12} />
-                      </button>
-                    )}
+                  {/* 🔍 Dish Search Bar & Filter */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="relative flex-1">
+                      <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                      <input
+                        id="dish-search-input"
+                        type="text"
+                        value={dishSearch}
+                        onChange={e => setDishSearch(e.target.value)}
+                        placeholder="Search dishes by name..."
+                        className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/8 text-sm font-medium placeholder:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 focus:ring-2 focus:ring-[#D4AF37]/20 transition-all"
+                      />
+                      {dishSearch && (
+                        <button
+                          onClick={() => setDishSearch('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral-200 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
+                        >
+                          <CloseIcon size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowVendorSidebar(!showVendorSidebar)}
+                      className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${showVendorSidebar ? 'bg-[#D4AF37] text-white' : 'bg-white dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/8 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-white/5'}`}
+                    >
+                      <Filter size={18} />
+                    </button>
                   </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendDishes.filter(d => !d.macros?.isCombo && (!dishSearch || d.name.toLowerCase().includes(dishSearch.toLowerCase()))).map(dish => {
+
+                  <div className="flex gap-6 items-start">
+                    {/* Left Sidebar for Categories */}
+                    <AnimatePresence>
+                      {showVendorSidebar && (
+                        <motion.div
+                          initial={{ opacity: 0, width: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, width: 220, scale: 1 }}
+                          exit={{ opacity: 0, width: 0, scale: 0.95 }}
+                          className="shrink-0 overflow-hidden flex flex-col gap-2"
+                        >
+                          <button
+                            onClick={() => setVendorActiveCategory('All')}
+                            className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${vendorActiveCategory === 'All' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30' : 'bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/5 text-neutral-600 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-white/20'}`}
+                          >
+                            All Categories
+                          </button>
+                          {customCategories.map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => setVendorActiveCategory(cat)}
+                              className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${vendorActiveCategory === cat ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30' : 'bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/5 text-neutral-600 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-white/20'}`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Right Side: Dishes Grid */}
+                    <div className="flex-1 min-w-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {vendDishes.filter(d => {
+                          if (d.macros?.isCombo) return false;
+                          if (dishSearch && !d.name.toLowerCase().includes(dishSearch.toLowerCase())) return false;
+                          if (vendorActiveCategory !== 'All') {
+                            return d.category === vendorActiveCategory || d.tags?.includes(vendorActiveCategory);
+                          }
+                          return true;
+                        }).map(dish => {
                     const isSoldOut = dish.tags?.includes('sold_out');
                     const isHidden = dish.tags?.includes('hidden');
                     return (

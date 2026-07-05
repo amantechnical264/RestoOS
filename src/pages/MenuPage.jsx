@@ -494,10 +494,8 @@ export default function MenuPage() {
   const [dinerPhone, setDinerPhone] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
-  const scrollDirection = useScrollDirection();
   const [variantModalDish, setVariantModalDish] = useState(null);
   const [selectedComboDish, setSelectedComboDish] = useState(null);
-  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
 
   const handleDishClick = (dish) => {
     if (dish.macros?.isCombo) {
@@ -1441,81 +1439,6 @@ export default function MenuPage() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Category Filter Button */}
-      <AnimatePresence>
-        {!showCategoryFilter && !searchOpen && !variantModalDish && !selectedComboDish && categoriesWithDishes.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-24 right-6 z-40"
-          >
-            <button
-              onClick={() => setShowCategoryFilter(true)}
-              className="flex items-center gap-2 px-5 py-3.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-black shadow-[0_10px_25px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_25px_rgba(255,255,255,0.1)] active:scale-95 transition-all"
-            >
-              <Filter size={18} />
-              <span>Menu</span>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Category Filter Modal */}
-      <AnimatePresence>
-        {showCategoryFilter && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={() => setShowCategoryFilter(false)}
-          >
-            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-[#121212] w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col max-h-[85vh] shadow-2xl"
-            >
-              <div className="p-5 border-b border-neutral-100 dark:border-white/5 flex justify-between items-center sticky top-0 bg-white dark:bg-[#121212] z-10">
-                <h2 className="font-display font-black text-xl flex items-center gap-2">
-                  <Filter size={20} className="text-[#D4AF37]" /> Categories
-                </h2>
-                <button onClick={() => setShowCategoryFilter(false)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="overflow-y-auto p-4 space-y-2 pb-10">
-                {/* Special "All" Category */}
-                <button
-                  onClick={() => {
-                    setActiveCategory('All');
-                    setShowCategoryFilter(false);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${activeCategory === 'All' ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30' : 'bg-neutral-50 dark:bg-white/5 border-transparent hover:border-neutral-200 dark:hover:border-white/10'}`}
-                >
-                  <span className={`font-bold ${activeCategory === 'All' ? 'text-[#D4AF37]' : 'text-neutral-700 dark:text-neutral-300'}`}>All Items</span>
-                  <span className="text-xs font-bold text-neutral-400 bg-neutral-200 dark:bg-white/10 px-2 py-0.5 rounded-full">{totalItemsCount}</span>
-                </button>
-                
-                {categoriesWithDishes.map((catGroup) => (
-                  <button
-                    key={catGroup.category}
-                    onClick={() => {
-                      setActiveCategory(catGroup.category);
-                      setShowCategoryFilter(false);
-                      // Scroll to top of list
-                      setTimeout(() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }, 100);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${activeCategory === catGroup.category ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30' : 'bg-neutral-50 dark:bg-white/5 border-transparent hover:border-neutral-200 dark:hover:border-white/10'}`}
-                  >
-                    <span className={`font-bold ${activeCategory === catGroup.category ? 'text-[#D4AF37]' : 'text-neutral-700 dark:text-neutral-300'}`}>{catGroup.category}</span>
-                    <span className="text-xs font-bold text-neutral-400 bg-neutral-200 dark:bg-white/10 px-2 py-0.5 rounded-full">{catGroup.dishes.length}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       <BottomNav />
