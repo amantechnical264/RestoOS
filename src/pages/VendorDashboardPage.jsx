@@ -592,6 +592,7 @@ export default function VendorDashboardPage() {
 
   const [categoryToDelete, setCategoryToDelete] = React.useState(null);
   const [customerFilter, setCustomerFilter] = React.useState('top'); // 'top', 'all', 'repeat'
+  const [dishSearch, setDishSearch] = React.useState('');
 
   // Custom Customer Modal State
   const [showAllCustomersModal, setShowAllCustomersModal] = React.useState(false);
@@ -1996,10 +1997,15 @@ export default function VendorDashboardPage() {
               <motion.div key="menu" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 overflow-y-auto p-6">
                 <div className="max-w-5xl mx-auto">
-                  <div className="flex justify-between items-center mb-6">
+                  <div className="flex justify-between items-center mb-4">
                     <div>
                       <h2 className="font-display font-black text-2xl">Menu Manager</h2>
-                      <p className="text-sm text-neutral-500 mt-0.5">{vendDishes.length} dishes · {vendDishes.filter(d => !d.tags?.includes('hidden')).length} visible</p>
+                      <p className="text-sm text-neutral-500 mt-0.5">
+                        {dishSearch
+                          ? `${vendDishes.filter(d => d.name.toLowerCase().includes(dishSearch.toLowerCase())).length} result${vendDishes.filter(d => d.name.toLowerCase().includes(dishSearch.toLowerCase())).length !== 1 ? 's' : ''} for "${dishSearch}"`
+                          : `${vendDishes.length} dishes · ${vendDishes.filter(d => !d.tags?.includes('hidden')).length} visible`
+                        }
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => setManagingCategories(true)}
@@ -2016,8 +2022,29 @@ export default function VendorDashboardPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* 🔍 Dish Search Bar */}
+                  <div className="relative mb-6">
+                    <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                    <input
+                      id="dish-search-input"
+                      type="text"
+                      value={dishSearch}
+                      onChange={e => setDishSearch(e.target.value)}
+                      placeholder="Search dishes by name..."
+                      className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/8 text-sm font-medium placeholder:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 focus:ring-2 focus:ring-[#D4AF37]/20 transition-all"
+                    />
+                    {dishSearch && (
+                      <button
+                        onClick={() => setDishSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral-200 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendDishes.map(dish => {
+                  {vendDishes.filter(d => !dishSearch || d.name.toLowerCase().includes(dishSearch.toLowerCase())).map(dish => {
                     const isSoldOut = dish.tags?.includes('sold_out');
                     const isHidden = dish.tags?.includes('hidden');
                     return (
