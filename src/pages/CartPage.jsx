@@ -35,7 +35,10 @@ export default function CartPage() {
     if (!activeRestId) navigate('/', { replace: true });
   }, [activeRestId, navigate]);
 
-  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const itemPrice = item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price);
+    return sum + itemPrice;
+  }, 0);
   const total = subtotal * (1 + taxRate);
   
   const groupedCart = Object.values(cart.reduce((acc, item) => {
@@ -113,9 +116,9 @@ export default function CartPage() {
 
     setIsProcessing(true);
 
-    const requireCode = currentRestaurant?.requireVerificationCode !== false;
+    const requireCode = !isDelivery && currentRestaurant?.requireVerificationCode !== false;
     const code = requireCode ? Math.floor(1000 + Math.random() * 9000).toString() : null;
-    const status = 'Pending Verification';
+    const status = requireCode ? 'Pending Verification' : 'Pending';
     const finalPaymentStatus = 'Unpaid';
     
     // Encode GPS into specialInstructions as a fallback (guaranteed to survive any DB schema)

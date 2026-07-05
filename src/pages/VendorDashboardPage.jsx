@@ -1908,20 +1908,25 @@ export default function VendorDashboardPage() {
                                 <MessageSquare size={16} /> Share to WhatsApp
                               </a>
                               
-                              {order.status === 'Pending Verification' && (
+                              {order.status === 'Pending' && (
                                 <button
-                                  onClick={() => {
-                                    const code = prompt("Enter verification code:");
-                                    if (code === order.verificationCode) updateOrderStatus(order.id, 'Preparing');
-                                    else alert("Invalid code");
-                                  }}
+                                  onClick={() => updateOrderStatus(order.id, 'Preparing')}
                                   className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl font-black text-sm shadow-sm"
                                 >
-                                  Verify & Accept
+                                  Accept Order
                                 </button>
                               )}
                               
                               {order.status === 'Preparing' && (
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, 'Ready')}
+                                  className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-blue-600 transition-colors"
+                                >
+                                  Mark Ready
+                                </button>
+                              )}
+                              
+                              {order.status === 'Ready' && (
                                 <button
                                   onClick={() => updateOrderStatus(order.id, 'Served')}
                                   className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors"
