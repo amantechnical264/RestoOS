@@ -1,88 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Camera, ArrowRight, Loader2, Crown } from 'lucide-react';
+import { Store, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 
 const GOLD = '#D4AF37';
 const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
 
+const DEFAULT_COVERS = [
+  'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+];
+
 export default function VendorOnboardingPage() {
   const navigate = useNavigate();
-  const { user, restaurants, addRestaurant, setActiveRestId, supabaseUser, isInitializing } = useAppContext();
+  const { restaurants, addRestaurant, setActiveRestId, supabaseUser, isInitializing, isDataLoaded } = useAppContext();
   
   const [name, setName] = useState('');
-  const [cover, setCover] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [selectedCover, setSelectedCover] = useState(DEFAULT_COVERS[0]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
+  // ── Redirect logic: wait for BOTH auth AND data to be fully loaded ──
   useEffect(() => {
-    if (isInitializing) return;
+    if (isInitializing) return; // Still loading auth
 
-    // If there's an OAuth code/token in the URL, Supabase is still exchanging it —
-    // don't redirect yet, wait for onAuthStateChange to fire with the session
+    // If auth callback params in URL — wait for Supabase to process them
     const hasAuthParams = window.location.hash.includes('access_token') ||
-      window.location.hash.includes('error') ||
-      window.location.search.includes('code=') ||
-      window.location.search.includes('error=');
-    
-    if (hasAuthParams && !supabaseUser) {
-      // Still processing the auth callback — don't redirect yet
-      return;
-    }
-    
+      window.location.search.includes('code=');
+    if (hasAuthParams && !supabaseUser) return;
+
+    // Not logged in → send to auth
     if (!supabaseUser) {
       navigate('/vendor-auth', { replace: true });
       return;
     }
 
-    // Check if user already has a restaurant — use supabaseUser.id as the authoritative ID
-    if (supabaseUser && restaurants && restaurants.length > 0) {
-      const existing = restaurants.find(r => 
-        r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id
-      );
-      if (existing) {
-        setActiveRestId(existing.id);
-        navigate('/vendor', { replace: true });
-      }
-    }
-  }, [user, restaurants, navigate, setActiveRestId, isInitializing, supabaseUser]);
+    // Wait for restaurant data to load before checking if we should skip onboarding
+    // This prevents a false "no restaurant" check on first load
+    if (!isDataLoaded) return;
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCover(reader.result);
-      setPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
+    // User already has a restaurant → go straight to dashboard
+    const existing = restaurants.find(r =>
+      r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id
+    );
+    if (existing) {
+      setActiveRestId(existing.id);
+      navigate('/vendor', { replace: true });
+    }
+  }, [restaurants, navigate, setActiveRestId, isInitializing, supabaseUser, isDataLoaded]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    
+
     setLoading(true);
-    // Use a default cover if they didn't upload one
-    const finalCover = cover || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=800&q=80';
-    
-    const result = await addRestaurant({ name, cover: finalCover });
-    
+    setErrorMsg('');
+
+    // Always use a URL (never base64) — Postgres text columns can't efficiently store images
+    const result = await addRestaurant({ name: name.trim(), cover: selectedCover });
+
     if (result && result.id) {
       setActiveRestId(result.id);
-      navigate('/vendor');
+      navigate('/vendor', { replace: true });
     } else {
       setLoading(false);
-      alert(`Failed to create restaurant. Error: ${result?.error || 'Please check your Supabase connection.'}`);
+      setErrorMsg(result?.error || 'Could not create restaurant. Please try again.');
     }
   };
 
+  // Show a loading screen while auth/data is being resolved
+  if (isInitializing || (supabaseUser && !isDataLoaded)) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={32} className="animate-spin" style={{ color: GOLD }} />
+          <p className="text-neutral-400 text-sm">Setting up your account…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      
+
       {/* Ambient background */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full pointer-events-none opacity-10"
         style={{ background: 'radial-gradient(ellipse, rgba(212,175,55,0.2), transparent 70%)' }} />
@@ -92,20 +96,21 @@ export default function VendorOnboardingPage() {
           background: 'linear-gradient(145deg, #111 0%, #050505 100%)',
           border: '1px solid rgba(212,175,55,0.15)',
         }}>
-        
+
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg"
           style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)' }}>
           <Store size={32} style={{ color: GOLD }} />
         </div>
-        
+
         <h1 className="text-3xl font-display font-black mb-2 text-white">Create Restaurant</h1>
         <p className="text-neutral-400 text-sm mb-8">Set up your digital presence to generate menus and QR codes instantly.</p>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Restaurant name */}
           <div>
             <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-widest">Restaurant Name</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. The Quantum Cafe"
@@ -114,44 +119,55 @@ export default function VendorOnboardingPage() {
               required
             />
           </div>
-          
+
+          {/* Cover image — pick from presets (no file upload to avoid base64 in DB) */}
           <div>
-            <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-widest">Cover Image (Optional)</label>
-            <div className="relative">
-              <input 
-                type="file" 
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="w-full bg-black border rounded-xl px-4 py-3 focus:outline-none transition-colors text-sm text-neutral-300
-                  file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold 
-                  file:text-black hover:file:opacity-90"
-                style={{ 
-                  borderColor: 'rgba(212,175,55,0.2)',
-                }}
-              />
-              <style>{`
-                input[type=file]::file-selector-button {
-                  background: ${goldGradient};
-                }
-              `}</style>
+            <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-widest">Cover Style</label>
+            <div className="grid grid-cols-4 gap-2">
+              {DEFAULT_COVERS.map((url, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedCover(url)}
+                  className="relative rounded-xl overflow-hidden border-2 transition-all"
+                  style={{
+                    borderColor: selectedCover === url ? GOLD : 'rgba(255,255,255,0.1)',
+                    boxShadow: selectedCover === url ? `0 0 10px rgba(212,175,55,0.5)` : 'none',
+                    aspectRatio: '1',
+                  }}
+                >
+                  <img src={url} alt={`Cover ${i + 1}`} className="w-full h-full object-cover" />
+                  {selectedCover === url && (
+                    <div className="absolute inset-0 flex items-center justify-center"
+                      style={{ background: 'rgba(212,175,55,0.3)' }}>
+                      <span className="text-white text-lg">✓</span>
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
-          
-          {preview && (
-            <div className="w-full h-32 rounded-xl bg-cover bg-center border mt-2 opacity-90 shadow-inner" 
-              style={{ backgroundImage: `url(${preview})`, borderColor: 'rgba(212,175,55,0.2)' }}></div>
+
+          {/* Preview */}
+          <div className="w-full h-32 rounded-xl bg-cover bg-center border"
+            style={{ backgroundImage: `url(${selectedCover})`, borderColor: 'rgba(212,175,55,0.2)' }} />
+
+          {/* Error */}
+          {errorMsg && (
+            <p className="text-red-400 text-sm bg-red-950/30 border border-red-800/30 rounded-xl px-4 py-3">{errorMsg}</p>
           )}
-          
-          <motion.button 
+
+          <motion.button
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading}
-            className="w-full font-black py-4 rounded-xl flex items-center justify-center gap-2 mt-4 text-black text-base shadow-gold"
+            className="w-full font-black py-4 rounded-xl flex items-center justify-center gap-2 mt-4 text-black text-base"
             style={{ background: goldGradient, boxShadow: '0 4px 20px rgba(212,175,55,0.25)' }}
           >
-            {loading ? <Loader2 className="animate-spin text-black" size={20} /> : (
-              <>Launch Digital Portal <ArrowRight size={18} /></>
-            )}
+            {loading
+              ? <Loader2 className="animate-spin text-black" size={20} />
+              : <><span>Launch Digital Portal</span><ArrowRight size={18} /></>
+            }
           </motion.button>
         </form>
       </div>
