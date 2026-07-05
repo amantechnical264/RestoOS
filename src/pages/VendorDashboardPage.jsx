@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle, Search
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -2039,7 +2039,7 @@ export default function VendorDashboardPage() {
                         onClick={() => setDishSearch('')}
                         className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral-200 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
                       >
-                        <X size={12} />
+                        <CloseIcon size={12} />
                       </button>
                     )}
                   </div>
