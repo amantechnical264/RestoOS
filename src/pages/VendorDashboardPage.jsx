@@ -589,6 +589,7 @@ export default function VendorDashboardPage() {
   // Custom Combo Creator State
   const [showComboCreator, setShowComboCreator] = React.useState(false);
   const [comboDraft, setComboDraft] = React.useState({ name: '', description: '', price: '', dishes: [] });
+  const [comboDishSearch, setComboDishSearch] = React.useState('');
 
   const [categoryToDelete, setCategoryToDelete] = React.useState(null);
   const [customerFilter, setCustomerFilter] = React.useState('top'); // 'top', 'all', 'repeat'
@@ -2638,9 +2639,27 @@ export default function VendorDashboardPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-2">Select Dishes ({comboDraft.dishes.length} selected)</label>
+                      <div className="flex justify-between items-end mb-2">
+                        <label className="block text-xs font-bold text-neutral-500">Select Dishes ({comboDraft.dishes.length} selected)</label>
+                        <div className="relative w-1/2">
+                          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={comboDishSearch}
+                            onChange={e => setComboDishSearch(e.target.value)}
+                            placeholder="Search dishes..."
+                            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-neutral-100 dark:bg-white/5 border border-transparent focus:bg-white dark:focus:bg-[#1A1C23] focus:border-[#D4AF37]/50 text-xs outline-none transition-all"
+                          />
+                          {comboDishSearch && (
+                            <button onClick={() => setComboDishSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-neutral-200 dark:hover:bg-white/10">
+                              <CloseIcon size={10} className="text-neutral-500" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      
                       <div className="space-y-1.5 max-h-[30vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                        {vendDishes.filter(d => !d.tags?.includes('combo') && !d.macros?.isCombo).flatMap(d => {
+                        {vendDishes.filter(d => !d.tags?.includes('combo') && !d.macros?.isCombo && (!comboDishSearch || d.name.toLowerCase().includes(comboDishSearch.toLowerCase()))).flatMap(d => {
                           // If dish has variants, show each variant as a selectable option
                           if (d.variants && d.variants.length > 0) {
                             return d.variants.map((v, idx) => {
