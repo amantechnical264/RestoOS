@@ -435,12 +435,7 @@ export const AppProvider = ({ children }) => {
             return next;
           });
           
-          if (r.promo !== undefined) {
-            setPromos(prev => ({
-              ...prev,
-              [r.id]: r.promo || { flash: null, happyHour: null }
-            }));
-          }
+          // Promos are purely local localStorage state now, so we do not overwrite them from DB.
         } else if (payload.eventType === 'DELETE') {
           setRestaurants(prev => prev.filter(r => r.id !== payload.old.id));
         }
