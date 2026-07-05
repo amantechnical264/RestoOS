@@ -126,6 +126,7 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
     });
     return imgs.length > 0 ? imgs : null;
   }, [combo, comboChildren]);
+  const imagesKey = allImages ? allImages.join(',') : '';
 
   React.useEffect(() => {
     if (!allImages || allImages.length <= 1) return;
@@ -133,7 +134,7 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
       setImgIdx(prev => (prev + 1) % allImages.length);
     }, 2000);
     return () => clearInterval(interval);
-  }, [allImages]);
+  }, [imagesKey, allImages.length]);
 
   const isSoldOut = combo.tags?.includes('sold_out');
   const isHidden = combo.tags?.includes('hidden');
