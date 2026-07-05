@@ -679,6 +679,16 @@ export const AppProvider = ({ children }) => {
   const addRestaurant = async (restData) => {
     if (!supabaseUser) return { error: 'Not authenticated' };
     
+    // Check if the user already has a restaurant
+    const hasRestaurant = restaurants.some(
+      r => r.vendorId === supabaseUser.id || r.vendor_id === supabaseUser.id
+    );
+    
+    if (hasRestaurant) {
+      showNotification('You can only create one restaurant per account.');
+      return { error: 'One restaurant per account limit reached.' };
+    }
+    
     const newRest = {
       vendor_id: supabaseUser.id,
       name: restData.name,
