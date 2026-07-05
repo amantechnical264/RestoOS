@@ -84,23 +84,16 @@ export default function CartPage() {
     );
   }
 
-  const executeCheckout = async () => {
-    let finalName = user?.name;
-    let finalPhone = user?.phone;
-    
-    // Check localStorage just in case
-    if (!finalName || !finalPhone) {
-      try {
-        const dp = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
-        if (dp.name) finalName = dp.name;
-        if (dp.phone) finalPhone = dp.phone;
-      } catch(e) {}
-    }
+  const executeCheckout = async ({ overrideName, overridePhone, overrideAddress, overrideCoords } = {}) => {
+    const finalName = overrideName || user?.name || (() => { try { return JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}').name; } catch(e) {} })();
+    const finalPhone = overridePhone || user?.phone || (() => { try { return JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}').phone; } catch(e) {} })();
+    const resolvedCoords = overrideCoords || locationCoords;
+    const resolvedAddress = overrideAddress || tempAddress;
 
-    const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
+    const missingDeliveryInfo = isDelivery && !resolvedCoords && !resolvedAddress;
     if (!finalName || !finalPhone || missingDeliveryInfo) {
       setShowNamePrompt(true);
-      return; // Pause checkout until they enter their name and location
+      return;
     }
 
     setIsProcessing(true);
@@ -110,10 +103,17 @@ export default function CartPage() {
     const status = 'Pending Verification';
     const finalPaymentStatus = 'Unpaid';
     
+    // Encode GPS into specialInstructions as a fallback (guaranteed to survive any DB schema)
+    let finalSpecialInstructions = specialInstructions;
+    if (isDelivery && resolvedCoords) {
+      const coordStr = `GPS:${resolvedCoords.lat},${resolvedCoords.lng}`;
+      finalSpecialInstructions = finalSpecialInstructions ? `${finalSpecialInstructions} | ${coordStr}` : coordStr;
+    }
+
     let meta = {};
     if (isDelivery) {
-       meta.address = tempAddress;
-       if (locationCoords) meta.location = locationCoords;
+      meta.address = resolvedAddress;
+      if (resolvedCoords) meta.location = resolvedCoords;
     }
 
     const success = await placeOrder({ 
@@ -126,13 +126,13 @@ export default function CartPage() {
       verificationCode: code,
       contactName: finalName,
       contactPhone: finalPhone,
-      specialInstructions: specialInstructions,
+      specialInstructions: finalSpecialInstructions,
       metadata: meta
     });
     
     setIsProcessing(false);
     if (success) {
-      setCart([]); // Clear cart upon success visually immediately
+      setCart([]);
       navigate('/orders');
     }
   };
@@ -404,8 +404,13 @@ export default function CartPage() {
                           localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
                           if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
                           setShowNamePrompt(false);
-                          // Resume checkout
-                          executeCheckout();
+                          // Pass values directly — avoids stale state re-prompt loop
+                          executeCheckout({
+                            overrideName: tempName,
+                            overridePhone: tempPhone,
+                            overrideAddress: tempAddress,
+                            overrideCoords: locationCoords,
+                          });
                         } else {
                           showNotification("Please fill in all required details.");
                         }

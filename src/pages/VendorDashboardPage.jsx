@@ -1799,12 +1799,16 @@ export default function VendorDashboardPage() {
                   ) : (
                     <div className="grid gap-4">
                       {deliveryOrders.map(order => {
-                        const loc = order.metadata?.location 
-                          || order.items?.find(i => i.type === 'location_meta') 
-                          || {};
-                        const savedAddress = order.metadata?.address 
-                          || order.items?.find(i => i.type === 'location_meta')?.address 
-                          || '';
+                        // Triple fallback: metadata > items array > GPS string in specialInstructions
+                        const _locFromMeta = order.metadata?.location;
+                        const _locFromItems = order.items?.find(i => i.type === 'location_meta');
+                        const _locFromSI = (() => {
+                          const si = order.metadata?.specialInstructions || '';
+                          const m = si.match(/GPS:([\d.\-]+),([\d.\-]+)/);
+                          return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
+                        })();
+                        const loc = _locFromMeta || _locFromItems || _locFromSI || {};
+                        const savedAddress = order.metadata?.address || _locFromItems?.address || '';
                         const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
                         
                         const itemsList = order.items
