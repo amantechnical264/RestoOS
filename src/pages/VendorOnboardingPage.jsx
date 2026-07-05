@@ -68,14 +68,14 @@ export default function VendorOnboardingPage() {
     // Use a default cover if they didn't upload one
     const finalCover = cover || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=800&q=80';
     
-    const newId = await addRestaurant({ name, cover: finalCover });
+    const result = await addRestaurant({ name, cover: finalCover });
     
-    if (newId) {
-      setActiveRestId(newId);
+    if (result && result.id) {
+      setActiveRestId(result.id);
       navigate('/vendor');
     } else {
       setLoading(false);
-      alert("Failed to create restaurant. Please check your Supabase connection.");
+      alert(`Failed to create restaurant. Error: ${result?.error || 'Please check your Supabase connection.'}`);
     }
   };
 

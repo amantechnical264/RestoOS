@@ -694,7 +694,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const addRestaurant = async (restData) => {
-    if (!supabaseUser) return null;
+    if (!supabaseUser) return { error: 'Not authenticated' };
     
     const newRest = {
       vendor_id: supabaseUser.id,
@@ -705,11 +705,11 @@ export const AppProvider = ({ children }) => {
     try {
       const { data, error } = await supabase.from('restaurants').insert([newRest]).select();
       if (error) throw error;
-      return data[0].id;
+      return { id: data[0].id };
     } catch (error) {
       console.error('Create restaurant error:', error);
       showNotification(`Failed to create restaurant: ${error.message || error.details || 'Unknown error'}`);
-      return null;
+      return { error: error.message || error.details || 'Unknown error' };
     }
   };
 
