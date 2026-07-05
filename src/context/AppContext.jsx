@@ -616,7 +616,12 @@ export const AppProvider = ({ children }) => {
     if (contactPhone)                 newOrder.contact_phone     = contactPhone;
     if (orderData?.scheduledTime)     newOrder.scheduled_time    = orderData.scheduledTime;
     if (orderData?.tipAmount != null) newOrder.tip_amount        = orderData.tipAmount;
-    if (orderData?.specialInstructions) newOrder.metadata = { specialInstructions: orderData.specialInstructions };
+    if (orderData?.specialInstructions || orderData?.metadata) {
+      newOrder.metadata = { 
+        ...(orderData.specialInstructions ? { specialInstructions: orderData.specialInstructions } : {}),
+        ...(orderData.metadata || {})
+      };
+    }
 
     try {
       const { error } = await supabase.from('orders').insert([newOrder]);

@@ -808,7 +808,7 @@ export default function MenuPage() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="flex items-center gap-3">
             <span className="px-3 py-1 rounded-full bg-white/10 border border-neutral-200 dark:border-white/15 text-xs font-bold text-neutral-900 dark:text-white backdrop-blur-md">
-              TABLE {tableNumber || '12'}
+              {tableNumber === 'delivery' ? 'Delivery / Takeaway' : `TABLE ${tableNumber || '12'}`}
             </span>
             <span className="text-xs text-neutral-900 dark:text-white/50">{allDishes.length} dishes available</span>
           </motion.div>

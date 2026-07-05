@@ -1299,6 +1299,7 @@ export default function VendorDashboardPage() {
 
   const FULL_TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
+    { key: 'delivery',  icon: Package,      label: 'Delivery' },
     { key: 'floor',     icon: Bell,         label: 'Floor',    badge: serviceAlerts.length },
     { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
     { key: 'menu',      icon: Utensils,     label: 'Menu' },
@@ -1768,6 +1769,140 @@ export default function VendorDashboardPage() {
               </div>
             </motion.div>
           )}
+
+          {/* ════════════════════ DELIVERY & TAKEAWAY ════════════════════ */}
+          {vendorTab === 'delivery' && (() => {
+            const deliveryOrders = restOrders.filter(o => o.orderType === 'delivery' || o.order_type === 'delivery');
+            
+            return (
+              <motion.div key="delivery" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 overflow-y-auto p-4 sm:p-6 no-scrollbar">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h2 className="text-3xl font-display font-black tracking-tight flex items-center gap-3">
+                        <Package className="text-blue-500" /> Delivery & Takeaway
+                      </h2>
+                      <p className="text-sm font-medium text-neutral-500 mt-1">Manage external orders and dispatch delivery agents.</p>
+                    </div>
+                  </div>
+
+                  {deliveryOrders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                      <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+                        <Package className="text-blue-400" size={32} />
+                      </div>
+                      <h3 className="font-display font-black text-xl mb-2">No Delivery Orders Yet</h3>
+                      <p className="text-sm text-neutral-500 max-w-sm">Share your Delivery QR code to start receiving orders.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {deliveryOrders.map(order => {
+                        const loc = order.metadata?.location || {};
+                        const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
+                        
+                        const waMessage = `*New Delivery Order!*\n\nOrder ID: ${order.verificationCode || order.id.slice(0,6)}\nCustomer: ${order.contactName || 'Guest'}${order.contactPhone ? ` (${order.contactPhone})` : ''}\n\n*Items:*\n${order.items.map(i => `- ${i.quantity || 1}x ${i.name} ${i.selectedVariant ? `(${i.selectedVariant.name})` : ''}`).join('\n')}\n\n*Total: ₹${parseFloat(order.total).toFixed(2)}*\n\n${mapUrl ? `*Navigation:* ${mapUrl}` : ''}`;
+                        const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+
+                        return (
+                          <div key={order.id} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none" />
+                            
+                            <div className="flex-1 space-y-4 relative z-10">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-md">Delivery Order</span>
+                                    <span className="text-xs text-neutral-400 font-bold">{new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                  </div>
+                                  <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white">{order.contactName || 'Guest'}</h3>
+                                  {order.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-1.5"><Phone size={12}/> {order.contactPhone}</p>}
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(2)}</p>
+                                  {order.verificationCode && (
+                                    <p className="text-xs font-bold font-mono text-neutral-400 mt-1">Code: {order.verificationCode}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {(order.metadata?.address || mapUrl) && (
+                                <div className="bg-neutral-50 dark:bg-[#0a0a0a] rounded-xl p-3 border border-neutral-200 dark:border-white/5 flex gap-3 items-start">
+                                  <MapPin className="text-blue-500 shrink-0 mt-0.5" size={16} />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">Delivery Address</p>
+                                    <p className="text-xs text-neutral-500 mb-2">{order.metadata.address || 'GPS Location Provided'}</p>
+                                    {mapUrl && (
+                                      <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                        <ArrowUpRight size={12} /> Open in Maps
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="pt-2 border-t border-neutral-100 dark:border-white/5">
+                                <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Order Items</p>
+                                <ul className="space-y-1">
+                                  {order.items.map((item, idx) => (
+                                    <li key={idx} className="flex justify-between text-sm">
+                                      <span className="font-medium text-neutral-700 dark:text-neutral-300"><span className="text-neutral-400 mr-2">{item.quantity || 1}x</span>{item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                      <span className="font-bold text-neutral-500">₹{parseFloat(item.price).toFixed(2)}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                                {order.metadata?.specialInstructions && (
+                                  <div className="mt-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
+                                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
+                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{order.metadata.specialInstructions}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Actions sidebar */}
+                            <div className="md:w-48 shrink-0 flex flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-neutral-100 dark:border-white/5 pt-4 md:pt-0 md:pl-6 relative z-10">
+                              <a 
+                                href={waUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="w-full py-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-[#25D366]/20"
+                              >
+                                <MessageSquare size={16} /> Share to WhatsApp
+                              </a>
+                              
+                              {order.status === 'Pending Verification' && (
+                                <button
+                                  onClick={() => {
+                                    const code = prompt("Enter verification code:");
+                                    if (code === order.verificationCode) updateOrderStatus(order.id, 'Preparing');
+                                    else alert("Invalid code");
+                                  }}
+                                  className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl font-black text-sm shadow-sm"
+                                >
+                                  Verify & Accept
+                                </button>
+                              )}
+                              
+                              {order.status === 'Preparing' && (
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, 'Served')}
+                                  className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors"
+                                >
+                                  Mark Dispatched
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })()}
 
           {/* ════════════════════ FLOOR & SERVICE HUB ════════════════════ */}
           {vendorTab === 'floor' && (
@@ -3904,6 +4039,24 @@ export default function VendorDashboardPage() {
                       <p className="text-[10px] text-neutral-400 mt-3 text-center">{currentRestaurant?.name} · T{i+1}</p>
                     </div>
                   ))}
+                </div>
+
+                <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-[100px] pointer-events-none" />
+                  <div className="flex-1 text-center sm:text-left relative z-10">
+                    <h3 className="font-display font-black text-xl mb-1 text-neutral-900 dark:text-white">Delivery & Takeaway</h3>
+                    <p className="text-sm text-neutral-500 mb-4">Print this QR for customers ordering from outside or for pick-up. No table assigned.</p>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                      <MapPin size={14} /> Requests Live Location from Diner
+                    </div>
+                  </div>
+                  <div className="shrink-0 bg-white p-3 rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm relative z-10">
+                    <QRCodeSVG
+                      value={`${window.location.origin}/menu?restId=${activeRestId}&table=delivery`}
+                      size={110} level="H" includeMargin={false} fgColor="#111111"
+                    />
+                    <p className="text-[10px] text-neutral-500 font-bold mt-2 text-center uppercase tracking-widest">Scan to Order</p>
+                  </div>
                 </div>
 
                 <button onClick={() => window.print()}

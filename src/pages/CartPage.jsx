@@ -9,11 +9,16 @@ import { supabase } from '../services/supabase';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart, user, setUser } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, planFor, dishes, addToCart, removeOneFromCart, user, setUser, tableNumber, showNotification } = useAppContext();
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempPhone, setTempPhone] = useState('');
+  const [tempAddress, setTempAddress] = useState('');
+  const [locationCoords, setLocationCoords] = useState(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const { t } = useTranslation();
+
+  const isDelivery = tableNumber === 'delivery';
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
   const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
@@ -92,9 +97,10 @@ export default function CartPage() {
       } catch(e) {}
     }
 
-    if (!finalName || !finalPhone) {
+    const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
+    if (!finalName || !finalPhone || missingDeliveryInfo) {
       setShowNamePrompt(true);
-      return; // Pause checkout until they enter their name
+      return; // Pause checkout until they enter their name and location
     }
 
     setIsProcessing(true);
@@ -104,17 +110,24 @@ export default function CartPage() {
     const status = 'Pending Verification';
     const finalPaymentStatus = 'Unpaid';
     
+    let meta = {};
+    if (isDelivery) {
+       meta.address = tempAddress;
+       if (locationCoords) meta.location = locationCoords;
+    }
+
     const success = await placeOrder({ 
-      orderType: 'dine_in', 
+      orderType: isDelivery ? 'delivery' : 'dine_in', 
       scheduledTime: null,
-      paymentMethod: paymentMethod,
+      paymentMethod: isDelivery ? 'Pay on Delivery' : paymentMethod,
       paymentStatus: finalPaymentStatus,
       status: status,
       tipAmount: 0,
       verificationCode: code,
       contactName: finalName,
       contactPhone: finalPhone,
-      specialInstructions: specialInstructions
+      specialInstructions: specialInstructions,
+      metadata: meta
     });
     
     setIsProcessing(false);
@@ -122,6 +135,26 @@ export default function CartPage() {
       setCart([]); // Clear cart upon success visually immediately
       navigate('/orders');
     }
+  };
+
+  const handleFetchLocation = () => {
+    if (!navigator.geolocation) {
+      showNotification("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        showNotification("Location detected successfully!");
+        setIsFetchingLocation(false);
+      },
+      (error) => {
+        console.warn('Geolocation error:', error);
+        showNotification("Failed to detect location. Please enter your address manually.");
+        setIsFetchingLocation(false);
+      }
+    );
   };
 
   const handleBack = () => {
@@ -283,28 +316,30 @@ export default function CartPage() {
           </div>
 
           {/* Payment Method Selector */}
-          <div className="mt-4 mb-8 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-5 backdrop-blur-md">
-            <h3 className="font-display font-bold text-neutral-900 dark:text-white text-sm mb-3">Payment Method</h3>
-            <div 
-              onClick={() => setPaymentMethod('Pay at Counter')}
-              className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border-2 transition-all ${
-                paymentMethod === 'Pay at Counter' 
-                  ? 'border-[#D4AF37] bg-[#D4AF37]/10' 
-                  : 'border-transparent bg-neutral-100 dark:bg-white/5'
-              }`}
-            >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-black shadow-sm">
-                <Store size={18} className="text-[#D4AF37]" />
-              </div>
-              <div className="flex-1">
-                <p className="font-bold text-neutral-900 dark:text-white text-sm">Pay at Counter</p>
-                <p className="text-xs text-neutral-500">Pay with Cash, Card, or UPI after your meal.</p>
-              </div>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'Pay at Counter' ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                {paymentMethod === 'Pay at Counter' && <div className="w-2 h-2 bg-white rounded-full" />}
+          {!isDelivery && (
+            <div className="mt-4 mb-8 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-5 backdrop-blur-md">
+              <h3 className="font-display font-bold text-neutral-900 dark:text-white text-sm mb-3">Payment Method</h3>
+              <div 
+                onClick={() => setPaymentMethod('Pay at Counter')}
+                className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border-2 transition-all ${
+                  paymentMethod === 'Pay at Counter' 
+                    ? 'border-[#D4AF37] bg-[#D4AF37]/10' 
+                    : 'border-transparent bg-neutral-100 dark:bg-white/5'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-black shadow-sm">
+                  <Store size={18} className="text-[#D4AF37]" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-neutral-900 dark:text-white text-sm">Pay at Counter</p>
+                  <p className="text-xs text-neutral-500">Pay with Cash, Card, or UPI after your meal.</p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'Pay at Counter' ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                  {paymentMethod === 'Pay at Counter' && <div className="w-2 h-2 bg-white rounded-full" />}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Name Prompt Modal for old profiles */}
           <AnimatePresence>
@@ -332,9 +367,32 @@ export default function CartPage() {
                       <input type="tel" value={tempPhone} onChange={e => setTempPhone(e.target.value)} placeholder="e.g. 9876543210"
                         className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                     </div>
+                    {isDelivery && (
+                      <div className="pt-2 border-t border-neutral-200 dark:border-white/10">
+                        <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Delivery Location <span className="text-red-500">*</span></label>
+                        <div className="flex gap-2 mb-2">
+                          <button 
+                            onClick={handleFetchLocation}
+                            disabled={isFetchingLocation || locationCoords}
+                            className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${locationCoords ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'}`}
+                          >
+                            <MapPin size={14} />
+                            {isFetchingLocation ? 'Detecting...' : locationCoords ? 'Location Detected' : 'Use GPS Location'}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-neutral-400 text-center mb-2">OR</p>
+                        <textarea 
+                          value={tempAddress} onChange={e => setTempAddress(e.target.value)} 
+                          placeholder="e.g. 123 Main St, Apt 4B, City"
+                          className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white resize-none" 
+                          rows={2}
+                        />
+                      </div>
+                    )}
                     <button 
                       onClick={() => {
-                        if (tempName && tempPhone) {
+                        const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
+                        if (tempName && tempPhone && !missingDeliveryInfo) {
                           const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
                           const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
                           localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
@@ -342,6 +400,8 @@ export default function CartPage() {
                           setShowNamePrompt(false);
                           // Resume checkout
                           executeCheckout();
+                        } else {
+                          showNotification("Please fill in all required details.");
                         }
                       }}
                       className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
