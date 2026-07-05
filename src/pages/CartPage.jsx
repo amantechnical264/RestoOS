@@ -440,19 +440,21 @@ export default function CartPage() {
           {/* Name Prompt Modal for old profiles */}
           <AnimatePresence>
             {showNamePrompt && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm">
+              <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  className="bg-white dark:bg-[#12141D] w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-neutral-200 dark:border-white/10 relative overflow-hidden"
+                  className="bg-white dark:bg-[#12141D] w-full max-w-sm rounded-[2rem] p-5 sm:p-6 shadow-2xl border border-neutral-200 dark:border-white/10 relative flex flex-col max-h-[85dvh] overflow-hidden"
                 >
                   <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#D4AF37]/20 blur-3xl rounded-full pointer-events-none" />
-                  <div className="text-center mb-6 relative z-10">
+                  
+                  <div className="text-center mb-4 sm:mb-6 relative z-10 shrink-0">
                     <h2 className="font-display font-black text-2xl text-neutral-900 dark:text-white">Almost there!</h2>
-                    <p className="text-sm text-neutral-500 mt-1">Please enter your name to complete the order.</p>
+                    <p className="text-sm text-neutral-500 mt-1">Please enter your details to complete the order.</p>
                   </div>
-                  <div className="space-y-4 relative z-10">
+                  
+                  <div className="space-y-4 relative z-10 overflow-y-auto no-scrollbar pb-2 px-1">
                     {!showOtpPrompt ? (
                       <>
                         <div>
