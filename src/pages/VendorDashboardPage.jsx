@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle, Search
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle, Search, MapPin, Phone
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
