@@ -216,7 +216,7 @@ export default function CartPage() {
       showNotification("OTP sent successfully!");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      showNotification("Failed to send OTP. Please check the number or try again.");
+      showNotification(error.message || "Failed to send OTP. Please check the number or try again.");
     }
     setIsSendingOtp(false);
   };
