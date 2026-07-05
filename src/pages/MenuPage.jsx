@@ -1439,6 +1439,7 @@ export default function MenuPage() {
               </div>
             </motion.div>
           </div>
+        )}
       </AnimatePresence>
 
       <BottomNav />

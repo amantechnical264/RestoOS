@@ -2518,8 +2518,11 @@ export default function VendorDashboardPage() {
                   )}
                 </div>
               </div>
-            </motion.div>
-          ))}
+            </div>
+          </div>
+        </motion.div>
+      )
+    )}
 
           {/* ── EDIT MENU TAB ── */}
           {vendorTab === 'editmenu' && (
