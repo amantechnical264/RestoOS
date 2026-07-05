@@ -607,6 +607,7 @@ export default function CartPage() {
         </div>
       </div>
 
+      <div id="recaptcha-container"></div>
       <BottomNav />
     </motion.div>
   );
