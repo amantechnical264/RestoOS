@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../services/supabase';
+import { auth } from '../services/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -180,6 +182,71 @@ export default function CartPage() {
     );
   };
 
+  useEffect(() => {
+    if (isDelivery && !window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible'
+      });
+    }
+  }, [isDelivery]);
+
+  const sendOtp = async () => {
+    const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
+    if (!tempName || !tempPhone || missingDeliveryInfo) {
+      showNotification("Please fill in all required details.");
+      return;
+    }
+    
+    let formattedPhone = tempPhone.trim();
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = `+91${formattedPhone}`; 
+    }
+
+    setIsSendingOtp(true);
+    try {
+      const appVerifier = window.recaptchaVerifier;
+      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmationResult(result);
+      setShowOtpPrompt(true);
+      showNotification("OTP sent successfully!");
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      showNotification("Failed to send OTP. Please check the number or try again.");
+    }
+    setIsSendingOtp(false);
+  };
+
+  const verifyOtp = async () => {
+    if (!otpCode || otpCode.length < 6) {
+      showNotification("Please enter a valid 6-digit OTP.");
+      return;
+    }
+    
+    setIsVerifyingOtp(true);
+    try {
+      await confirmationResult.confirm(otpCode);
+      showNotification("Phone number verified!");
+      
+      const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
+      localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
+      if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
+      
+      setShowOtpPrompt(false);
+      setShowNamePrompt(false);
+      
+      executeCheckout({
+        overrideName: tempName,
+        overridePhone: tempPhone,
+        overrideAddress: tempAddress,
+        overrideCoords: locationCoords,
+      });
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      showNotification("Invalid OTP. Please try again.");
+    }
+    setIsVerifyingOtp(false);
+  };
 
   const handleBack = () => {
     navigate(-1);
@@ -381,63 +448,92 @@ export default function CartPage() {
                     <p className="text-sm text-neutral-500 mt-1">Please enter your name to complete the order.</p>
                   </div>
                   <div className="space-y-4 relative z-10">
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Your Name</label>
-                      <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} placeholder="e.g. John Doe"
-                        className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
-                      <input type="tel" value={tempPhone} onChange={e => setTempPhone(e.target.value)} placeholder="e.g. 9876543210"
-                        className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
-                    </div>
-                    {isDelivery && (
-                      <div className="pt-2 border-t border-neutral-200 dark:border-white/10">
-                        <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Delivery Location <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2 mb-2">
-                          <button 
-                            onClick={handleFetchLocation}
-                            disabled={isFetchingLocation || locationCoords}
-                            className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${locationCoords ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'}`}
-                          >
-                            <MapPin size={14} />
-                            {isFetchingLocation ? 'Detecting...' : locationCoords ? 'Location Detected' : 'Use GPS Location'}
-                          </button>
+                    {!showOtpPrompt ? (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Your Name</label>
+                          <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} placeholder="e.g. John Doe"
+                            className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                         </div>
-                        <p className="text-[10px] text-neutral-400 text-center mb-2">OR</p>
-                        <textarea 
-                          value={tempAddress} onChange={e => setTempAddress(e.target.value)} 
-                          placeholder="e.g. 123 Main St, Apt 4B, City"
-                          className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white resize-none" 
-                          rows={2}
-                        />
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                          <input type="tel" value={tempPhone} onChange={e => setTempPhone(e.target.value)} placeholder="e.g. 9876543210"
+                            className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+                        </div>
+                        {isDelivery && (
+                          <div className="pt-2 border-t border-neutral-200 dark:border-white/10">
+                            <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Delivery Location <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2 mb-2">
+                              <button 
+                                onClick={handleFetchLocation}
+                                disabled={isFetchingLocation || locationCoords}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${locationCoords ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'}`}
+                              >
+                                <MapPin size={14} />
+                                {isFetchingLocation ? 'Detecting...' : locationCoords ? 'Location Detected' : 'Use GPS Location'}
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-neutral-400 text-center mb-2">OR</p>
+                            <textarea 
+                              value={tempAddress} onChange={e => setTempAddress(e.target.value)} 
+                              placeholder="e.g. 123 Main St, Apt 4B, City"
+                              className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white resize-none" 
+                              rows={2}
+                            />
+                          </div>
+                        )}
+                        
+                        <div id="recaptcha-container"></div>
+                        
+                        <button 
+                          onClick={() => {
+                            if (isDelivery) {
+                              sendOtp();
+                            } else {
+                              const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
+                              if (tempName && tempPhone && !missingDeliveryInfo) {
+                                const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                                const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
+                                localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
+                                if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
+                                setShowNamePrompt(false);
+                                executeCheckout({
+                                  overrideName: tempName,
+                                  overridePhone: tempPhone,
+                                  overrideAddress: tempAddress,
+                                  overrideCoords: locationCoords,
+                                });
+                              } else {
+                                showNotification("Please fill in all required details.");
+                              }
+                            }
+                          }}
+                          disabled={isSendingOtp}
+                          className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {isSendingOtp ? 'Sending OTP...' : (isDelivery ? 'Send OTP & Checkout' : 'Save & Checkout')}
+                        </button>
+                      </>
+                    ) : (
+                      <div className="pt-2 border-t border-neutral-200 dark:border-white/10 mt-2">
+                        <div className="text-center pb-4">
+                          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">OTP sent to <strong>{tempPhone}</strong></p>
+                          <button onClick={() => setShowOtpPrompt(false)} className="text-xs font-bold text-blue-500 hover:underline mt-1">Change Number</button>
+                        </div>
+                        <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider text-center">Enter 6-Digit OTP</label>
+                        <input autoFocus type="text" maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••"
+                          className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-center tracking-[1em] font-mono text-xl focus:outline-none focus:border-[#D4AF37] dark:text-white mb-4 pl-[calc(1em+0.5rem)]" />
+                        
+                        <button 
+                          onClick={verifyOtp}
+                          disabled={isVerifyingOtp}
+                          className="w-full py-3.5 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {isVerifyingOtp ? 'Verifying...' : 'Verify & Checkout'}
+                        </button>
                       </div>
                     )}
+                    
                     <button 
-                      onClick={() => {
-                        const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
-                        if (tempName && tempPhone && !missingDeliveryInfo) {
-                          const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-                          const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
-                          localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
-                          if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
-                          setShowNamePrompt(false);
-                          // Pass values directly — avoids stale state re-prompt loop
-                          executeCheckout({
-                            overrideName: tempName,
-                            overridePhone: tempPhone,
-                            overrideAddress: tempAddress,
-                            overrideCoords: locationCoords,
-                          });
-                        } else {
-                          showNotification("Please fill in all required details.");
-                        }
-                      }}
-                      className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
-                      Save & Checkout
-                    </button>
-                    <button 
-                      onClick={() => setShowNamePrompt(false)}
+                      onClick={() => { setShowNamePrompt(false); setShowOtpPrompt(false); setOtpCode(''); }}
                       className="w-full py-3 mt-1 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
                       Cancel
                     </button>
