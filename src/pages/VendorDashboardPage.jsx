@@ -473,7 +473,10 @@ export default function VendorDashboardPage() {
     // Don't redirect to onboarding until data has fully loaded from Supabase 
     // (prevents false redirect on fresh device where localStorage cache is empty)
     if (!isDataLoaded) return;
-    const myRest = restaurants.find(r => r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id);
+    
+    const myRests = restaurants.filter(r => r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id);
+    const myRest = myRests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+    
     if (!myRest && restaurants.length === 0) return;
     if (!myRest) { navigate('/vendor-onboard', { replace: true }); }
     else if (!activeRestId) { setActiveRestId(myRest.id); }
@@ -482,6 +485,7 @@ export default function VendorDashboardPage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('3dish_user');
+    localStorage.removeItem('3dish_active_rest');
     sessionStorage.removeItem('3dish_active_rest');
     window.location.href = '/vendor-auth';
   };

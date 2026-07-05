@@ -124,7 +124,7 @@ export const AppProvider = ({ children }) => {
       return null;
     }
   }); 
-  const [activeRestId, setActiveRestIdState] = useState(() => sessionStorage.getItem('3dish_active_rest') || null);
+  const [activeRestId, setActiveRestIdState] = useState(() => localStorage.getItem('3dish_active_rest') || null);
   const [tableNumber, setTableNumberState] = useState(() => sessionStorage.getItem('3dish_table_number') || null);
   const [activeDishId, setActiveDishId] = useState(null);
   
@@ -132,8 +132,8 @@ export const AppProvider = ({ children }) => {
   const userRef = useRef(user);
 
   const setActiveRestId = (id) => {
-    if (id) sessionStorage.setItem('3dish_active_rest', id);
-    else sessionStorage.removeItem('3dish_active_rest');
+    if (id) localStorage.setItem('3dish_active_rest', id);
+    else localStorage.removeItem('3dish_active_rest');
     setActiveRestIdState(id);
   };
 
