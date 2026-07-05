@@ -7,6 +7,18 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Activate new service worker immediately — no waiting for old tabs to close
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        // Never cache Supabase API calls — always go to network
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.hostname.includes('supabase.co'),
+            handler: 'NetworkOnly',
+          },
+        ],
+      },
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: '3Dish — AR Dining',
@@ -23,6 +35,7 @@ export default defineConfig({
     })
   ],
   build: {
-    chunkSizeWarningLimit: 800, // @zxing/browser and shared vendor bundle are expected to be large
+    chunkSizeWarningLimit: 800,
   },
 })
+
