@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       // Activate new service worker immediately — no waiting for old tabs to close
       workbox: {
         skipWaiting: true,
