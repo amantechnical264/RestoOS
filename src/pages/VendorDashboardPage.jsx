@@ -2197,7 +2197,7 @@ export default function VendorDashboardPage() {
                     )}
                   </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendDishes.filter(d => !dishSearch || d.name.toLowerCase().includes(dishSearch.toLowerCase())).map(dish => {
+                  {vendDishes.filter(d => !d.macros?.isCombo && (!dishSearch || d.name.toLowerCase().includes(dishSearch.toLowerCase()))).map(dish => {
                     const isSoldOut = dish.tags?.includes('sold_out');
                     const isHidden = dish.tags?.includes('hidden');
                     return (

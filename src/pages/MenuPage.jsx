@@ -303,7 +303,67 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
   );
 });
 
-const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove, activeDietaryFilters }) => {
+// ─── Auto-Sliding Image Slider for Combos ────────────────────────────────────
+const ComboImageSlider = React.memo(({ dish, allDishes, className }) => {
+  const [imgIdx, setImgIdx] = React.useState(0);
+
+  const images = React.useMemo(() => {
+    const imgs = [];
+    const childIdsStr = dish.macros?.comboDishes || [];
+    childIdsStr.forEach(idStr => {
+      const [dishId] = (typeof idStr === 'string' ? idStr : '').split('::');
+      const d = allDishes.find(x => x.id === (dishId || idStr));
+      if (d?.cover) imgs.push(d.cover);
+      else if (d?.images?.[0]) imgs.push(d.images[0]);
+    });
+    if (imgs.length === 0 && dish.cover) imgs.push(dish.cover);
+    return imgs;
+  }, [dish, allDishes]);
+
+  const imagesKey = images.join(',');
+
+  React.useEffect(() => {
+    if (images.length <= 1) return;
+    const interval = setInterval(() => {
+      setImgIdx(prev => (prev + 1) % images.length);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [imagesKey, images.length]);
+
+  if (images.length === 0) {
+    return (
+      <div className={`flex items-center justify-center bg-neutral-100 dark:bg-[#111115] ${className}`}>
+        <ChefHat size={28} className="text-neutral-300" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative overflow-hidden ${className}`}>
+      <AnimatePresence mode="popLayout">
+        <motion.img
+          key={imgIdx}
+          src={images[imgIdx]}
+          alt={dish.name}
+          initial={{ opacity: 0, scale: 1.08 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6, ease: 'easeInOut' }}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </AnimatePresence>
+      {images.length > 1 && (
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5 z-10">
+          {images.map((_, i) => (
+            <div key={i} className={`w-1 h-1 rounded-full transition-colors ${i === imgIdx ? 'bg-white' : 'bg-white/30'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
+
+const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDishClick, onARClick, qty, onAdd, onRemove, activeDietaryFilters, allDishes }) => {
   const hasModel = !!(dish.modelUrl || dish.model_url);
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
@@ -386,13 +446,17 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
       {/* Right Image / Add Button Panel */}
       <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
-        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#111115] border border-neutral-200 dark:border-white/10 shadow-sm">
-          <OptimizedImage
-            src={dish.cover || dish.images?.[0]}
-            alt={dish.name}
-            eager={true}
-            className="w-full h-full"
-          />
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-[#111115] border border-neutral-200 dark:border-white/10 shadow-sm relative">
+          {dish.macros?.isCombo ? (
+            <ComboImageSlider dish={dish} allDishes={allDishes || []} className="w-full h-full" />
+          ) : (
+            <OptimizedImage
+              src={dish.cover || dish.images?.[0]}
+              alt={dish.name}
+              eager={true}
+              className="w-full h-full"
+            />
+          )}
           
           {dish.tags?.includes('sold_out') && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl z-10">
@@ -907,6 +971,7 @@ export default function MenuPage() {
                           qty={dishQty}
                           onAdd={(e) => { if (e) e.stopPropagation(); handleAddToCart(dish); }}
                           onRemove={(e) => { if (e) e.stopPropagation(); removeOneFromCart(dish.id); }}
+                          allDishes={allDishes}
                         />
                       </div>
                     );
