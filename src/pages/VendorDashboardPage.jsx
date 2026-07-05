@@ -1801,9 +1801,11 @@ export default function VendorDashboardPage() {
                       {deliveryOrders.map(order => {
                         const loc = order.metadata?.location 
                           || order.items?.find(i => i.type === 'location_meta') 
-                          || {};\n                        const savedAddress = order.metadata?.address 
+                          || {};
+                        const savedAddress = order.metadata?.address 
                           || order.items?.find(i => i.type === 'location_meta')?.address 
-                          || '';\n                        const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
+                          || '';
+                        const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
                         
                         const itemsList = order.items
                           .filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location')
