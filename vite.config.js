@@ -7,10 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      // Activate new service worker immediately — no waiting for old tabs to close
+      // We removed skipWaiting and clientsClaim because we are handling updates manually via prompt in main.jsx
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
         // Never cache Supabase API calls — always go to network
         runtimeCaching: [
           {
