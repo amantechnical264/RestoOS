@@ -6,8 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../services/supabase';
-import { auth } from '../services/firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -187,71 +186,7 @@ export default function CartPage() {
     );
   };
 
-  useEffect(() => {
-    if (isDelivery && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible'
-      });
-    }
-  }, [isDelivery]);
-
-  const sendOtp = async () => {
-    const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
-    if (!tempName || !tempPhone || missingDeliveryInfo) {
-      showNotification("Please fill in all required details.");
-      return;
-    }
-    
-    let formattedPhone = tempPhone.trim();
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = `+91${formattedPhone}`; 
-    }
-
-    setIsSendingOtp(true);
-    try {
-      const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmationResult(result);
-      setShowOtpPrompt(true);
-      showNotification("OTP sent successfully!");
-    } catch (error) {
-      console.error("Error sending OTP:", error);
-      showNotification(error.message || "Failed to send OTP. Please check the number or try again.");
-    }
-    setIsSendingOtp(false);
-  };
-
-  const verifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) {
-      showNotification("Please enter a valid 6-digit OTP.");
-      return;
-    }
-    
-    setIsVerifyingOtp(true);
-    try {
-      await confirmationResult.confirm(otpCode);
-      showNotification("Phone number verified!");
-      
-      const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-      const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
-      localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
-      if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
-      
-      setShowOtpPrompt(false);
-      setShowNamePrompt(false);
-      
-      executeCheckout({
-        overrideName: tempName,
-        overridePhone: tempPhone,
-        overrideAddress: tempAddress,
-        overrideCoords: locationCoords,
-      });
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      showNotification("Invalid OTP. Please try again.");
-    }
-    setIsVerifyingOtp(false);
-  };
+  
 
   const handleBack = () => {
     navigate(-1);
@@ -455,9 +390,7 @@ export default function CartPage() {
                   </div>
                   
                   <div className="space-y-4 relative z-10 overflow-y-auto no-scrollbar pb-2 px-1">
-                    {!showOtpPrompt ? (
-                      <>
-                        <div>
+                    <div>
                           <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Your Name</label>
                           <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} placeholder="e.g. John Doe"
                             className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
@@ -489,61 +422,34 @@ export default function CartPage() {
                             />
                           </div>
                         )}
-                        
-                        <div id="recaptcha-container"></div>
-                        
                         <button 
                           onClick={() => {
-                            if (isDelivery) {
-                              sendOtp();
+                            const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
+                            if (tempName && tempPhone && !missingDeliveryInfo) {
+                              const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                              const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
+                              localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
+                              if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
+                              setShowNamePrompt(false);
+                              // Pass values directly — avoids stale state re-prompt loop
+                              executeCheckout({
+                                overrideName: tempName,
+                                overridePhone: tempPhone,
+                                overrideAddress: tempAddress,
+                                overrideCoords: locationCoords,
+                              });
                             } else {
-                              const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
-                              if (tempName && tempPhone && !missingDeliveryInfo) {
-                                const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-                                const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
-                                localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
-                                if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
-                                setShowNamePrompt(false);
-                                executeCheckout({
-                                  overrideName: tempName,
-                                  overridePhone: tempPhone,
-                                  overrideAddress: tempAddress,
-                                  overrideCoords: locationCoords,
-                                });
-                              } else {
-                                showNotification("Please fill in all required details.");
-                              }
+                              showNotification("Please fill in all required details.");
                             }
                           }}
-                          disabled={isSendingOtp}
-                          className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {isSendingOtp ? 'Sending OTP...' : (isDelivery ? 'Send OTP & Checkout' : 'Save & Checkout')}
+                          className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
+                          Save & Checkout
                         </button>
-                      </>
-                    ) : (
-                      <div className="pt-2 border-t border-neutral-200 dark:border-white/10 mt-2">
-                        <div className="text-center pb-4">
-                          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">OTP sent to <strong>{tempPhone}</strong></p>
-                          <button onClick={() => setShowOtpPrompt(false)} className="text-xs font-bold text-blue-500 hover:underline mt-1">Change Number</button>
-                        </div>
-                        <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider text-center">Enter 6-Digit OTP</label>
-                        <input autoFocus type="text" maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••"
-                          className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-center tracking-[1em] font-mono text-xl focus:outline-none focus:border-[#D4AF37] dark:text-white mb-4 pl-[calc(1em+0.5rem)]" />
-                        
                         <button 
-                          onClick={verifyOtp}
-                          disabled={isVerifyingOtp}
-                          className="w-full py-3.5 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {isVerifyingOtp ? 'Verifying...' : 'Verify & Checkout'}
+                          onClick={() => setShowNamePrompt(false)}
+                          className="w-full py-3 mt-1 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
+                          Cancel
                         </button>
-                      </div>
-                    )}
-                    
-                    <button 
-                      onClick={() => { setShowNamePrompt(false); setShowOtpPrompt(false); setOtpCode(''); }}
-                      className="w-full py-3 mt-1 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
-                      Cancel
-                    </button>
                   </div>
                 </motion.div>
               </div>
