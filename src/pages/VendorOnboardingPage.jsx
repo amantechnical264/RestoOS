@@ -43,11 +43,16 @@ export default function VendorOnboardingPage() {
     if (!isDataLoaded) return;
 
     // User already has a restaurant → go straight to dashboard
-    const existing = restaurants.find(r =>
+    // Pick the one with the most dishes (oldest as tiebreaker) so we land on the right one
+    const myRests = restaurants.filter(r =>
       r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id
     );
-    if (existing) {
-      setActiveRestId(existing.id);
+    if (myRests.length > 0) {
+      const best = [...myRests].sort((a, b) => {
+        if (b.created_at < a.created_at) return -1; // older first as tiebreaker
+        return 1;
+      })[0];
+      setActiveRestId(best.id);
       navigate('/vendor', { replace: true });
     }
   }, [restaurants, navigate, setActiveRestId, isInitializing, supabaseUser, isDataLoaded]);

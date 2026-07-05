@@ -705,6 +705,14 @@ export const AppProvider = ({ children }) => {
     try {
       const { data, error } = await supabase.from('restaurants').insert([newRest]).select();
       if (error) throw error;
+      // Immediately update local state so dashboard renders without full reload
+      const mapped = {
+        ...data[0],
+        vendorId: data[0].vendor_id,
+        cover: data[0].cover || '',
+        requireVerificationCode: true,
+      };
+      setRestaurants(prev => [...prev, mapped]);
       return { id: data[0].id };
     } catch (error) {
       console.error('Create restaurant error:', error);

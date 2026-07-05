@@ -470,17 +470,26 @@ export default function VendorDashboardPage() {
   React.useEffect(() => {
     if (isInitializing) return;
     if (!supabaseUser) { navigate('/vendor-auth', { replace: true }); return; }
-    // Don't redirect to onboarding until data has fully loaded from Supabase 
-    // (prevents false redirect on fresh device where localStorage cache is empty)
+    // Don't redirect to onboarding until data has fully loaded from Supabase
     if (!isDataLoaded) return;
-    
+
     const myRests = restaurants.filter(r => r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id);
-    const myRest = myRests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-    
-    if (!myRest && restaurants.length === 0) return;
-    if (!myRest) { navigate('/vendor-onboard', { replace: true }); }
-    else if (!activeRestId) { setActiveRestId(myRest.id); }
-  }, [supabaseUser, restaurants, activeRestId, navigate, setActiveRestId, isInitializing, isDataLoaded]);
+
+    // No restaurants at all yet — send to onboard (but only after data is loaded)
+    if (myRests.length === 0) { navigate('/vendor-onboard', { replace: true }); return; }
+
+    // If the stored activeRestId already belongs to this user, keep it — don't switch
+    if (activeRestId && myRests.some(r => r.id === activeRestId)) return;
+
+    // Otherwise pick the restaurant with the most dishes (oldest as tiebreaker)
+    const ranked = [...myRests].sort((a, b) => {
+      const aDishes = dishes.filter(d => (d.rest_id || d.restId) === a.id).length;
+      const bDishes = dishes.filter(d => (d.rest_id || d.restId) === b.id).length;
+      if (bDishes !== aDishes) return bDishes - aDishes; // more dishes first
+      return new Date(a.created_at) - new Date(b.created_at); // older first as tiebreaker
+    });
+    setActiveRestId(ranked[0].id);
+  }, [supabaseUser, restaurants, dishes, activeRestId, navigate, setActiveRestId, isInitializing, isDataLoaded]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
