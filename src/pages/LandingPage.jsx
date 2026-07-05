@@ -59,10 +59,10 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <button onClick={() => navigate('/vendor')} className="text-sm font-bold text-neutral-300 hover:text-gold-400 transition-colors px-4">
+            <button onClick={() => navigate('/vendor-auth')} className="text-sm font-bold text-neutral-300 hover:text-gold-400 transition-colors px-4">
               Login
             </button>
-            <button onClick={() => navigate('/vendor-onboard')} className="bg-gold-gradient text-noir-950 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-gold hover:shadow-gold-lg flex items-center gap-2 hover:scale-105 active:scale-95">
+            <button onClick={() => navigate('/vendor-auth')} className="bg-gold-gradient text-noir-950 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-gold hover:shadow-gold-lg flex items-center gap-2 hover:scale-105 active:scale-95">
               Get Started <ChevronRight size={16} />
             </button>
           </div>
@@ -99,7 +99,7 @@ export default function LandingPage() {
           </motion.p>
           
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-6">
-            <button onClick={() => navigate('/vendor-onboard')} className="bg-gold-gradient text-noir-950 px-10 py-5 rounded-full font-bold text-lg transition-all shadow-gold hover:shadow-gold-lg flex items-center gap-2 hover:scale-105 active:scale-95 w-full sm:w-auto justify-center">
+            <button onClick={() => navigate('/vendor-auth')} className="bg-gold-gradient text-noir-950 px-10 py-5 rounded-full font-bold text-lg transition-all shadow-gold hover:shadow-gold-lg flex items-center gap-2 hover:scale-105 active:scale-95 w-full sm:w-auto justify-center">
               Transform Your Restaurant <ChevronRight size={24} />
             </button>
             <button className="px-10 py-5 rounded-full font-bold text-lg text-white border border-white/10 hover:bg-white/5 transition-all flex items-center gap-2 w-full sm:w-auto justify-center group">
@@ -366,7 +366,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-6"
           >
-            <button onClick={() => navigate('/vendor-onboard')} className="bg-gold-gradient text-noir-950 px-12 py-5 rounded-full font-bold text-xl transition-all shadow-gold-lg hover:shadow-gold flex items-center gap-2 hover:scale-105 active:scale-95 w-full sm:w-auto justify-center">
+            <button onClick={() => navigate('/vendor-auth')} className="bg-gold-gradient text-noir-950 px-12 py-5 rounded-full font-bold text-xl transition-all shadow-gold-lg hover:shadow-gold flex items-center gap-2 hover:scale-105 active:scale-95 w-full sm:w-auto justify-center">
               Book Your Demo <ChevronRight size={24} />
             </button>
           </motion.div>

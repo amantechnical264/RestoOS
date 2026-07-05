@@ -18,6 +18,18 @@ export default function VendorOnboardingPage() {
 
   useEffect(() => {
     if (isInitializing) return;
+
+    // If there's an OAuth code/token in the URL, Supabase is still exchanging it —
+    // don't redirect yet, wait for onAuthStateChange to fire with the session
+    const hasAuthParams = window.location.hash.includes('access_token') ||
+      window.location.hash.includes('error') ||
+      window.location.search.includes('code=') ||
+      window.location.search.includes('error=');
+    
+    if (hasAuthParams && !supabaseUser) {
+      // Still processing the auth callback — don't redirect yet
+      return;
+    }
     
     if (!supabaseUser) {
       navigate('/vendor-auth', { replace: true });

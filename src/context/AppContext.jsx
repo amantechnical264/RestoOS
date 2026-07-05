@@ -257,27 +257,11 @@ export const AppProvider = ({ children }) => {
       return; 
     }
 
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error('Session error:', error);
-      }
-      const session = data?.session;
-      const u = session?.user || null;
-      setSupabaseUser(u);
-      if (u) {
-        // Only assign vendor role if user doesn't already have a diner role
-        setUser(prev => {
-          if (prev?.role === 'diner') {
-            // Diner signed in via Google for pre-order — keep diner role, just enrich
-            return { ...prev, email: u?.email, uid: u?.id };
-          }
-          return { ...prev, email: u?.email, uid: u?.id, role: 'vendor' };
-        });
-      }
-      setIsInitializing(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Use onAuthStateChange as the single source of truth for auth state.
+    // With detectSessionInUrl + PKCE enabled, this fires an INITIAL_SESSION event
+    // AFTER processing any OAuth code/token in the URL — so we never have a
+    // race condition where we redirect before the email link auth completes.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const u = session?.user || null;
       setSupabaseUser(u);
       if (u) {
@@ -290,9 +274,21 @@ export const AppProvider = ({ children }) => {
       } else {
         setUser(prev => (prev?.role === 'vendor' ? null : prev));
       }
+
+      // Mark initialization as complete after the first auth event fires
+      // (covers both INITIAL_SESSION from existing session and SIGNED_IN from email links)
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        setIsInitializing(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // Fallback: if onAuthStateChange never fires within 5s, unblock the UI anyway
+    const fallbackTimer = setTimeout(() => setIsInitializing(false), 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   // Sync language on mount
