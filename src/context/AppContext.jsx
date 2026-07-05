@@ -353,7 +353,7 @@ export const AppProvider = ({ children }) => {
     const fetchRestaurants = async () => {
       try {
         const { data, error } = await withTimeout(
-          supabase.from('restaurants').select('id, vendor_id, name, cover, tax_rate, accept_cash, promo, created_at')
+          supabase.from('restaurants').select('*')
         );
         if (error) { console.warn('Restaurants fetch error:', error.message); return; }
         if (data) {
