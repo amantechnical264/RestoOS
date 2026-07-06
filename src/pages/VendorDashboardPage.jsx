@@ -81,9 +81,23 @@ const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
             top: 0,
             transform: 'translateX(-50%)'
           }}>
-          <div>₹{Number(data[hovered].value).toFixed(2)}</div>
-          <div className="text-[10px] font-medium opacity-70">{data[hovered].orders || 0} orders</div>
-          {data[hovered].fullDate && <div className="text-[9px] opacity-50">{data[hovered].fullDate}</div>}
+          <div className="flex items-center gap-1.5 mb-1.5 border-b border-white/10 pb-1.5">
+            <span className="text-[14px]">₹{Number(data[hovered].value).toFixed(2)}</span>
+            <span className="text-[9px] font-medium opacity-70 bg-white/10 px-1.5 py-0.5 rounded-md">{data[hovered].orders || 0} orders</span>
+          </div>
+          {data[hovered].dineInValue > 0 && (
+            <div className="flex justify-between items-center gap-4 text-[10px] font-medium opacity-90 mb-0.5">
+              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Dine-In:</span>
+              <span>₹{Number(data[hovered].dineInValue).toFixed(2)}</span>
+            </div>
+          )}
+          {data[hovered].deliveryValue > 0 && (
+            <div className="flex justify-between items-center gap-4 text-[10px] font-medium opacity-90 mb-0.5">
+              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Delivery:</span>
+              <span>₹{Number(data[hovered].deliveryValue).toFixed(2)}</span>
+            </div>
+          )}
+          {data[hovered].fullDate && <div className="text-[9px] opacity-50 mt-1.5 pt-1.5 border-t border-white/5">{data[hovered].fullDate}</div>}
         </div>
       )}
       {/* Bars */}
@@ -1010,7 +1024,7 @@ export default function VendorDashboardPage() {
     const now = new Date();
     const todayStr = now.toLocaleDateString('en-CA');
     return restOrders.filter(o => {
-      if (o.status !== 'Completed' || !o.timestamp) return false;
+      if ((o.status !== 'Completed' && o.status !== 'Delivered') || !o.timestamp) return false;
       const orderDate = new Date(o.timestamp).toLocaleDateString('en-CA');
       if (analyticsRange === 'Today') return orderDate === todayStr;
       if (analyticsRange === 'Week') {
@@ -1143,11 +1157,16 @@ export default function VendorDashboardPage() {
       d.setDate(d.getDate() - (days - 1 - i));
       const dayStr = d.toLocaleDateString('en-CA');
       const dayOrders = restOrders
-        .filter(o => o.status === 'Completed' && o.timestamp && new Date(o.timestamp).toLocaleDateString('en-CA') === dayStr);
+        .filter(o => (o.status === 'Completed' || o.status === 'Delivered') && o.timestamp && new Date(o.timestamp).toLocaleDateString('en-CA') === dayStr);
       const dayRev = dayOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const dineInRev = dayOrders.filter(o => o.orderType === 'dine_in' || o.order_type === 'dine_in').reduce((s, o) => s + (o.total || 0), 0);
+      const deliveryRev = dayOrders.filter(o => o.orderType === 'delivery' || o.order_type === 'delivery').reduce((s, o) => s + (o.total || 0), 0);
+      
       return {
         label: days === 1 ? `${d.getHours()}h` : d.toLocaleDateString('en-US', { weekday: 'short' })[0],
         value: dayRev,
+        dineInValue: dineInRev,
+        deliveryValue: deliveryRev,
         orders: dayOrders.length,
         fullDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       };
