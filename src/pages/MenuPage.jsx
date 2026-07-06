@@ -381,11 +381,8 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
     <div className={`flex justify-between items-start gap-4 cursor-pointer group transition-all p-3 -mx-3 rounded-2xl ${rowStyle}`} onClick={() => onDishClick(dish.id)}>
       {/* Left Details Panel */}
       <div className="flex-1 min-w-0 flex flex-col gap-1.5 text-left">
-        {/* Veg / Non-veg Indicator */}
+        {/* Badges Row */}
         <div className="flex items-center gap-2">
-          <div className={`w-4 h-4 border-2 rounded flex items-center justify-center shrink-0 ${isVeg ? 'border-green-600' : 'border-red-600'}`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
-          </div>
           {badgeStyle && (
             <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border backdrop-blur-md ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}>
               {primaryBadge}
@@ -580,21 +577,20 @@ export default function MenuPage() {
   const heroParallax = useTransform(scrollY, [0, 300], [0, 80]);
   const heroOpacity  = useTransform(scrollY, [0, 250], [1, 0.5]);
 
+  // Onboarding trigger removed as per user request to not ask for Name & Phone initially.
   useEffect(() => {
+    // Optionally load existing profile silently without forcing modal
     try {
       const profileStr = localStorage.getItem('3dish_diner_profile');
-      if (!profileStr) {
-        setShowOnboarding(true);
-        return;
+      if (profileStr) {
+        const profile = JSON.parse(profileStr);
+        if (profile.name && profile.phone) {
+          // just silently load if we want, but AppContext might already do it
+        }
       }
-      const profile = JSON.parse(profileStr);
-      if (!profile.name || !profile.phone) {
-        setShowOnboarding(true);
-      }
-    } catch (e) {
-      setShowOnboarding(true);
-    }
+    } catch (e) {}
   }, []);
+
 
   const handleOnboardingSubmit = (e) => {
     e.preventDefault();

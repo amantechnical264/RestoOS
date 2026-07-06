@@ -169,7 +169,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
 
         {/* Items List with per-dish review buttons */}
         <div className="p-4 space-y-3">
-          {order.items.map((item, i) => {
+          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location').map((item, i) => {
             const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
             const iconColor = isNonVeg ? '#E23744' : '#22c55e';
             const itemRating = reviewedItems[item.id] || reviewedItems['order'] || 0;
@@ -183,7 +183,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
-                      {item.quantity || item.qty} x {item.name}
+                      {(item.quantity || item.qty || 1)}x {item.name}
                     </span>
                     {/* Show average rating for this dish */}
                     {item.id && <DishRatingBadge dishId={item.id} variant="inline" />}
@@ -354,9 +354,9 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
       {/* Items list */}
       <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
         <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
-          {order.items.map((item, i) => (
+          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location').map((item, i) => (
             <li key={i} className="flex justify-between">
-              <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty)}x {item.name}</span>
+              <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty || 1)}x {item.name}</span>
               <span className="font-bold" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>
             </li>
           ))}
