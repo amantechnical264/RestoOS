@@ -1,13 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Flame, Droplets, Leaf, CheckCircle2, User, Phone, Store, Trash2, Plus, Minus, Zap, Box, Sparkles, X, Users, Share2, SplitSquareHorizontal } from 'lucide-react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CheckCircle2, Store, Trash2, Plus, Minus, Zap, Box, Sparkles, X, Truck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../services/supabase';
 import { auth } from '../services/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+
+// ── Combo Image Cycler ─────────────────────────────────────────────────
+function ComboImageCycler({ images }) {
+  const [idx, setIdx] = React.useState(0);
+  const keyRef = React.useRef(images.join(','));
+
+  React.useEffect(() => {
+    if (images.length <= 1) return;
+    const interval = setInterval(() => {
+      setIdx(prev => (prev + 1) % images.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [keyRef.current, images.length]);
+
+  if (!images.length) return (
+    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center">
+      <ShoppingCart size={20} className="text-neutral-600"/>
+    </div>
+  );
+
+  return (
+    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-neutral-200 dark:border-white/10 shrink-0">
+      <AnimatePresence mode="popLayout">
+        <motion.img
+          key={idx}
+          src={images[idx]}
+          initial={{ opacity: 0, scale: 1.08 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.55, ease: 'easeInOut' }}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </AnimatePresence>
+      {images.length > 1 && (
+        <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5">
+          {images.map((_, i) => (
+            <div key={i} className={`w-1 h-1 rounded-full transition-colors ${
+              i === idx ? 'bg-white' : 'bg-white/30'
+            }`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 
 export default function CartPage() {
@@ -32,6 +77,19 @@ export default function CartPage() {
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
   const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
+
+  // ── Delivery fee config from vendor settings ────────────────────────
+  const deliveryConfig = currentRestaurant?.macros?.deliveryConfig || {};
+  const convenienceFee = isDelivery ? (Number(deliveryConfig.convenienceFee) || 0) : 0;
+  const otherFees = isDelivery ? (deliveryConfig.otherFees || []) : [];
+  const otherFeesTotal = otherFees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
+  // Show lowest delivery range fee (or flat fee if no ranges)
+  const deliveryRanges = deliveryConfig.deliveryRanges || [];
+  const baseDeliveryFee = isDelivery
+    ? (deliveryRanges.length > 0
+        ? Math.min(...deliveryRanges.map(r => Number(r.fee) || 0))
+        : (Number(deliveryConfig.deliveryFee) || 0))
+    : 0;
   
   useEffect(() => {
     if (!activeRestId) navigate('/', { replace: true });
@@ -75,7 +133,8 @@ export default function CartPage() {
     const itemPrice = item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price);
     return sum + itemPrice;
   }, 0);
-  const total = subtotal * (1 + taxRate);
+  const taxAmount = subtotal * taxRate;
+  const total = subtotal + taxAmount + convenienceFee + baseDeliveryFee + otherFeesTotal;
   
   const groupedCart = Object.values(cart.reduce((acc, item) => {
     const groupId = item.id + (item.selectedVariant ? '-' + item.selectedVariant.name : '');
@@ -97,7 +156,6 @@ export default function CartPage() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showArCombo, setShowArCombo] = useState(false);
-  const [splitCount, setSplitCount] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('Pay at Counter');
 
   const hasSoldOutItem = cart.some(item => {
@@ -350,8 +408,23 @@ export default function CartPage() {
             <h2 className="text-lg font-display font-bold text-neutral-900 dark:text-white">Your Order</h2>
           </div>
           
-          {groupedCart.map((item) => (
-            <motion.div layout key={item.id}
+          {groupedCart.map((item) => {
+            // ── Combo image slideshow ──
+            const comboDishIds = item.macros?.comboDishes || [];
+            const comboImages = comboDishIds.length > 0
+              ? comboDishIds
+                  .map(id => {
+                    const d = dishes.find(d => d.id === id);
+                    return d?.cover || d?.images?.[0] || null;
+                  })
+                  .filter(Boolean)
+              : [];
+            const isCombo = comboImages.length > 0;
+            // Fall back: if combo but children have no images, try own cover
+            const singleImage = item.cover || item.images?.[0];
+
+            return (
+            <motion.div layout key={item.groupId || item.id}
               drag="x" dragConstraints={{ left: -80, right: 0 }}
               onDragEnd={(e, info) => { if (info.offset.x < -50) setCart(cart.filter(c => c.id !== item.id)); }}
               className="relative flex items-center bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/5 rounded-3xl p-4 shadow-md cursor-grab active:cursor-grabbing group">
@@ -364,10 +437,12 @@ export default function CartPage() {
               <div className="relative z-10 flex-1 flex flex-col bg-neutral-50 dark:bg-[#111] w-full rounded-3xl gap-3">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-4">
-                    {(item.cover || item.images?.[0]) ? (
-                      <img src={item.cover || item.images[0]} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10" />
+                    {isCombo ? (
+                      <ComboImageCycler images={comboImages} />
+                    ) : singleImage ? (
+                      <img src={singleImage} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200 dark:border-white/10 shrink-0" />
                     ) : (
-                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-neutral-600"/></div>
+                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0"><ShoppingCart size={20} className="text-neutral-600"/></div>
                     )}
                     <div>
                       <h3 className="font-bold text-neutral-900 dark:text-white font-sans max-w-[150px] leading-tight mb-1">{item.name}</h3>
@@ -419,7 +494,8 @@ export default function CartPage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
 
           <p className="text-center text-xs text-neutral-500 py-2">Swipe items left to remove</p>
 
@@ -446,28 +522,28 @@ export default function CartPage() {
           {/* Receipt Summary */}
           <div className="mt-4 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-6 backdrop-blur-md">
             <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-            <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-5 border-b border-neutral-200 dark:border-white/10 pb-5"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>₹{(subtotal * taxRate).toFixed(2)}</span></div>
-            <div className="text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
+            <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>₹{taxAmount.toFixed(2)}</span></div>
+            {isDelivery && baseDeliveryFee > 0 && (
+              <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3">
+                <span className="flex items-center gap-1.5"><Truck size={13}/>Delivery Fee</span>
+                <span>₹{baseDeliveryFee.toFixed(2)}</span>
+              </div>
+            )}
+            {isDelivery && convenienceFee > 0 && (
+              <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3">
+                <span>Convenience Fee</span>
+                <span>₹{convenienceFee.toFixed(2)}</span>
+              </div>
+            )}
+            {isDelivery && otherFees.map((f, i) => f.amount > 0 && (
+              <div key={i} className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3">
+                <span>{f.label || 'Other Fee'}</span>
+                <span>₹{Number(f.amount).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="border-t border-neutral-200 dark:border-white/10 pt-4 mt-2 text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
               <span>Total</span>
               <span className="text-[#D4AF37] text-3xl">₹{total.toFixed(2)}</span>
-            </div>
-            
-            {/* Split Bill section */}
-            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-bold flex items-center gap-2"><Users size={16}/> Split Bill</span>
-                <div className="flex items-center gap-3 bg-neutral-100 dark:bg-white/5 rounded-lg p-1">
-                  <button onClick={() => setSplitCount(Math.max(1, splitCount - 1))} className="w-6 h-6 flex items-center justify-center rounded-md bg-white dark:bg-white/10 shadow-sm"><Minus size={12}/></button>
-                  <span className="text-sm font-bold w-4 text-center">{splitCount}</span>
-                  <button onClick={() => setSplitCount(Math.min(10, splitCount + 1))} className="w-6 h-6 flex items-center justify-center rounded-md bg-white dark:bg-white/10 shadow-sm"><Plus size={12}/></button>
-                </div>
-              </div>
-              {splitCount > 1 && (
-                <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                  <span className="text-sm text-blue-600 dark:text-blue-400 font-bold">Per Person</span>
-                  <span className="text-lg font-black text-blue-600 dark:text-blue-400">₹{(total / splitCount).toFixed(2)}</span>
-                </div>
-              )}
             </div>
             {/* Loyalty Points display */}
             <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between">

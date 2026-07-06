@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -15,14 +15,22 @@ const GOLD = '#D4AF37';
 const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
 
 const STATUS_STEPS = [
-  { id: 'Pending',   icon: Clock,       label: 'Received' },
-  { id: 'Preparing', icon: ChefHat,     label: 'Cooking' },
+  { id: 'Pending',   icon: Clock,        label: 'Received' },
+  { id: 'Preparing', icon: ChefHat,      label: 'Cooking' },
   { id: 'Ready',     icon: CheckCircle2, label: 'Ready' }
 ];
 
-function OrderTimeline({ currentStatus }) {
+const DELIVERY_STATUS_STEPS = [
+  { id: 'Pending',         icon: Clock,        label: 'Received' },
+  { id: 'Preparing',       icon: ChefHat,      label: 'Preparing' },
+  { id: 'OutForDelivery',  icon: Truck,        label: 'Out for Delivery' },
+  { id: 'Delivered',       icon: CheckCircle2, label: 'Delivered' },
+];
+
+function OrderTimeline({ currentStatus, orderType }) {
   if (currentStatus === 'Pending Verification' || currentStatus === 'Cancelled') return null;
-  const currentIndex = STATUS_STEPS.findIndex(s => s.id === currentStatus);
+  const steps = orderType === 'delivery' ? DELIVERY_STATUS_STEPS : STATUS_STEPS;
+  const currentIndex = steps.findIndex(s => s.id === currentStatus);
   const activeIndex  = currentIndex === -1 ? 0 : currentIndex;
 
   return (
@@ -32,11 +40,11 @@ function OrderTimeline({ currentStatus }) {
       <motion.div
         className="absolute top-1/2 left-0 h-1 rounded-full -translate-y-1/2 z-0"
         initial={{ width: '0%' }}
-        animate={{ width: `${(activeIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
+        animate={{ width: `${(activeIndex / (steps.length - 1)) * 100}%` }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
         style={{ background: goldGradient, boxShadow: `0 0 10px rgba(212,175,55,0.5)` }}
       />
-      {STATUS_STEPS.map((step, index) => {
+      {steps.map((step, index) => {
         const isCompleted = index <= activeIndex;
         const isActive    = index === activeIndex;
         return (
@@ -300,7 +308,9 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
             </div>
           )}
         </div>
-        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-100 dark:bg-white/5 px-2.5 py-1 rounded-full">{order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}</span>
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-100 dark:bg-white/5 px-2.5 py-1 rounded-full">
+          {order.orderType === 'delivery' ? 'DELIVERY' : order.orderType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}
+        </span>
       </div>
 
       {/* Pending Verification */}
@@ -339,7 +349,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
         </motion.div>
       )}
 
-      <OrderTimeline currentStatus={order.status} />
+      <OrderTimeline currentStatus={order.status} orderType={order.orderType} />
 
       {/* Items list */}
       <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
@@ -353,8 +363,8 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
         </ul>
       </div>
 
-      {/* Call Waiter button */}
-      {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
+      {/* Call Waiter / Ask Bill — only for dine-in orders */}
+      {order.orderType !== 'delivery' && order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
         <div className="flex gap-3 mb-4">
           <button
             onClick={async () => {
@@ -543,7 +553,7 @@ export default function DinerOrdersPage() {
               ? orderDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
               : '';
 
-            if (order.status === 'Completed' || order.status === 'Cancelled') {
+            if (order.status === 'Completed' || order.status === 'Cancelled' || order.status === 'Delivered') {
               return (
                 <div key={order.id}>
                   <ZomatoStyleOrderCard

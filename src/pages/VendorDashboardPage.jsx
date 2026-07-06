@@ -784,7 +784,8 @@ export default function VendorDashboardPage() {
   };
 
   const [settingsForm, setSettingsForm] = React.useState({
-    name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00', requireVerificationCode: true
+    name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00', requireVerificationCode: true,
+    deliveryConfig: { convenienceFee: 0, deliveryFee: 0, deliveryRanges: [], otherFees: [] }
   });
 
 
@@ -800,6 +801,7 @@ export default function VendorDashboardPage() {
         requireVerificationCode: currentRestaurant.requireVerificationCode !== undefined ? currentRestaurant.requireVerificationCode : true,
         phone: currentRestaurant.phone || '',
         hours: currentRestaurant.hours || '10:00 - 22:00',
+        deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, deliveryRanges: [], otherFees: [] },
       });
       setFormInitializedFor(currentRestaurant.id);
     }
@@ -1959,8 +1961,44 @@ export default function VendorDashboardPage() {
                               </div>
                             </div>
                             
+                            {/* Delivery Progress Tracker */}
+                            <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5">
+                              <div className="relative flex items-center justify-between px-1">
+                                {/* track line */}
+                                <div className="absolute top-4 left-4 right-4 h-0.5 rounded-full bg-neutral-200 dark:bg-white/10 z-0" />
+                                {[
+                                  { id: 'Pending',        label: 'Received',       icon: Clock },
+                                  { id: 'Preparing',      label: 'Preparing',      icon: ChefHat },
+                                  { id: 'OutForDelivery', label: 'Out for\nDelivery', icon: Package },
+                                  { id: 'Delivered',      label: 'Delivered',      icon: CheckCircle },
+                                ].map((step, idx, arr) => {
+                                  const statusOrder = ['Pending', 'Preparing', 'OutForDelivery', 'Delivered'];
+                                  const curIdx = statusOrder.indexOf(order.status);
+                                  const stepIdx = statusOrder.indexOf(step.id);
+                                  const done = stepIdx <= curIdx;
+                                  const active = stepIdx === curIdx;
+                                  return (
+                                    <div key={step.id} className="relative z-10 flex flex-col items-center gap-1 flex-1">
+                                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                                        done
+                                          ? 'text-black shadow-md'
+                                          : 'bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-neutral-600'
+                                      } ${active ? 'scale-110' : ''}`}
+                                        style={done ? { background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', boxShadow: '0 3px 10px rgba(212,175,55,0.35)' } : {}}>
+                                        <step.icon size={13} />
+                                      </div>
+                                      <span className="text-[9px] font-bold text-center leading-tight whitespace-pre-line"
+                                        style={{ color: active ? '#D4AF37' : done ? 'rgba(212,175,55,0.6)' : 'rgba(150,150,150,0.6)' }}>
+                                        {step.label}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            
                             {/* Actions sidebar */}
-                            <div className="md:w-48 shrink-0 flex flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-neutral-100 dark:border-white/5 pt-4 md:pt-0 md:pl-6 relative z-10">
+                            <div className="md:w-52 shrink-0 flex flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-neutral-100 dark:border-white/5 pt-4 md:pt-0 md:pl-6 relative z-10">
                               <a 
                                 href={waUrl} 
                                 target="_blank" 
@@ -1973,28 +2011,34 @@ export default function VendorDashboardPage() {
                               {order.status === 'Pending' && (
                                 <button
                                   onClick={() => updateOrderStatus(order.id, 'Preparing')}
-                                  className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl font-black text-sm shadow-sm"
+                                  className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl font-black text-sm shadow-sm hover:opacity-90 transition-opacity"
                                 >
-                                  Accept Order
+                                  ✓ Accept Order
                                 </button>
                               )}
                               
                               {order.status === 'Preparing' && (
                                 <button
-                                  onClick={() => updateOrderStatus(order.id, 'Ready')}
-                                  className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-blue-600 transition-colors"
+                                  onClick={() => updateOrderStatus(order.id, 'OutForDelivery')}
+                                  className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                                 >
-                                  Mark Ready
+                                  <Package size={15}/> Out for Delivery
                                 </button>
                               )}
                               
-                              {order.status === 'Ready' && (
+                              {order.status === 'OutForDelivery' && (
                                 <button
-                                  onClick={() => updateOrderStatus(order.id, 'Served')}
-                                  className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors"
+                                  onClick={() => updateOrderStatus(order.id, 'Delivered')}
+                                  className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
                                 >
-                                  Mark Dispatched
+                                  <CheckCircle size={15}/> Mark Delivered
                                 </button>
+                              )}
+
+                              {order.status === 'Delivered' && (
+                                <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center gap-2">
+                                  <CheckCircle size={15}/> Order Delivered
+                                </div>
                               )}
                             </div>
                           </div>
@@ -4332,6 +4376,138 @@ export default function VendorDashboardPage() {
                         />
                       </button>
                     </div>
+                    </div>
+                  </div>
+
+                  {/* ── Delivery & Fees ── */}
+                  <div className="rounded-2xl p-5 space-y-5 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <Package size={13}/> Delivery &amp; Fees
+                    </h3>
+
+                    {/* Convenience Fee */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Convenience Fee (₹)</label>
+                        <input
+                          type="number" min="0" step="0.5"
+                          value={settingsForm.deliveryConfig?.convenienceFee ?? 0}
+                          onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, convenienceFee: parseFloat(e.target.value) || 0 } }))}
+                          className="w-full rounded-xl p-3 text-sm"
+                          placeholder="e.g. 15"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Flat Delivery Fee (₹) <span className="normal-case text-neutral-500 font-normal">(if no ranges)</span></label>
+                        <input
+                          type="number" min="0" step="0.5"
+                          value={settingsForm.deliveryConfig?.deliveryFee ?? 0}
+                          onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryFee: parseFloat(e.target.value) || 0 } }))}
+                          className="w-full rounded-xl p-3 text-sm"
+                          placeholder="e.g. 40"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Distance-based Delivery Ranges */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Distance-Based Delivery Ranges</label>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: [...(f.deliveryConfig.deliveryRanges || []), { minKm: 0, maxKm: 5, fee: 30 }] } }))}
+                          className="text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1"
+                          style={{ background: 'rgba(212,175,55,0.12)', color: GOLD, border: '1px solid rgba(212,175,55,0.3)' }}
+                        >
+                          <Plus size={11}/> Add Range
+                        </button>
+                      </div>
+                      {(settingsForm.deliveryConfig?.deliveryRanges || []).length === 0 ? (
+                        <p className="text-xs text-neutral-500 py-2">No ranges set. Add ranges to override the flat delivery fee above.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {(settingsForm.deliveryConfig.deliveryRanges).map((range, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <input
+                                type="number" min="0" step="0.5"
+                                value={range.minKm}
+                                onChange={e => setSettingsForm(f => { const rr = [...f.deliveryConfig.deliveryRanges]; rr[i] = { ...rr[i], minKm: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
+                                className="w-20 rounded-xl p-2.5 text-xs text-center"
+                                placeholder="Min km"
+                              />
+                              <span className="text-xs text-neutral-400 font-bold">–</span>
+                              <input
+                                type="number" min="0" step="0.5"
+                                value={range.maxKm}
+                                onChange={e => setSettingsForm(f => { const rr = [...f.deliveryConfig.deliveryRanges]; rr[i] = { ...rr[i], maxKm: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
+                                className="w-20 rounded-xl p-2.5 text-xs text-center"
+                                placeholder="Max km"
+                              />
+                              <span className="text-xs text-neutral-400 font-bold">km → ₹</span>
+                              <input
+                                type="number" min="0" step="0.5"
+                                value={range.fee}
+                                onChange={e => setSettingsForm(f => { const rr = [...f.deliveryConfig.deliveryRanges]; rr[i] = { ...rr[i], fee: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
+                                className="w-24 rounded-xl p-2.5 text-xs text-center"
+                                placeholder="Fee ₹"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm(f => { const rr = f.deliveryConfig.deliveryRanges.filter((_, j) => j !== i); return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
+                                className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center hover:opacity-80 shrink-0"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Other Fees */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Other Fees</label>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: [...(f.deliveryConfig.otherFees || []), { label: '', amount: 0 }] } }))}
+                          className="text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1"
+                          style={{ background: 'rgba(212,175,55,0.12)', color: GOLD, border: '1px solid rgba(212,175,55,0.3)' }}
+                        >
+                          <Plus size={11}/> Add Fee
+                        </button>
+                      </div>
+                      {(settingsForm.deliveryConfig?.otherFees || []).length === 0 ? (
+                        <p className="text-xs text-neutral-500 py-2">No other fees added (e.g. Packaging ₹5, Platform ₹2).</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {(settingsForm.deliveryConfig.otherFees).map((fee, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={fee.label}
+                                onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], label: e.target.value }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
+                                className="flex-1 rounded-xl p-2.5 text-xs"
+                                placeholder="Fee label (e.g. Packaging)"
+                              />
+                              <input
+                                type="number" min="0" step="0.5"
+                                value={fee.amount}
+                                onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], amount: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
+                                className="w-24 rounded-xl p-2.5 text-xs text-center"
+                                placeholder="₹ Amount"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm(f => { const ff = f.deliveryConfig.otherFees.filter((_, j) => j !== i); return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
+                                className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center hover:opacity-80 shrink-0"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 

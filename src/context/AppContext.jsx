@@ -587,6 +587,18 @@ export const AppProvider = ({ children }) => {
     const rest = restaurants.find(r => r.id === activeRestId);
     const taxRate = rest?.tax_rate !== undefined ? rest.tax_rate / 100 : 0.08;
 
+    // Additional delivery fees
+    const deliveryConfig = rest?.macros?.deliveryConfig || {};
+    const convenienceFee = orderData?.orderType === 'delivery' ? (Number(deliveryConfig.convenienceFee) || 0) : 0;
+    const otherFees = orderData?.orderType === 'delivery' ? (deliveryConfig.otherFees || []) : [];
+    const otherFeesTotal = otherFees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
+    const deliveryRanges = deliveryConfig.deliveryRanges || [];
+    const baseDeliveryFee = orderData?.orderType === 'delivery'
+      ? (deliveryRanges.length > 0
+          ? Math.min(...deliveryRanges.map(r => Number(r.fee) || 0))
+          : (Number(deliveryConfig.deliveryFee) || 0))
+      : 0;
+
     const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
     const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId || user?.phone || dinerProfile.phone || 'anonymous';
 
@@ -594,7 +606,7 @@ export const AppProvider = ({ children }) => {
       user_id: guestId,
       rest_id: activeRestId,
       items: cart,
-      total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
+      total: (cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
       status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
       table_number: parseInt(tableNumber) || (orderData?.tableNumber ? parseInt(orderData.tableNumber) : null),
@@ -739,6 +751,11 @@ export const AppProvider = ({ children }) => {
       if (updateData.cover !== undefined) updatePayload.cover = updateData.cover;
       if (updateData.taxRate !== undefined) updatePayload.tax_rate = updateData.taxRate;
       if (updateData.acceptCash !== undefined) updatePayload.accept_cash = updateData.acceptCash;
+      // deliveryConfig is saved into the macros JSON blob
+      if (updateData.deliveryConfig !== undefined) {
+        const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
+        updatePayload.macros = { ...currentMacros, deliveryConfig: updateData.deliveryConfig };
+      }
       // NOTE: 'promo' column does not exist in the DB — stored in localStorage only
       // requireVerificationCode is kept in local state only
 
@@ -760,7 +777,10 @@ export const AppProvider = ({ children }) => {
           tax_rate: updateData.taxRate !== undefined ? updateData.taxRate : r.tax_rate,
           acceptCash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.acceptCash,
           accept_cash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.accept_cash,
-          requireVerificationCode: updateData.requireVerificationCode !== undefined ? updateData.requireVerificationCode : r.requireVerificationCode
+          requireVerificationCode: updateData.requireVerificationCode !== undefined ? updateData.requireVerificationCode : r.requireVerificationCode,
+          macros: updateData.deliveryConfig !== undefined
+            ? { ...(r.macros || {}), deliveryConfig: updateData.deliveryConfig }
+            : r.macros,
         } : r)
       );
       
