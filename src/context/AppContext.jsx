@@ -534,7 +534,9 @@ export const AppProvider = ({ children }) => {
   }, [orders.length, user, prevOrdersCount]);
 
   const addToCart = (dish) => {
-    setCart(prev => [...prev, { ...dish, cartId: Date.now() }]);
+    // Stamp the effective price at add-time so every consumer (subtotal, placeOrder, etc.) reads it correctly
+    const effectivePrice = dish.selectedVariant ? Number(dish.selectedVariant.price) : Number(dish.price);
+    setCart(prev => [...prev, { ...dish, price: effectivePrice, cartId: Date.now() }]);
     showNotification('Added to cart');
   };
 
@@ -606,7 +608,7 @@ export const AppProvider = ({ children }) => {
       user_id: guestId,
       rest_id: activeRestId,
       items: cart,
-      total: (cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
+      total: (cart.reduce((sum, item) => sum + (item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price || 0)), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
       status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
       table_number: parseInt(tableNumber) || (orderData?.tableNumber ? parseInt(orderData.tableNumber) : null),

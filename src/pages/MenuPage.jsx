@@ -250,7 +250,7 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
             <DietIcon type={dish.dietaryPreference} />
             {dish.name}
           </h3>
-          <DishRatingBadge dishId={dish.id} variant="inline" className="mt-0.5" />
+
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-1 mt-1">
@@ -401,8 +401,6 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
           {dish.name}
         </h3>
 
-        {/* Aggregate Rating Badge */}
-        <DishRatingBadge dishId={dish.id} variant="compact" className="mt-0.5" />
 
         {/* Price / Variants */}
         {dish.variants && dish.variants.length > 0 ? (

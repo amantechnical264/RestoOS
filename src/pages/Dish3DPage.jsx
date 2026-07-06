@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import ModelViewer from '../components/ModelViewer';
 import ARCameraOverlay from '../components/ARCameraOverlay';
+import DishRatingBadge from '../components/DishRatingBadge';
 
 const ALLERGEN_ICONS = { Gluten: '🌾', Nuts: '🥜', Dairy: '🥛', Eggs: '🥚', Shellfish: '🦐', Soy: '🫘', Fish: '🐟' };
 
@@ -167,7 +168,10 @@ export default function Dish3DPage() {
           </div>
 
           {/* ── Description ── */}
-          <p className="text-sm text-neutral-500 dark:text-neutral-300 leading-relaxed mb-5">{dish.description || 'A carefully crafted dish made with the finest seasonal ingredients.'}</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300 leading-relaxed mb-3">{dish.description || 'A carefully crafted dish made with the finest seasonal ingredients.'}</p>
+
+          {/* ── Rating (only shown here on detail page, not on menu list) ── */}
+          <DishRatingBadge dishId={dish.id} variant="full" className="mb-5" />
 
           {/* ── Stats Row: Calories + Prep Time ── */}
           <div className={`grid ${dish.macros?.calories ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-5`}>
@@ -360,7 +364,7 @@ export default function Dish3DPage() {
           }`}
           style={dish.tags?.includes('sold_out') ? {} : { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 10px 40px rgba(212,175,55,0.35)' }}>
           <ShoppingCart size={19} />
-          {dish.tags?.includes('sold_out') ? 'Sold Out' : (dish.variants && dish.variants.length > 1 ? 'Choose Variant' : `Order Now — ₹${Number(dish.variants?.length === 1 ? dish.variants[0].price : dish.price).toFixed(2)}`)}
+          {dish.tags?.includes('sold_out') ? 'Sold Out' : (dish.variants && dish.variants.length > 1 ? 'Choose Variant' : `Order Now — ₹${Number(dish.variants?.length === 1 ? dish.variants[0].price : dish.price || 0).toFixed(2)}`)}
         </motion.button>
       </div>
     </motion.div>
