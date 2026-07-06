@@ -638,14 +638,25 @@ export default function CartPage() {
                           )}
                         </div>
 
-                        {/* Helpful hint about SMS */}
-                        <div className="bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-500/20 rounded-xl p-3 flex gap-2.5">
-                          <span className="text-base shrink-0">💬</span>
-                          <div>
-                            <p className="text-xs font-bold text-blue-700 dark:text-blue-400">Check your SMS / Messages app</p>
-                            <p className="text-[11px] text-blue-600/80 dark:text-blue-400/70 mt-0.5 leading-relaxed">
-                              The OTP arrives as a text message. It usually takes 5–20 seconds. Do not close this screen.
-                            </p>
+                        {/* Helpful hints about SMS + spam */}
+                        <div className="space-y-2">
+                          <div className="bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-500/20 rounded-xl p-3 flex gap-2.5">
+                            <span className="text-base shrink-0">💬</span>
+                            <div>
+                              <p className="text-xs font-bold text-blue-700 dark:text-blue-400">Check your SMS / Messages app</p>
+                              <p className="text-[11px] text-blue-600/80 dark:text-blue-400/70 mt-0.5 leading-relaxed">
+                                The OTP arrives as a text message. It usually takes 5–20 seconds. Do not close this screen.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-3 flex gap-2.5">
+                            <span className="text-base shrink-0">📂</span>
+                            <div>
+                              <p className="text-xs font-bold text-amber-700 dark:text-amber-400">OTP not received?</p>
+                              <p className="text-[11px] text-amber-600/80 dark:text-amber-400/70 mt-0.5 leading-relaxed">
+                                Some carriers filter OTP messages into a <span className="font-black">Spam</span> or <span className="font-black">Promotions</span> folder. Please check there if you don't see it in your inbox.
+                              </p>
+                            </div>
                           </div>
                         </div>
 
