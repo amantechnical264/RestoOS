@@ -24,6 +24,8 @@ export default function CartPage() {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpResendCountdown, setOtpResendCountdown] = useState(0);
+  const otpResendTimer = React.useRef(null);
   const { t } = useTranslation();
 
   const isDelivery = tableNumber === 'delivery';
@@ -34,6 +36,40 @@ export default function CartPage() {
   useEffect(() => {
     if (!activeRestId) navigate('/', { replace: true });
   }, [activeRestId, navigate]);
+
+  // Pre-initialize RecaptchaVerifier on mount so it's ready instantly when needed
+  useEffect(() => {
+    const initRecaptcha = () => {
+      if (!window.recaptchaVerifier && document.getElementById('recaptcha-container')) {
+        try {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => {},
+          });
+          window.recaptchaVerifier.render().catch(() => {});
+        } catch (e) {
+          // silently fail — will retry on sendOtp
+        }
+      }
+    };
+    // Slight defer so DOM is ready
+    const t = setTimeout(initRecaptcha, 300);
+    return () => {
+      clearTimeout(t);
+      if (otpResendTimer.current) clearInterval(otpResendTimer.current);
+    };
+  }, []);
+
+  const startResendCountdown = () => {
+    setOtpResendCountdown(30);
+    if (otpResendTimer.current) clearInterval(otpResendTimer.current);
+    otpResendTimer.current = setInterval(() => {
+      setOtpResendCountdown(prev => {
+        if (prev <= 1) { clearInterval(otpResendTimer.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const subtotal = cart.reduce((sum, item) => {
     const itemPrice = item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price);
@@ -207,63 +243,69 @@ export default function CartPage() {
     }
   }, [isDelivery]);
 
-  const sendOtp = async () => {
+  const sendOtp = async (isResend = false) => {
     const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;
     if (!tempName || !tempPhone || missingDeliveryInfo) {
-      showNotification("Please fill in all required details.");
+      showNotification('Please fill in all required details.');
       return;
     }
-    
+
     let formattedPhone = tempPhone.trim();
     if (!formattedPhone.startsWith('+')) {
-      formattedPhone = `+91${formattedPhone}`; 
+      formattedPhone = `+91${formattedPhone}`;
     }
 
     setIsSendingOtp(true);
     try {
+      // Ensure recaptchaVerifier is ready
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+        await window.recaptchaVerifier.render();
+      }
       const appVerifier = window.recaptchaVerifier;
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       setConfirmationResult(result);
       setShowOtpPrompt(true);
-      showNotification("OTP sent successfully!");
+      setOtpCode('');
+      startResendCountdown();
+      showNotification(isResend ? '🔄 New OTP sent to your phone!' : '📱 OTP sent to your phone!');
     } catch (error) {
-      console.error("Error sending OTP:", error);
-      showNotification(error.message || "Failed to send OTP. Please check the number or try again.");
-      
-      // Reset ReCaptcha so the user can try again!
+      console.error('Error sending OTP:', error);
+      showNotification(error.message || 'Failed to send OTP. Please check the number or try again.');
+
+      // Reset ReCaptcha so the user can try again
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
       }
-      
       // Re-initialize for next attempt
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible'
-      });
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
       window.recaptchaVerifier.render().catch(console.error);
     }
     setIsSendingOtp(false);
   };
 
-  const verifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) {
-      showNotification("Please enter a valid 6-digit OTP.");
+  const verifyOtp = async (codeOverride) => {
+    const code = codeOverride || otpCode;
+    if (!code || code.length < 6) {
+      showNotification('Please enter a valid 6-digit OTP.');
       return;
     }
-    
+
     setIsVerifyingOtp(true);
     try {
-      await confirmationResult.confirm(otpCode);
-      showNotification("Phone number verified!");
-      
+      await confirmationResult.confirm(code);
+      showNotification('✅ Phone number verified!');
+
       const guestId = user?.uid || user?.guestId || 'guest_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
       const profile = { guestId, name: tempName, phone: tempPhone, firstVisit: new Date().toISOString() };
       localStorage.setItem('3dish_diner_profile', JSON.stringify(profile));
       if (setUser) setUser(prev => ({ ...prev, name: tempName, phone: tempPhone, role: 'diner', guestId }));
-      
+
+      if (otpResendTimer.current) clearInterval(otpResendTimer.current);
       setShowOtpPrompt(false);
       setShowNamePrompt(false);
-      
+
       executeCheckout({
         overrideName: tempName,
         overridePhone: tempPhone,
@@ -271,8 +313,8 @@ export default function CartPage() {
         overrideCoords: locationCoords,
       });
     } catch (error) {
-      console.error("Error verifying OTP:", error);
-      showNotification("Invalid OTP. Please try again.");
+      console.error('Error verifying OTP:', error);
+      showNotification('❌ Invalid OTP. Please check and try again.');
     }
     setIsVerifyingOtp(false);
   };
@@ -549,21 +591,96 @@ export default function CartPage() {
                         </button>
                       </>
                     ) : (
+                      // ── OTP Entry Screen ──
                       <>
-                        <div className="text-center mb-4">
-                          <p className="text-sm font-bold text-neutral-900 dark:text-white">OTP sent to {tempPhone}</p>
-                          <button onClick={() => setShowOtpPrompt(false)} className="text-xs text-[#D4AF37] mt-1 underline">Change Number</button>
+                        {/* Header */}
+                        <div className="text-center mb-5">
+                          <div className="w-14 h-14 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center mx-auto mb-3">
+                            <Smartphone size={26} className="text-[#D4AF37]" />
+                          </div>
+                          <p className="text-base font-black text-neutral-900 dark:text-white">Enter Verification Code</p>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            Sent via SMS to{' '}
+                            <span className="font-black text-neutral-700 dark:text-neutral-300">
+                              +91 {tempPhone.replace(/^\+91/, '')}
+                            </span>
+                          </p>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider text-center">Enter 6-Digit Code</label>
-                          <input autoFocus type="number" value={otpCode} onChange={e => setOtpCode(e.target.value)} placeholder="000000"
-                            className="w-full text-center tracking-[0.5em] font-display font-black text-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-4 focus:outline-none focus:border-[#D4AF37] dark:text-white" />
+
+                        {/* OTP Input — large, numeric, auto-submit on 6 digits */}
+                        <div className="relative">
+                          <input
+                            autoFocus
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            type="tel"
+                            maxLength={6}
+                            value={otpCode}
+                            onChange={e => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                              setOtpCode(val);
+                              // Auto-submit as soon as 6 digits entered
+                              if (val.length === 6) verifyOtp(val);
+                            }}
+                            placeholder="––  ––  ––"
+                            className="w-full text-center tracking-[0.6em] font-display font-black text-3xl bg-neutral-50 dark:bg-[#0a0a0a] border-2 border-neutral-200 dark:border-white/10 rounded-2xl py-5 px-4 focus:outline-none focus:border-[#D4AF37] dark:text-white transition-colors"
+                          />
+                          {isVerifyingOtp && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/80 rounded-2xl">
+                              <div className="flex gap-1.5">
+                                {[0,1,2].map(i => (
+                                  <motion.div key={i} animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
+                                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }}
+                                    className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <button 
-                          onClick={verifyOtp}
-                          disabled={isVerifyingOtp}
-                          className="w-full py-3.5 mt-2 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 flex items-center justify-center disabled:opacity-50">
-                          {isVerifyingOtp ? "Verifying..." : "Verify & Place Order"}
+
+                        {/* Helpful hint about SMS */}
+                        <div className="bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-500/20 rounded-xl p-3 flex gap-2.5">
+                          <span className="text-base shrink-0">💬</span>
+                          <div>
+                            <p className="text-xs font-bold text-blue-700 dark:text-blue-400">Check your SMS / Messages app</p>
+                            <p className="text-[11px] text-blue-600/80 dark:text-blue-400/70 mt-0.5 leading-relaxed">
+                              The OTP arrives as a text message. It usually takes 5–20 seconds. Do not close this screen.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Manual verify button (shown only if not auto-submitted) */}
+                        {!isVerifyingOtp && otpCode.length > 0 && otpCode.length < 6 && (
+                          <button
+                            onClick={() => verifyOtp()}
+                            disabled={isVerifyingOtp}
+                            className="w-full py-3.5 rounded-xl bg-[#D4AF37] text-black font-black text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                            <CheckCircle2 size={18} /> Verify & Place Order
+                          </button>
+                        )}
+
+                        {/* Resend OTP */}
+                        <div className="text-center pt-1">
+                          {otpResendCountdown > 0 ? (
+                            <p className="text-xs text-neutral-400">
+                              Resend OTP in{' '}
+                              <span className="font-black text-[#D4AF37]">{otpResendCountdown}s</span>
+                            </p>
+                          ) : (
+                            <button
+                              onClick={() => sendOtp(true)}
+                              disabled={isSendingOtp}
+                              className="text-xs font-black text-[#D4AF37] hover:text-amber-500 transition-colors underline underline-offset-2 disabled:opacity-50">
+                              {isSendingOtp ? 'Sending...' : '🔄 Resend OTP'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Change number */}
+                        <button
+                          onClick={() => { setShowOtpPrompt(false); setOtpCode(''); if (otpResendTimer.current) clearInterval(otpResendTimer.current); }}
+                          className="w-full py-2 text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                          ← Change phone number
                         </button>
                       </>
                     )}
