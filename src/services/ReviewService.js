@@ -45,12 +45,12 @@ class ReviewService {
     }
 
     // Persist onto the orders row — works without a separate table
+    // (Note: review_text column does not exist on the database schema, so we omit it to prevent update failures)
     const { data, error } = await supabase
       .from('orders')
       .update({
         review_rating: rating,
         review_name: dinerName,
-        review_text: reviewText,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', orderId);
@@ -94,7 +94,7 @@ class ReviewService {
     // Fetch from orders table
     const { data, error } = await supabase
       .from('orders')
-      .select('id, contact_name, review_rating, review_name, review_text, reviewed_at, rest_id, timestamp')
+      .select('id, contact_name, review_rating, review_name, reviewed_at, rest_id, timestamp')
       .eq('rest_id', restId)
       .not('review_rating', 'is', null)
       .order('reviewed_at', { ascending: false });
