@@ -2202,8 +2202,9 @@ export default function VendorDashboardPage() {
                     <h3 className="font-display font-black text-base mb-6">Order Types</h3>
                     <div className="space-y-4">
                       {[
-                        { label: 'Dine-In',  count: restOrders.filter(o => o.orderType === 'dine_in').length, color: 'bg-blue-500' },
-                        { label: 'Pre-Order', count: restOrders.filter(o => o.orderType === 'prepaid').length, color: 'bg-purple-500' },
+                        { label: 'Dine-In',   count: restOrders.filter(o => o.orderType === 'dine_in').length,  color: 'bg-blue-500' },
+                        { label: 'Delivery',  count: restOrders.filter(o => o.orderType === 'delivery').length, color: 'bg-emerald-500' },
+                        { label: 'Pre-Order', count: restOrders.filter(o => o.orderType === 'prepaid').length,  color: 'bg-purple-500' },
                       ].map(type => {
                         const pct = restOrders.length > 0 ? Math.round((type.count / restOrders.length) * 100) : 0;
                         return (
