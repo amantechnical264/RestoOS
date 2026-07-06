@@ -413,13 +413,14 @@ export default function CartPage() {
             const comboDishIds = item.macros?.comboDishes || [];
             const comboImages = comboDishIds.length > 0
               ? comboDishIds
-                  .map(id => {
-                    const d = dishes.find(d => d.id === id);
+                  .map(idStr => {
+                    const dishId = typeof idStr === 'string' ? idStr.split('::')[0] : idStr;
+                    const d = dishes.find(d => d.id === dishId);
                     return d?.cover || d?.images?.[0] || null;
                   })
                   .filter(Boolean)
               : [];
-            const isCombo = comboImages.length > 0;
+            const isCombo = comboDishIds.length > 0; // Fix: use comboDishIds.length, not images length, to know it's a combo
             // Fall back: if combo but children have no images, try own cover
             const singleImage = item.cover || item.images?.[0];
 

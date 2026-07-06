@@ -1263,13 +1263,26 @@ export default function VendorDashboardPage() {
   const reviewOrders = React.useMemo(() => {
     return restOrders
       .filter(o => o.review_rating)
-      .map(o => ({
-        id: o.id,
-        rating: o.review_rating,
-        diner_name: o.review_name || o.contactName || o.contact_name || 'Anonymous Diner',
-        created_at: o.reviewed_at || o.timestamp,
-        text: o.review_text
-      }))
+      .map(o => {
+        let dinerName = o.review_name || o.contactName || o.contact_name || 'Anonymous Diner';
+        let text = o.review_text;
+        
+        if (o.review_name && o.review_name.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(o.review_name);
+            if (parsed.name) dinerName = parsed.name;
+            if (parsed.text) text = parsed.text;
+          } catch(e) {}
+        }
+        
+        return {
+          id: o.id,
+          rating: o.review_rating,
+          diner_name: dinerName,
+          created_at: o.reviewed_at || o.timestamp,
+          text: text
+        };
+      })
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [restOrders]);
 

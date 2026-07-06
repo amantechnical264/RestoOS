@@ -50,7 +50,7 @@ class ReviewService {
       .from('orders')
       .update({
         review_rating: rating,
-        review_name: dinerName,
+        review_name: JSON.stringify({ name: dinerName, text: reviewText || '' }),
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', orderId);

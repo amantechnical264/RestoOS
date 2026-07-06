@@ -188,34 +188,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                     {/* Show average rating for this dish */}
                     {item.id && <DishRatingBadge dishId={item.id} variant="inline" />}
                   </div>
-                  {/* Per-item review button for completed orders */}
-                  {!isCancelled && (
-                    <div className="mt-1.5">
-                      {!isItemReviewed ? (
-                        <button
-                          onClick={() => setReviewingDish(getDishObject(item))}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border"
-                          style={{
-                            background: 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.04))',
-                            borderColor: 'rgba(212,175,55,0.3)',
-                            color: GOLD
-                          }}
-                        >
-                          <Sparkles size={9} />
-                          <span>Rate with AI</span>
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} size={11}
-                              className={`${s <= itemRating ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-600'}`}
-                            />
-                          ))}
-                          <span className="text-[10px] text-neutral-400 ml-0.5">You rated</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Per-item review button removed per request */}
                 </div>
               </div>
             );
@@ -253,14 +226,16 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
         {/* Prompt to review if not yet started */}
         {!isCancelled && !orderReviewed && (
           <div className="px-4 pb-4">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+            <button
+              onClick={() => setReviewingDish({ id: 'order', name: 'Your Order' })}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-transform active:scale-[0.98]"
               style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
               <Sparkles size={14} style={{ color: GOLD }} />
               <div className="flex-1">
                 <p className="text-[12px] font-bold" style={{ color: GOLD }}>Rate your dishes with AI!</p>
-                <p className="text-[11px] text-neutral-500">Tap "Rate with AI" next to any dish above</p>
+                <p className="text-[11px] text-neutral-500">Tap here to share your feedback</p>
               </div>
-            </div>
+            </button>
           </div>
         )}
       </motion.div>
