@@ -471,7 +471,7 @@ export const AppProvider = ({ children }) => {
               : [...prev, mapped];
             return next;
           });
-          // Promos sync is handled by the useEffect watching restaurants.
+        } else if (payload.eventType === 'DELETE') {
           setRestaurants(prev => prev.filter(r => r.id !== payload.old.id));
         }
       }).subscribe();
