@@ -14,6 +14,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
+import { auth } from '../services/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { reviewService } from '../services/ReviewService';
 import ModelViewer from '../components/ModelViewer';
 import AIImageGenerator from '../components/AIImageGenerator';
@@ -730,6 +732,63 @@ export default function VendorDashboardPage() {
   const [flashDishSearch, setFlashDishSearch] = React.useState('');
   const [flashCategoryFilter, setFlashCategoryFilter] = React.useState('All');
 
+  // ── Vendor Phone Verification OTP State ──────────────────────────────
+  const [vendorPendingPhone, setVendorPendingPhone] = React.useState('');
+  const [vendorOtpSent, setVendorOtpSent] = React.useState(false);
+  const [vendorOtpCode, setVendorOtpCode] = React.useState('');
+  const [vendorConfirmResult, setVendorConfirmResult] = React.useState(null);
+  const [isSendingVendorOtp, setIsSendingVendorOtp] = React.useState(false);
+  const [isVerifyingVendorOtp, setIsVerifyingVendorOtp] = React.useState(false);
+  const vendorRecaptchaRef = React.useRef(null);
+
+  const sendVendorOtp = async () => {
+    let phone = vendorPendingPhone.trim();
+    if (!phone) { showNotification('Enter a phone number first.'); return; }
+    if (!phone.startsWith('+')) phone = `+91${phone}`;
+
+    setIsSendingVendorOtp(true);
+    try {
+      const container = document.getElementById('vendor-recaptcha-container');
+      if (container) container.innerHTML = '';
+      if (vendorRecaptchaRef.current) {
+        try { vendorRecaptchaRef.current.clear(); } catch {}
+        vendorRecaptchaRef.current = null;
+      }
+      vendorRecaptchaRef.current = new RecaptchaVerifier(auth, 'vendor-recaptcha-container', { size: 'invisible' });
+      await vendorRecaptchaRef.current.render();
+      const result = await signInWithPhoneNumber(auth, phone, vendorRecaptchaRef.current);
+      setVendorConfirmResult(result);
+      setVendorOtpSent(true);
+      setVendorOtpCode('');
+      showNotification('📱 OTP sent to ' + phone);
+    } catch (err) {
+      console.error('Vendor OTP error:', err);
+      showNotification(err.message?.includes('reCAPTCHA') ? 'Verification failed. Try again.' : (err.message || 'Failed to send OTP.'));
+      if (vendorRecaptchaRef.current) { try { vendorRecaptchaRef.current.clear(); } catch {} vendorRecaptchaRef.current = null; }
+    }
+    setIsSendingVendorOtp(false);
+  };
+
+  const verifyVendorOtp = async () => {
+    if (!vendorOtpCode || vendorOtpCode.length < 6) { showNotification('Enter the 6-digit OTP.'); return; }
+    setIsVerifyingVendorOtp(true);
+    try {
+      await vendorConfirmResult.confirm(vendorOtpCode);
+      const verifiedPhone = vendorPendingPhone.trim().startsWith('+') ? vendorPendingPhone.trim() : `+91${vendorPendingPhone.trim()}`;
+      // Save phone + verified status to settings form AND persist to DB via updateRestaurant
+      setSettingsForm(f => ({ ...f, phone: verifiedPhone, phoneVerified: true }));
+      await updateRestaurant(activeRestId, { phone: verifiedPhone, phoneVerified: true });
+      setVendorOtpSent(false);
+      setVendorOtpCode('');
+      setVendorPendingPhone('');
+      setVendorConfirmResult(null);
+      showNotification('✅ Phone number verified and saved!');
+    } catch {
+      showNotification('❌ Invalid OTP. Please try again.');
+    }
+    setIsVerifyingVendorOtp(false);
+  };
+
   const handleActivatePromo = () => {
     const disc = Number(promoForm.discount);
     if (!promoForm.label.trim()) {
@@ -842,7 +901,8 @@ export default function VendorDashboardPage() {
         taxRate: currentRestaurant.taxRate !== undefined ? currentRestaurant.taxRate : 8,
         acceptCash: currentRestaurant.acceptCash !== undefined ? currentRestaurant.acceptCash : true,
         requireVerificationCode: currentRestaurant.requireVerificationCode !== undefined ? currentRestaurant.requireVerificationCode : true,
-        phone: currentRestaurant.phone || '',
+        phone: currentRestaurant.macros?.phone || currentRestaurant.phone || '',
+        phoneVerified: currentRestaurant.macros?.phoneVerified || false,
         hours: currentRestaurant.hours || '10:00 - 22:00',
         deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, deliveryRanges: [], otherFees: [] },
       });
@@ -4482,10 +4542,101 @@ export default function VendorDashboardPage() {
                         </label>
                       )}
                     </div>
-                    <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Phone Number</label>
-                      <input type="tel" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})}
-                        placeholder="+1 (555) 123-4567" className="w-full rounded-xl p-3 text-sm" />
+                    <div className="col-span-full">
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest flex items-center gap-2">
+                        <Phone size={12} /> Restaurant Phone Number
+                      </label>
+
+                      {/* Hidden recaptcha anchor */}
+                      <div id="vendor-recaptcha-container" className="hidden" />
+
+                      {/* Already verified — show number with edit option */}
+                      {settingsForm.phoneVerified && !vendorOtpSent && (
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-300 dark:border-emerald-700/40">
+                          <CheckCircle size={16} className="text-emerald-500 shrink-0" />
+                          <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex-1">{settingsForm.phone}</span>
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">VERIFIED</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVendorPendingPhone(settingsForm.phone.replace(/^\+91/, ''));
+                              setSettingsForm(f => ({ ...f, phoneVerified: false }));
+                            }}
+                            className="text-[11px] font-bold text-neutral-500 hover:text-[#D4AF37] transition-colors underline underline-offset-2 ml-1"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Input + Send OTP (shown when not verified or editing) */}
+                      {!settingsForm.phoneVerified && !vendorOtpSent && (
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">+91</span>
+                            <input
+                              type="tel"
+                              value={vendorPendingPhone}
+                              onChange={e => setVendorPendingPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                              placeholder="9876543210"
+                              className="w-full pl-10 pr-3 py-3 rounded-xl bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 text-sm dark:text-white focus:outline-none focus:border-[#D4AF37]/50 transition-all"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={sendVendorOtp}
+                            disabled={isSendingVendorOtp || vendorPendingPhone.length < 10}
+                            className="px-4 py-2 rounded-xl bg-[#D4AF37] text-black text-xs font-black hover:bg-amber-400 transition-colors disabled:opacity-50 shrink-0"
+                          >
+                            {isSendingVendorOtp ? 'Sending…' : 'Send OTP'}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* OTP entry screen */}
+                      {vendorOtpSent && (
+                        <div className="space-y-3 p-4 rounded-xl bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10">
+                          <p className="text-xs text-neutral-500">Enter the 6-digit OTP sent to <span className="font-black text-neutral-700 dark:text-neutral-300">+91 {vendorPendingPhone}</span></p>
+                          <div className="flex gap-2">
+                            <input
+                              autoFocus
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              type="tel"
+                              maxLength={6}
+                              value={vendorOtpCode}
+                              onChange={e => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                setVendorOtpCode(val);
+                              }}
+                              placeholder="_ _ _ _ _ _"
+                              className="flex-1 text-center tracking-[0.4em] font-display font-black text-xl bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10 rounded-xl py-3 px-2 focus:outline-none focus:border-[#D4AF37] dark:text-white transition-colors"
+                            />
+                            <button
+                              type="button"
+                              onClick={verifyVendorOtp}
+                              disabled={isVerifyingVendorOtp || vendorOtpCode.length < 6}
+                              className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-black hover:bg-emerald-600 transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                            >
+                              <CheckCircle size={14} />
+                              {isVerifyingVendorOtp ? 'Verifying…' : 'Verify'}
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <button type="button" onClick={() => { setVendorOtpSent(false); setVendorOtpCode(''); }} className="text-[11px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                              ← Change number
+                            </button>
+                            <button type="button" onClick={sendVendorOtp} disabled={isSendingVendorOtp} className="text-[11px] font-bold text-[#D4AF37] hover:text-amber-400 transition-colors underline underline-offset-2 disabled:opacity-50">
+                              {isSendingVendorOtp ? 'Sending…' : 'Resend OTP'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] text-neutral-400 mt-1.5 flex items-center gap-1">
+                        <Phone size={9} className="shrink-0" />
+                        Verified number will be displayed to customers on your menu page.
+                      </p>
                     </div>
                     <div>
                       <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Operating Hours</label>

@@ -788,11 +788,13 @@ export const AppProvider = ({ children }) => {
         requireVerificationCode: updateData.requireVerificationCode !== undefined
           ? updateData.requireVerificationCode
           : r.requireVerificationCode,
-        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined)
+        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined)
           ? {
               ...(r.macros || {}),
               ...(updateData.deliveryConfig          !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
               ...(updateData.requireVerificationCode !== undefined ? { requireVerificationCode: updateData.requireVerificationCode } : {}),
+              ...(updateData.phone                  !== undefined ? { phone: updateData.phone } : {}),
+              ...(updateData.phoneVerified           !== undefined ? { phoneVerified: updateData.phoneVerified } : {}),
             }
           : r.macros,
       } : r);
@@ -819,11 +821,13 @@ export const AppProvider = ({ children }) => {
       // requireVerificationCode and deliveryConfig live here. If the column is missing,
       // the value is already saved in local state + localStorage above, so the toggle
       // still works correctly for the session and across page reloads.
-      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined) {
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined) {
         const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
         const newMacros = { ...currentMacros };
         if (updateData.deliveryConfig          !== undefined) newMacros.deliveryConfig          = updateData.deliveryConfig;
         if (updateData.requireVerificationCode !== undefined) newMacros.requireVerificationCode = updateData.requireVerificationCode;
+        if (updateData.phone                  !== undefined) newMacros.phone                  = updateData.phone;
+        if (updateData.phoneVerified           !== undefined) newMacros.phoneVerified           = updateData.phoneVerified;
 
         const { error: macrosError } = await supabase.from('restaurants')
           .update({ macros: newMacros })

@@ -841,11 +841,21 @@ export default function MenuPage() {
             {restaurant?.name || 'Restaurant'}
           </motion.h1>
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="flex items-center gap-3">
+            className="flex items-center gap-3 flex-wrap">
             <span className="px-3 py-1 rounded-full bg-white/10 border border-neutral-200 dark:border-white/15 text-xs font-bold text-neutral-900 dark:text-white backdrop-blur-md">
               {tableNumber === 'delivery' ? 'Delivery / Takeaway' : `TABLE ${tableNumber || '12'}`}
             </span>
             <span className="text-xs text-neutral-900 dark:text-white/50">{allDishes.length} dishes available</span>
+            {restaurant?.macros?.phoneVerified && restaurant?.macros?.phone && (
+              <a
+                href={`tel:${restaurant.macros.phone}`}
+                onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-xs font-bold text-emerald-700 dark:text-emerald-300 backdrop-blur-md hover:bg-emerald-500/30 transition-all"
+              >
+                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.67 19.79 19.79 0 0116.92 2 2 0 0122 4.18v3c0 1.1-.87 2-1.97 2.13A16.62 16.62 0 0116 8a2.11 2.11 0 00-.72.13A16 16 0 008 14.28a2.11 2.11 0 00.13.72 16.62 16.62 0 01-1.13 4.05C6.87 20.13 7.78 21 8.88 21"/></svg>
+                {restaurant.macros.phone}
+              </a>
+            )}
           </motion.div>
         </div>
       </div>
