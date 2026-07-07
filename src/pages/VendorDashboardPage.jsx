@@ -4393,18 +4393,19 @@ export default function VendorDashboardPage() {
                       <button 
                         type="button" 
                         onClick={async () => {
-                          const newValue = !settingsForm.requireVerificationCode;
+                          const isCurrentlyRequired = String(settingsForm.requireVerificationCode) !== 'false';
+                          const newValue = !isCurrentlyRequired;
                           setSettingsForm({...settingsForm, requireVerificationCode: newValue});
                           await updateRestaurant(activeRestId, { requireVerificationCode: newValue });
                         }}
-                        className={`w-12 h-6 rounded-full transition-all relative ${settingsForm.requireVerificationCode ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
-                        style={settingsForm.requireVerificationCode ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
+                        className={`w-12 h-6 rounded-full transition-all relative ${String(settingsForm.requireVerificationCode) !== 'false' ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
+                        style={String(settingsForm.requireVerificationCode) !== 'false' ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
                       >
                         <span 
                           className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
                           style={{ 
-                            left: settingsForm.requireVerificationCode ? '26px' : '4px',
-                            background: settingsForm.requireVerificationCode ? '#000' : '#fff'
+                            left: String(settingsForm.requireVerificationCode) !== 'false' ? '26px' : '4px',
+                            background: String(settingsForm.requireVerificationCode) !== 'false' ? '#000' : '#fff'
                           }}
                         />
                       </button>

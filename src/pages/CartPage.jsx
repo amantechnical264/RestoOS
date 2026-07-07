@@ -210,7 +210,8 @@ export default function CartPage() {
 
     setIsProcessing(true);
 
-    const requireCode = !isDelivery && currentRestaurant?.requireVerificationCode !== false;
+    // Safe check against string 'false' or boolean false
+    const requireCode = !isDelivery && String(currentRestaurant?.requireVerificationCode) !== 'false';
     const code = requireCode ? Math.floor(1000 + Math.random() * 9000).toString() : null;
     const status = requireCode ? 'Pending Verification' : 'Pending';
     const finalPaymentStatus = 'Unpaid';
