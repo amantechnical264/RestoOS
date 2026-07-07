@@ -2600,7 +2600,7 @@ export default function VendorDashboardPage() {
                                 <DietIcon type={dish.dietaryPreference} />
                                 <span className="truncate">{dish.name}</span>
                               </h3>
-                              <p className="text-xs text-neutral-500 mt-0.5">{dish.chef || 'Chef of House'}</p>
+                              {dish.chef && <p className="text-xs text-neutral-500 mt-0.5">{dish.chef}</p>}
                             </div>
                             {dish.variants && dish.variants.length > 0 ? (
                               <div className="flex flex-col items-end gap-1">
@@ -2802,7 +2802,7 @@ export default function VendorDashboardPage() {
                               </div>
                               <div className="flex items-center gap-3 mt-0.5">
                                 <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
-                                <span className="text-[11px] text-neutral-400">{dish.chef || 'Chef of House'}</span>
+                                {dish.chef && <span className="text-[11px] text-neutral-400">{dish.chef}</span>}
                               </div>
                               {/* Category tags on this dish */}
                               <div className="flex flex-wrap gap-1 mt-1">
@@ -3616,6 +3616,13 @@ export default function VendorDashboardPage() {
                       <div className="col-span-2">
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Name *</label>
                         <input required type="text" value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})}
+                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Base Price (₹) *</label>
+                        <input required={!(editingDish.variants?.length > 0)} type="number" step="0.01" value={editingDish.price || ''} onChange={e => setEditingDish({...editingDish, price: e.target.value})}
+                          placeholder="199.00"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
 
