@@ -185,11 +185,29 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
   const primaryBadge = dish.tags?.find(t => BADGE_STYLES[t]);
   const badgeStyle = primaryBadge ? BADGE_STYLES[primaryBadge] : null;
   const hasModel = !!(dish.modelUrl || dish.model_url);
-  const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
-  const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
+  const hasPromo = !!((dish.originalPrice && dish.originalPrice > dish.price) || 
+                   (dish.variants && dish.variants.some(v => v.originalPrice && v.originalPrice > v.price)));
+  
+  const promoDiscount = (() => {
+    if (dish.originalPrice && dish.originalPrice > dish.price) {
+      return Math.round((1 - dish.price / dish.originalPrice) * 100);
+    }
+    if (dish.variants && dish.variants.length > 0) {
+      const discounts = dish.variants
+        .filter(v => v.originalPrice && v.originalPrice > v.price)
+        .map(v => Math.round((1 - v.price / v.originalPrice) * 100));
+      return discounts.length > 0 ? Math.max(...discounts) : 0;
+    }
+    return 0;
+  })();
+
   const promoBorder = !hasPromo ? 'border-neutral-200 dark:border-white/5' 
     : dish.promoType === 'flash' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
     : 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+
+  const promoBg = !hasPromo ? 'bg-neutral-50 dark:bg-[#0a0a0a]'
+    : dish.promoType === 'flash' ? 'bg-red-50/60 dark:bg-red-950/20'
+    : 'bg-emerald-50/60 dark:bg-emerald-950/20';
 
   return (
     <motion.div
@@ -198,7 +216,7 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className={`relative flex flex-col rounded-[1.75rem] overflow-hidden bg-neutral-50 dark:bg-[#0a0a0a] border shadow-xl group cursor-pointer transition-all ${promoBorder}`}
+      className={`relative flex flex-col rounded-[1.75rem] overflow-hidden ${promoBg} border shadow-xl group cursor-pointer transition-all ${promoBorder}`}
       onClick={() => onDishClick(dish.id)}
     >
       {/* Food Photo */}
@@ -375,8 +393,21 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
 
   const isVeg = dish.dietaryPreference === 'Vegetarian' || dish.dietaryPreference === 'Vegan' || dish.tags?.includes('Veg') || dish.tags?.includes('Vegan');
   
-  const hasPromo = dish.originalPrice && dish.originalPrice > dish.price;
-  const promoDiscount = hasPromo ? Math.round((1 - dish.price / dish.originalPrice) * 100) : 0;
+  const hasPromo = !!((dish.originalPrice && dish.originalPrice > dish.price) || 
+                   (dish.variants && dish.variants.some(v => v.originalPrice && v.originalPrice > v.price)));
+  
+  const promoDiscount = (() => {
+    if (dish.originalPrice && dish.originalPrice > dish.price) {
+      return Math.round((1 - dish.price / dish.originalPrice) * 100);
+    }
+    if (dish.variants && dish.variants.length > 0) {
+      const discounts = dish.variants
+        .filter(v => v.originalPrice && v.originalPrice > v.price)
+        .map(v => Math.round((1 - v.price / v.originalPrice) * 100));
+      return discounts.length > 0 ? Math.max(...discounts) : 0;
+    }
+    return 0;
+  })();
   
   const rowStyle = !hasPromo ? 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'
     : dish.promoType === 'flash' ? 'bg-red-50/50 dark:bg-red-900/10 border border-red-200/50 dark:border-red-500/20 shadow-sm'
