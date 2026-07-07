@@ -272,6 +272,11 @@ const DishCard = React.memo(({ dish, index, onDishClick, onAddToCart, isFav, onT
                   style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>
                   <span className="opacity-70 font-medium">{v.name}</span>
                   <span className="mx-0.5 opacity-40">·</span>
+                  {v.originalPrice && v.originalPrice > v.price && (
+                    <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through mr-0.5 font-medium">
+                      ₹{Number(v.originalPrice).toFixed(0)}
+                    </span>
+                  )}
                   ₹{Number(v.price).toFixed(0)}
                 </span>
               ))}
@@ -410,6 +415,11 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
                 style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>
                 <span className="opacity-70 font-medium">{v.name}</span>
                 <span className="mx-0.5 opacity-40">·</span>
+                {v.originalPrice && v.originalPrice > v.price && (
+                  <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through mr-0.5 font-medium">
+                    ₹{Number(v.originalPrice).toFixed(0)}
+                  </span>
+                )}
                 ₹{Number(v.price).toFixed(0)}
               </span>
             ))}
@@ -1316,7 +1326,14 @@ export default function MenuPage() {
                     setVariantModalDish(null);
                   }} className="w-full flex justify-between items-center p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all text-left">
                     <span className="font-bold text-sm text-neutral-900 dark:text-white">{v.name}</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{Number(v.price).toFixed(2)}</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      {v.originalPrice && v.originalPrice > v.price && (
+                        <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
+                          ₹{Number(v.originalPrice).toFixed(2)}
+                        </span>
+                      )}
+                      ₹{Number(v.price).toFixed(2)}
+                    </span>
                   </button>
                 ))}
               </div>

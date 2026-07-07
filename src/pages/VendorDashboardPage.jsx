@@ -4047,30 +4047,34 @@ export default function VendorDashboardPage() {
                             <div className="col-span-2">
                               <div className="flex items-center justify-between mb-2">
                                 <label className="text-xs font-bold text-neutral-500 block">Applicable Dishes</label>
-                                <button 
-                                  onClick={() => {
-                                    const vendorDishes = dishes.filter(d => d.restId === activeRestId);
-                                    if (promoForm.applicableDishes.length === vendorDishes.length) {
-                                      setPromoForm(p => ({...p, applicableDishes: []}));
-                                    } else {
-                                      setPromoForm(p => ({...p, applicableDishes: vendorDishes.map(d => d.id)}));
-                                    }
-                                  }}
-                                  className="text-[10px] font-bold text-[#D4AF37] hover:underline"
-                                >
-                                  {promoForm.applicableDishes.length === dishes.filter(d => d.restId === activeRestId).length ? 'Deselect All' : 'Select All'}
-                                </button>
+                                {(() => {
+                                  const expanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                  return (
+                                    <button
+                                      onClick={() => {
+                                        if (promoForm.applicableDishes.length === expanded.length) {
+                                          setPromoForm(p => ({...p, applicableDishes: []}));
+                                        } else {
+                                          setPromoForm(p => ({...p, applicableDishes: expanded.map(d => d.id)}));
+                                        }
+                                      }}
+                                      className="text-[10px] font-bold text-[#D4AF37] hover:underline"
+                                    >
+                                      {promoForm.applicableDishes.length === expanded.length ? 'Deselect All' : 'Select All'}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                               <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
-                                {dishes.filter(d => d.restId === activeRestId).map(dish => (
+                                {expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId)).map(dish => (
                                   <label key={dish.id} className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                      type="checkbox" 
+                                    <input
+                                      type="checkbox"
                                       checked={promoForm.applicableDishes.includes(dish.id)}
                                       onChange={(e) => {
                                         setPromoForm(p => {
                                           const checked = e.target.checked;
-                                          const newDishes = checked 
+                                          const newDishes = checked
                                             ? [...p.applicableDishes, dish.id]
                                             : p.applicableDishes.filter(id => id !== dish.id);
                                           return { ...p, applicableDishes: newDishes };
@@ -4079,7 +4083,7 @@ export default function VendorDashboardPage() {
                                       className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
                                     />
                                     <span className="text-sm dark:text-neutral-200">{dish.name}</span>
-                                    <span className="text-xs text-neutral-500 ml-auto">₹{dish.originalPrice || dish.price}</span>
+                                    <span className="text-xs text-neutral-500 ml-auto">₹{Number(dish.price).toFixed(0)}</span>
                                   </label>
                                 ))}
                                 {dishes.filter(d => d.restId === activeRestId).length === 0 && (

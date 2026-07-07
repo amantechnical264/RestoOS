@@ -3,13 +3,13 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCxC5VGpfi-bkluyk5YVSzSPBb9TcK8-As",
-  authDomain: "restroos-76177.firebaseapp.com",
-  projectId: "restroos-76177",
-  storageBucket: "restroos-76177.firebasestorage.app",
-  messagingSenderId: "550018057520",
-  appId: "1:550018057520:web:547b00b70baa6a4d4eb4f5",
-  measurementId: "G-YQ2Q0LTWV9"
+  apiKey: "AIzaSyDz4cuRjv-4XcMDDGKfzCjIuUbuU5g2FS0",
+  authDomain: "restroos-bb895.firebaseapp.com",
+  projectId: "restroos-bb895",
+  storageBucket: "restroos-bb895.firebasestorage.app",
+  messagingSenderId: "1006761126053",
+  appId: "1:1006761126053:web:90ed852984e92db3b5c54c",
+  measurementId: "G-Y51YKK3XMY"
 };
 
 const app = initializeApp(firebaseConfig);

@@ -189,25 +189,18 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (restaurants.length === 0) return;
+    // Map ALL restaurants — explicitly clearing promos when a campaign is stopped
     const newPromos = {};
-    let changed = false;
     restaurants.forEach(r => {
-      if (r.macros && r.macros.promos) {
-        newPromos[r.id] = r.macros.promos;
-        changed = true;
-      }
+      newPromos[r.id] = r.macros?.promos || { flash: null, happyHour: null };
     });
-    if (changed) {
-      setPromos(prev => {
-        // Deep compare to avoid unnecessary re-renders
-        const next = { ...prev, ...newPromos };
-        if (JSON.stringify(prev) !== JSON.stringify(next)) {
-          localStorage.setItem('3dish_promos', JSON.stringify(next));
-          return next;
-        }
-        return prev;
-      });
-    }
+    setPromos(prev => {
+      if (JSON.stringify(prev) !== JSON.stringify(newPromos)) {
+        localStorage.setItem('3dish_promos', JSON.stringify(newPromos));
+        return newPromos;
+      }
+      return prev;
+    });
   }, [restaurants]);
 
   const updateMarketingCampaign = async (restId, type, campaignData) => {
@@ -1037,38 +1030,63 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Dynamically apply active promos to dishes
+  // Dynamically apply active promos to dishes (including per-variant pricing)
   const processedDishes = React.useMemo(() => {
     return dishes.map(dish => {
       const marketing = promos[dish.restId];
       if (!marketing) return dish;
 
-      // 1. Check Flash Promo (Overrides Happy Hour)
+      const applyVariantDiscount = (pct) => {
+        if (!dish.variants || dish.variants.length === 0) return null;
+        return dish.variants.map(v => {
+          const vPrice = parseFloat(v.price) || 0;
+          return { ...v, originalPrice: vPrice, price: vPrice - (vPrice * pct) / 100 };
+        });
+      };
+
+      // 1. Flash Promo (overrides Happy Hour)
       const flash = marketing.flash;
-      if (flash) {
-        const appliesToDish = !flash.applicableDishes || flash.applicableDishes.length === 0 || flash.applicableDishes.includes(dish.id);
-        
-        if (appliesToDish && flash.discount > 0 && flash.discount <= 100) {
-          const discountAmt = (dish.price * flash.discount) / 100;
-          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'flash' };
+      if (flash && flash.discount > 0 && flash.discount <= 100) {
+        const appliesToWholeMenu = !flash.applicableDishes || flash.applicableDishes.length === 0;
+
+        if (dish.variants && dish.variants.length > 0) {
+          // Check variant-level applicability (id = "parentId-variantName") OR whole-menu
+          const discountedVariants = dish.variants.map(v => {
+            const variantVirtualId = `${dish.id}-${v.name}`;
+            const applies = appliesToWholeMenu
+              || flash.applicableDishes.includes(dish.id)
+              || flash.applicableDishes.includes(variantVirtualId);
+            if (!applies) return v;
+            const vPrice = parseFloat(v.price) || 0;
+            return { ...v, originalPrice: vPrice, price: vPrice - (vPrice * flash.discount) / 100 };
+          });
+          const anyDiscounted = discountedVariants.some(v => v.originalPrice !== undefined);
+          if (anyDiscounted) return { ...dish, promoType: 'flash', variants: discountedVariants };
+        } else {
+          const appliesToDish = appliesToWholeMenu || flash.applicableDishes.includes(dish.id);
+          if (appliesToDish) {
+            const discountAmt = (dish.price * flash.discount) / 100;
+            return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'flash' };
+          }
         }
       }
 
-      // 2. Check Happy Hour (Applies to all dishes)
+      // 2. Happy Hour (applies to all dishes / all variants)
       const hh = marketing.happyHour;
       if (hh && hh.startTime && hh.endTime && hh.discount > 0 && hh.discount <= 100) {
-        const current = currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "HH:mm"
-        
-        const start = hh.startTime;
-        const end = hh.endTime;
-        
-        const isActive = start <= end 
-          ? (current >= start && current < end)
-          : (current >= start || current < end);
+        const current = currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        const isActive = hh.startTime <= hh.endTime
+          ? (current >= hh.startTime && current < hh.endTime)
+          : (current >= hh.startTime || current < hh.endTime);
 
         if (isActive) {
-          const discountAmt = (dish.price * hh.discount) / 100;
-          return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'happyHour' };
+          if (dish.variants && dish.variants.length > 0) {
+            const discountedVariants = applyVariantDiscount(hh.discount);
+            return { ...dish, promoType: 'happyHour', variants: discountedVariants };
+          } else {
+            const discountAmt = (dish.price * hh.discount) / 100;
+            return { ...dish, originalPrice: dish.price, price: dish.price - discountAmt, promoType: 'happyHour' };
+          }
         }
       }
 
