@@ -210,9 +210,15 @@ export default function CartPage() {
 
     setIsProcessing(true);
 
-    // Safe check against string 'false' or boolean false
+    // ── Verification Code Logic ─────────────────────────────────────────
+    // This 4-digit code is ONLY for DINE-IN orders.
+    // • DINE-IN: code is generated only when the vendor's toggle is ON.
+    // • DELIVERY: code is NEVER generated — delivery has its own SMS/OTP verification
+    //             (enforced via Firebase at the sendOtp/verifyOtp flow above).
+    //   The vendor's "Customer Verification Code" toggle has NO effect on delivery.
     const requireCode = !isDelivery && String(currentRestaurant?.requireVerificationCode) !== 'false';
     const code = requireCode ? Math.floor(1000 + Math.random() * 9000).toString() : null;
+    // Delivery always goes to 'Pending' (never 'Pending Verification')
     const status = requireCode ? 'Pending Verification' : 'Pending';
     const finalPaymentStatus = 'Unpaid';
     

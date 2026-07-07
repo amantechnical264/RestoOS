@@ -4385,30 +4385,46 @@ export default function VendorDashboardPage() {
                           <option value="false">✗ No — Digital Only</option>
                         </select>
                       </div>
-                    <div className="col-span-2 mt-4 pt-4 border-t border-neutral-200 dark:border-[rgba(212,175,55,0.15)] flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-neutral-900 dark:text-white">Customer Verification Code</p>
-                        <p className="text-xs text-neutral-500 mt-0.5 max-w-[280px]">Require customers to provide a 4-digit code. Disable to directly accept/reject orders.</p>
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={async () => {
-                          const isCurrentlyRequired = String(settingsForm.requireVerificationCode) !== 'false';
-                          const newValue = !isCurrentlyRequired;
-                          setSettingsForm({...settingsForm, requireVerificationCode: newValue});
-                          await updateRestaurant(activeRestId, { requireVerificationCode: newValue });
-                        }}
-                        className={`w-12 h-6 rounded-full transition-all relative ${String(settingsForm.requireVerificationCode) !== 'false' ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
-                        style={String(settingsForm.requireVerificationCode) !== 'false' ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
-                      >
-                        <span 
-                          className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
-                          style={{ 
-                            left: String(settingsForm.requireVerificationCode) !== 'false' ? '26px' : '4px',
-                            background: String(settingsForm.requireVerificationCode) !== 'false' ? '#000' : '#fff'
+                    <div className="col-span-2 mt-4 pt-4 border-t border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-neutral-900 dark:text-white">Customer Verification Code</p>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                              <Store size={9} /> Dine-In Only
+                            </span>
+                          </div>
+                          <p className="text-xs text-neutral-500 mt-1 max-w-[280px]">
+                            When enabled, dine-in customers must show a 4-digit code to confirm pickup. Disable to accept/reject dine-in orders directly without a code.
+                          </p>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={async () => {
+                            const isCurrentlyRequired = String(settingsForm.requireVerificationCode) !== 'false';
+                            const newValue = !isCurrentlyRequired;
+                            setSettingsForm({...settingsForm, requireVerificationCode: newValue});
+                            await updateRestaurant(activeRestId, { requireVerificationCode: newValue });
                           }}
-                        />
-                      </button>
+                          className={`w-12 h-6 rounded-full transition-all relative shrink-0 mt-0.5 ${String(settingsForm.requireVerificationCode) !== 'false' ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
+                          style={String(settingsForm.requireVerificationCode) !== 'false' ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
+                        >
+                          <span 
+                            className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
+                            style={{ 
+                              left: String(settingsForm.requireVerificationCode) !== 'false' ? '26px' : '4px',
+                              background: String(settingsForm.requireVerificationCode) !== 'false' ? '#000' : '#fff'
+                            }}
+                          />
+                        </button>
+                      </div>
+                      {/* Always-on delivery note */}
+                      <div className="mt-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-500/20 rounded-xl px-3 py-2.5">
+                        <Phone size={13} className="text-blue-500 mt-0.5 shrink-0" />
+                        <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed">
+                          <span className="font-black">Delivery orders always require SMS verification</span> — regardless of this toggle. Customers must verify their phone via OTP before a delivery order is placed.
+                        </p>
+                      </div>
                     </div>
                     </div>
                   </div>
