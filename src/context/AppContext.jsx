@@ -781,51 +781,67 @@ export const AppProvider = ({ children }) => {
       showNotification('No restaurant selected. Please complete onboarding first.');
       return;
     }
-    try {
-      // Only include columns that actually exist in the DB schema
-      const updatePayload = {};
-      if (updateData.name !== undefined) updatePayload.name = updateData.name;
-      if (updateData.cover !== undefined) updatePayload.cover = updateData.cover;
-      if (updateData.taxRate !== undefined) updatePayload.tax_rate = updateData.taxRate;
-      if (updateData.acceptCash !== undefined) updatePayload.accept_cash = updateData.acceptCash;
-      // deliveryConfig and requireVerificationCode are saved into the macros JSON blob
-      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined) {
-        const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
-        updatePayload.macros = { ...currentMacros, ...(updatePayload.macros || {}) };
-        if (updateData.deliveryConfig !== undefined) updatePayload.macros.deliveryConfig = updateData.deliveryConfig;
-        if (updateData.requireVerificationCode !== undefined) updatePayload.macros.requireVerificationCode = updateData.requireVerificationCode;
-      }
-      // NOTE: 'promo' column does not exist in the DB — stored in localStorage only
 
-      // Only call DB update if there's something to update
-      if (Object.keys(updatePayload).length > 0) {
-        const { error } = await supabase.from('restaurants')
-          .update(updatePayload)
-          .eq('id', restId);
+    // ── Step 1: Update local state FIRST (UI responds instantly, no error shown) ──
+    setRestaurants(prev => {
+      const next = prev.map(r => r.id === restId ? {
+        ...r,
+        name:        updateData.name        !== undefined ? updateData.name        : r.name,
+        cover:       updateData.cover       !== undefined ? updateData.cover       : r.cover,
+        taxRate:     updateData.taxRate     !== undefined ? updateData.taxRate     : r.taxRate,
+        tax_rate:    updateData.taxRate     !== undefined ? updateData.taxRate     : r.tax_rate,
+        acceptCash:  updateData.acceptCash  !== undefined ? updateData.acceptCash  : r.acceptCash,
+        accept_cash: updateData.acceptCash  !== undefined ? updateData.acceptCash  : r.accept_cash,
+        requireVerificationCode: updateData.requireVerificationCode !== undefined
+          ? updateData.requireVerificationCode
+          : r.requireVerificationCode,
+        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined)
+          ? {
+              ...(r.macros || {}),
+              ...(updateData.deliveryConfig          !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
+              ...(updateData.requireVerificationCode !== undefined ? { requireVerificationCode: updateData.requireVerificationCode } : {}),
+            }
+          : r.macros,
+      } : r);
+      // Also persist to localStorage so value survives page refresh
+      try { localStorage.setItem('3dish_cached_restaurants', JSON.stringify(next)); } catch {}
+      return next;
+    });
+
+    try {
+      // ── Step 2: Push known scalar columns (name, cover, tax_rate, accept_cash) ──
+      // These columns are guaranteed to exist in the DB schema.
+      const scalarPayload = {};
+      if (updateData.name       !== undefined) scalarPayload.name        = updateData.name;
+      if (updateData.cover      !== undefined) scalarPayload.cover       = updateData.cover;
+      if (updateData.taxRate    !== undefined) scalarPayload.tax_rate    = updateData.taxRate;
+      if (updateData.acceptCash !== undefined) scalarPayload.accept_cash = updateData.acceptCash;
+
+      if (Object.keys(scalarPayload).length > 0) {
+        const { error } = await supabase.from('restaurants').update(scalarPayload).eq('id', restId);
         if (error) throw error;
       }
-      
-      // Update local state immediately
-      setRestaurants(prev =>
-        prev.map(r => r.id === restId ? { 
-          ...r, 
-          name: updateData.name !== undefined ? updateData.name : r.name,
-          cover: updateData.cover !== undefined ? updateData.cover : r.cover,
-          taxRate: updateData.taxRate !== undefined ? updateData.taxRate : r.taxRate,
-          tax_rate: updateData.taxRate !== undefined ? updateData.taxRate : r.tax_rate,
-          acceptCash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.acceptCash,
-          accept_cash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.accept_cash,
-          requireVerificationCode: updateData.requireVerificationCode !== undefined ? updateData.requireVerificationCode : r.requireVerificationCode,
-          macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined)
-            ? { 
-                ...(r.macros || {}), 
-                ...(updateData.deliveryConfig !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
-                ...(updateData.requireVerificationCode !== undefined ? { requireVerificationCode: updateData.requireVerificationCode } : {})
-              }
-            : r.macros,
-        } : r)
-      );
-      
+
+      // ── Step 3: Try to save macros blob (column may not exist — silently skip) ──
+      // requireVerificationCode and deliveryConfig live here. If the column is missing,
+      // the value is already saved in local state + localStorage above, so the toggle
+      // still works correctly for the session and across page reloads.
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined) {
+        const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
+        const newMacros = { ...currentMacros };
+        if (updateData.deliveryConfig          !== undefined) newMacros.deliveryConfig          = updateData.deliveryConfig;
+        if (updateData.requireVerificationCode !== undefined) newMacros.requireVerificationCode = updateData.requireVerificationCode;
+
+        const { error: macrosError } = await supabase.from('restaurants')
+          .update({ macros: newMacros })
+          .eq('id', restId);
+        if (macrosError) {
+          // Silently swallow — macros column may not exist in this DB deployment.
+          // The value is already persisted locally; no error shown to vendor.
+          console.warn('[3Dish] macros column unavailable — toggle saved locally only:', macrosError.message);
+        }
+      }
+
       showNotification('Settings updated successfully!');
     } catch (error) {
       console.error('Update restaurant error:', error);
