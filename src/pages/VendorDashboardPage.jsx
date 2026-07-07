@@ -611,6 +611,33 @@ const ReviewsAnalytics = ({ reviews }) => {
 };
 
 
+const expandDishesWithVariants = (dishesList) => {
+  const result = [];
+  dishesList.forEach(dish => {
+    if (dish.variants && dish.variants.length > 0) {
+      dish.variants.forEach(v => {
+        result.push({
+          ...dish,
+          id: `${dish.id}-${v.name}`, // Unique ID for React keys / Framer Motion
+          originalId: dish.id,        // To know which actual dish it refers to
+          name: `${dish.name} (${v.name})`,
+          price: parseFloat(v.price) || 0,
+          isVariant: true,
+          variantName: v.name
+        });
+      });
+    } else {
+      result.push({
+        ...dish,
+        originalId: dish.id,
+        price: parseFloat(dish.price) || 0
+      });
+    }
+  });
+  return result;
+};
+
+
 // ══════════════════════════════════════════════════════════════════════
 export default function VendorDashboardPage() {
   const navigate = useNavigate();
@@ -1373,29 +1400,35 @@ export default function VendorDashboardPage() {
   };
 
 
-  const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
-
-  React.useEffect(() => {
-    let display = [...vendDishes].sort((a, b) => (a.macros?.sort_order || 0) - (b.macros?.sort_order || 0));
-    if (selectedEditCategory === '__uncategorised__') {
-      display = display.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
-    } else if (selectedEditCategory !== 'All') {
-      display = display.filter(d => d.tags?.includes(selectedEditCategory));
-    }
-    setLocalDisplayDishes(display);
-  }, [vendDishes, selectedEditCategory, customCategories]);
-
-  const handleReorderDishes = (newOrder) => {
-    setLocalDisplayDishes(newOrder);
-    newOrder.forEach((dish, index) => {
-      if ((dish.macros?.sort_order || 0) !== index) {
-        updateDish(dish.id, {
-          ...dish,
-          macros: { ...(dish.macros || {}), sort_order: index }
-        });
-      }
-    });
-  };
+   const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
+ 
+   React.useEffect(() => {
+     let display = [...vendDishes].sort((a, b) => (a.macros?.sort_order || 0) - (b.macros?.sort_order || 0));
+     if (selectedEditCategory === '__uncategorised__') {
+       display = display.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
+     } else if (selectedEditCategory !== 'All') {
+       display = display.filter(d => d.tags?.includes(selectedEditCategory));
+     }
+     setLocalDisplayDishes(expandDishesWithVariants(display));
+   }, [vendDishes, selectedEditCategory, customCategories]);
+ 
+   const handleReorderDishes = (newOrder) => {
+     setLocalDisplayDishes(newOrder);
+     const updatedParentIds = new Set();
+     newOrder.forEach((dish, index) => {
+       const parentId = dish.originalId || dish.id;
+       if (!updatedParentIds.has(parentId)) {
+         updatedParentIds.add(parentId);
+         const originalDish = vendDishes.find(d => d.id === parentId);
+         if (originalDish && (originalDish.macros?.sort_order || 0) !== index) {
+           updateDish(parentId, {
+             ...originalDish,
+             macros: { ...(originalDish.macros || {}), sort_order: index }
+           });
+         }
+       }
+     });
+   };
 
   const FULL_TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
@@ -2747,13 +2780,9 @@ export default function VendorDashboardPage() {
                         : selectedEditCategory === '__uncategorised__' ? 'Uncategorised'
                         : selectedEditCategory}
                     </h3>
-                    <p className="text-[11px] text-neutral-500">
-                      {(() => {
-                        if (selectedEditCategory === 'All') return vendDishes.length;
-                        if (selectedEditCategory === '__uncategorised__') return vendDishes.filter(d => !customCategories.some(cat => d.tags?.includes(cat))).length;
-                        return vendDishes.filter(d => d.tags?.includes(selectedEditCategory)).length;
-                      })()} items
-                    </p>
+                     <p className="text-[11px] text-neutral-500">
+                       {localDisplayDishes.length} items
+                     </p>
                   </div>
                 </div>
 
@@ -2768,8 +2797,9 @@ export default function VendorDashboardPage() {
                   ) : (
                     <Reorder.Group axis="y" values={localDisplayDishes} onReorder={handleReorderDishes}>
                       {localDisplayDishes.map(dish => {
-                        const isSoldOut = dish.tags?.includes('sold_out');
-                        const isHidden  = dish.tags?.includes('hidden');
+                        const originalDish = vendDishes.find(d => d.id === (dish.originalId || dish.id)) || dish;
+                        const isSoldOut = originalDish.tags?.includes('sold_out');
+                        const isHidden  = originalDish.tags?.includes('hidden');
                         return (
                           <Reorder.Item
                             key={dish.id}
@@ -2815,7 +2845,7 @@ export default function VendorDashboardPage() {
                             {/* Action buttons */}
                             <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
-                                onClick={() => { setEditingDish(dish); setVendorTab('menu'); }}
+                                onClick={() => { setEditingDish(originalDish); setVendorTab('menu'); }}
                                 className="p-2 rounded-lg bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-600 dark:text-neutral-300 transition-colors cursor-pointer"
                                 title="Edit"
                               >
@@ -2824,15 +2854,15 @@ export default function VendorDashboardPage() {
                               <button
                                 onClick={async () => {
                                   const newTags = isSoldOut
-                                    ? (dish.tags || []).filter(t => t !== 'sold_out')
-                                    : [...(dish.tags || []), 'sold_out'];
-                                  await updateDish(dish.id, { tags: newTags });
+                                    ? (originalDish.tags || []).filter(t => t !== 'sold_out')
+                                    : [...(originalDish.tags || []), 'sold_out'];
+                                  await updateDish(originalDish.id, { tags: newTags });
                                 }}
                                 className={`p-2 rounded-lg transition-colors cursor-pointer ${
                                   isSoldOut
                                     ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
                                     : 'bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-500'
-                                }`}
+                                  }`}
                                 title={isSoldOut ? 'Mark Available' : 'Mark Sold Out'}
                               >
                                 <Package size={13} />
@@ -2840,24 +2870,24 @@ export default function VendorDashboardPage() {
                               <button
                                 onClick={async () => {
                                   const newTags = isHidden
-                                    ? (dish.tags || []).filter(t => t !== 'hidden')
-                                    : [...(dish.tags || []), 'hidden'];
-                                  await updateDish(dish.id, { tags: newTags });
+                                    ? (originalDish.tags || []).filter(t => t !== 'hidden')
+                                    : [...(originalDish.tags || []), 'hidden'];
+                                  await updateDish(originalDish.id, { tags: newTags });
                                 }}
                                 className={`p-2 rounded-lg transition-colors cursor-pointer ${
                                   isHidden
                                     ? 'bg-neutral-200 dark:bg-white/15 text-neutral-700 dark:text-neutral-200'
                                     : 'bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-500'
-                                }`}
+                                  }`}
                                 title={isHidden ? 'Make Visible' : 'Hide Dish'}
                               >
                                 {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
                               </button>
                               <button
                                 onClick={async () => {
-                                  if (confirm(`Delete "${dish.name}"? This cannot be undone.`)) {
-                                    const { error } = await supabase.from('dishes').delete().eq('id', dish.id);
-                                    if (!error) { setDishes(prev => prev.filter(d => d.id !== dish.id)); showNotification('Dish deleted.'); }
+                                  if (confirm(`Delete "${originalDish.name}"? This cannot be undone.`)) {
+                                    const { error } = await supabase.from('dishes').delete().eq('id', originalDish.id);
+                                    if (!error) { setDishes(prev => prev.filter(d => d.id !== originalDish.id)); showNotification('Dish deleted.'); }
                                     else showNotification('Failed to delete dish.');
                                   }
                                 }}
@@ -3020,84 +3050,97 @@ export default function VendorDashboardPage() {
                           </div>
                         </div>
 
-                        {/* Save Combo Button */}
-                        <button
-                          disabled={!comboParent || comboRecs.length === 0}
-                          onClick={async () => {
-                            if (!comboParent || comboRecs.length === 0) return;
-                            await updateDish(comboParent.id, {
-                              macros: { ...(comboParent.macros || {}), comboRecommendations: comboRecs.map(r => r.id) }
-                            });
-                            showNotification(`Combo saved for "${comboParent.name}" with ${comboRecs.length} recommendations!`);
-                            setShowComboDialog(false);
-                            setComboParent(null);
-                            setComboRecs([]);
-                          }}
-                          className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
-                        >
-                          <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Suggestions</span>
-                        </button>
-                      </div>
-
-                      {/* Right: Available Dishes Grid */}
-                      <div>
-                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
-                        <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                          {vendDishes.map(d => {
-                            const isParent = comboParent?.id === d.id;
-                            const isRec = comboRecs.some(r => r.id === d.id);
-                            const isAlreadyParentElsewhere = d.macros?.comboRecommendations?.length > 0 && comboParent?.id !== d.id;
-                            const isUsed = isParent || isRec;
-                            return (
-                              <button
-                                key={d.id}
-                                disabled={isAlreadyParentElsewhere && !comboParent}
-                                onClick={() => {
-                                  if (isParent) { setComboParent(null); return; }
-                                  if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
-                                  if (!comboParent) {
-                                    if (d.macros?.comboRecommendations?.length > 0) {
-                                      showNotification(`${d.name} is already a parent of another suggestion.`);
-                                      return;
-                                    }
-                                    setComboParent(d);
-                                  } else {
-                                    setComboRecs(prev => [...prev, d]);
-                                  }
-                                }}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                                  isParent
-                                    ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700'
-                                    : isRec
-                                      ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700'
-                                      : isAlreadyParentElsewhere && !comboParent
-                                        ? 'opacity-40 cursor-not-allowed bg-neutral-100 dark:bg-white/[0.01] border-neutral-200 dark:border-white/5'
-                                        : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
-                                } border`}
-                              >
-                                <div className="w-9 h-9 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
-                                  {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={14} className="text-neutral-400" /></div>}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-bold text-xs truncate">{d.name}</p>
-                                  <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(2)}</p>
-                                </div>
-                                {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
-                                {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
-                                {!isUsed && (
-                                  <span className="text-[10px] text-neutral-400">
-                                    {isAlreadyParentElsewhere && !comboParent
-                                      ? 'Already Parent'
-                                      : !comboParent
-                                        ? 'Set as parent'
-                                        : '+ Add rec'}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
+                         {/* Save Combo Button */}
+                         <button
+                           disabled={!comboParent || comboRecs.length === 0}
+                           onClick={async () => {
+                             if (!comboParent || comboRecs.length === 0) return;
+                             const parentId = comboParent.originalId || comboParent.id;
+                             const originalParent = vendDishes.find(d => d.id === parentId);
+                             await updateDish(parentId, {
+                               macros: {
+                                 ...(originalParent.macros || {}),
+                                 comboRecommendations: comboRecs.map(r => r.originalId || r.id)
+                               }
+                             });
+                             showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
+                             setShowComboDialog(false);
+                             setComboParent(null);
+                             setComboRecs([]);
+                           }}
+                           className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                           style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
+                         >
+                           <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Suggestions</span>
+                         </button>
+                       </div>
+ 
+                       {/* Right: Available Dishes Grid */}
+                       <div>
+                         <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
+                         <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                           {expandDishesWithVariants(vendDishes).map(d => {
+                             const isParent = comboParent?.id === d.id;
+                             const isRec = comboRecs.some(r => r.id === d.id);
+                             const parentId = d.originalId || d.id;
+                             const originalD = vendDishes.find(x => x.id === parentId);
+                             const isAlreadyParentElsewhere = originalD?.macros?.comboRecommendations?.length > 0 && (comboParent?.originalId || comboParent?.id) !== parentId;
+                             const isUsed = isParent || isRec;
+                             return (
+                               <button
+                                 key={d.id}
+                                 disabled={isAlreadyParentElsewhere && !comboParent}
+                                 onClick={() => {
+                                   if (isParent) { setComboParent(null); return; }
+                                   if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
+                                   if (!comboParent) {
+                                     if (originalD?.macros?.comboRecommendations?.length > 0) {
+                                       showNotification(`${originalD.name} is already a parent of another suggestion.`);
+                                       return;
+                                     }
+                                     setComboParent(d);
+                                   } else {
+                                     // Avoid adding duplicate parent recommendations if the dish has variants
+                                     const recParentId = d.originalId || d.id;
+                                     if (comboRecs.some(r => (r.originalId || r.id) === recParentId)) {
+                                       showNotification(`This dish is already in recommendations.`);
+                                       return;
+                                     }
+                                     setComboRecs(prev => [...prev, d]);
+                                   }
+                                 }}
+                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                                   isParent
+                                     ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700'
+                                     : isRec
+                                       ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700'
+                                       : isAlreadyParentElsewhere && !comboParent
+                                         ? 'opacity-40 cursor-not-allowed bg-neutral-100 dark:bg-white/[0.01] border-neutral-200 dark:border-white/5'
+                                         : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                 } border`}
+                               >
+                                 <div className="w-9 h-9 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                   {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={14} className="text-neutral-400" /></div>}
+                                 </div>
+                                 <div className="flex-1 min-w-0">
+                                   <p className="font-bold text-xs truncate">{d.name}</p>
+                                   <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(2)}</p>
+                                 </div>
+                                 {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
+                                 {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
+                                 {!isUsed && (
+                                   <span className="text-[10px] text-neutral-400">
+                                     {isAlreadyParentElsewhere && !comboParent
+                                       ? 'Already Parent'
+                                       : !comboParent
+                                         ? 'Set as parent'
+                                         : '+ Add rec'}
+                                   </span>
+                                 )}
+                               </button>
+                             );
+                           })}
+                         </div>
                       </div>
                     </div>
                   </div>
