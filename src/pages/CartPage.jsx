@@ -98,8 +98,10 @@ export default function CartPage() {
   // Pre-initialize RecaptchaVerifier on mount so it's ready instantly when needed
   useEffect(() => {
     const initRecaptcha = () => {
-      if (!window.recaptchaVerifier && document.getElementById('recaptcha-container')) {
+      const container = document.getElementById('recaptcha-container');
+      if (!window.recaptchaVerifier && container) {
         try {
+          container.innerHTML = '';
           window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             size: 'invisible',
             callback: () => {},
@@ -302,10 +304,14 @@ export default function CartPage() {
 
   useEffect(() => {
     if (isDelivery && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible'
-      });
-      window.recaptchaVerifier.render().catch(console.error);
+      try {
+        const container = document.getElementById('recaptcha-container');
+        if (container) container.innerHTML = '';
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible'
+        });
+        window.recaptchaVerifier.render().catch(() => {});
+      } catch (e) {}
     }
   }, [isDelivery]);
 
@@ -325,6 +331,8 @@ export default function CartPage() {
     try {
       // Ensure recaptchaVerifier is ready
       if (!window.recaptchaVerifier) {
+        const container = document.getElementById('recaptcha-container');
+        if (container) container.innerHTML = ''; // Force clear any stale iframe
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
         await window.recaptchaVerifier.render();
       }
@@ -337,16 +345,22 @@ export default function CartPage() {
       showNotification(isResend ? '🔄 New OTP sent to your phone!' : '📱 OTP sent to your phone!');
     } catch (error) {
       console.error('Error sending OTP:', error);
-      showNotification(error.message || 'Failed to send OTP. Please check the number or try again.');
+      // Suppress the confusing ReCaptcha internal error message from being shown to user
+      const isRecaptchaError = error.message && error.message.includes('reCAPTCHA');
+      showNotification(isRecaptchaError ? 'Verification failed. Please try again.' : (error.message || 'Failed to send OTP. Please check the number or try again.'));
 
       // Reset ReCaptcha so the user can try again
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+        try { window.recaptchaVerifier.clear(); } catch (e) {}
         window.recaptchaVerifier = null;
       }
-      // Re-initialize for next attempt
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
-      window.recaptchaVerifier.render().catch(console.error);
+      // Re-initialize safely for next attempt
+      try {
+        const container = document.getElementById('recaptcha-container');
+        if (container) container.innerHTML = '';
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+        window.recaptchaVerifier.render().catch(() => {});
+      } catch(e) {}
     }
     setIsSendingOtp(false);
   };
