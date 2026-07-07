@@ -187,8 +187,30 @@ export const AppProvider = ({ children }) => {
     try { return JSON.parse(localStorage.getItem('3dish_promos') || '{}'); } catch { return {}; }
   });
 
+  useEffect(() => {
+    if (restaurants.length === 0) return;
+    const newPromos = {};
+    let changed = false;
+    restaurants.forEach(r => {
+      if (r.macros && r.macros.promos) {
+        newPromos[r.id] = r.macros.promos;
+        changed = true;
+      }
+    });
+    if (changed) {
+      setPromos(prev => {
+        // Deep compare to avoid unnecessary re-renders
+        const next = { ...prev, ...newPromos };
+        if (JSON.stringify(prev) !== JSON.stringify(next)) {
+          localStorage.setItem('3dish_promos', JSON.stringify(next));
+          return next;
+        }
+        return prev;
+      });
+    }
+  }, [restaurants]);
+
   const updateMarketingCampaign = async (restId, type, campaignData) => {
-    // Promos are stored only in localStorage (no 'promo' column in DB)
     setPromos(prev => {
       const current = prev[restId] || { flash: null, happyHour: null };
       const nextPromoState = { ...current, [type]: campaignData };
@@ -196,6 +218,20 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('3dish_promos', JSON.stringify(next));
       return next;
     });
+    
+    if (!supabase) return;
+    const rest = restaurants.find(r => r.id === restId);
+    if (rest) {
+      const currentMacros = rest.macros || {};
+      const currentPromos = currentMacros.promos || { flash: null, happyHour: null };
+      const nextPromos = { ...currentPromos, [type]: campaignData };
+      const newMacros = { ...currentMacros, promos: nextPromos };
+      
+      const { error } = await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+      if (error) {
+        console.error('Failed to update marketing campaign in DB:', error);
+      }
+    }
   };
 
   const ordersChannelRef = useRef(null);
@@ -354,7 +390,7 @@ export const AppProvider = ({ children }) => {
               ...r,
               vendorId: r.vendor_id || r.vendorId,
               cover: r.cover || '',
-              requireVerificationCode: true // default
+              requireVerificationCode: r.macros?.requireVerificationCode !== undefined ? r.macros.requireVerificationCode : true
             }));
             if (fastArrayEquals(prev, mapped)) return prev;
             try {
@@ -425,7 +461,8 @@ export const AppProvider = ({ children }) => {
           const mapped = {
             ...r,
             vendorId: r.vendor_id || r.vendorId,
-            cover: r.cover || ''
+            cover: r.cover || '',
+            requireVerificationCode: r.macros?.requireVerificationCode !== undefined ? r.macros.requireVerificationCode : true
           };
           setRestaurants(prev => {
             const exists = prev.some(item => item.id === mapped.id);
@@ -434,9 +471,7 @@ export const AppProvider = ({ children }) => {
               : [...prev, mapped];
             return next;
           });
-          
-          // Promos are purely local localStorage state now, so we do not overwrite them from DB.
-        } else if (payload.eventType === 'DELETE') {
+          // Promos sync is handled by the useEffect watching restaurants.
           setRestaurants(prev => prev.filter(r => r.id !== payload.old.id));
         }
       }).subscribe();
@@ -753,13 +788,14 @@ export const AppProvider = ({ children }) => {
       if (updateData.cover !== undefined) updatePayload.cover = updateData.cover;
       if (updateData.taxRate !== undefined) updatePayload.tax_rate = updateData.taxRate;
       if (updateData.acceptCash !== undefined) updatePayload.accept_cash = updateData.acceptCash;
-      // deliveryConfig is saved into the macros JSON blob
-      if (updateData.deliveryConfig !== undefined) {
+      // deliveryConfig and requireVerificationCode are saved into the macros JSON blob
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined) {
         const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
-        updatePayload.macros = { ...currentMacros, deliveryConfig: updateData.deliveryConfig };
+        updatePayload.macros = { ...currentMacros, ...(updatePayload.macros || {}) };
+        if (updateData.deliveryConfig !== undefined) updatePayload.macros.deliveryConfig = updateData.deliveryConfig;
+        if (updateData.requireVerificationCode !== undefined) updatePayload.macros.requireVerificationCode = updateData.requireVerificationCode;
       }
       // NOTE: 'promo' column does not exist in the DB — stored in localStorage only
-      // requireVerificationCode is kept in local state only
 
       // Only call DB update if there's something to update
       if (Object.keys(updatePayload).length > 0) {
@@ -780,8 +816,12 @@ export const AppProvider = ({ children }) => {
           acceptCash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.acceptCash,
           accept_cash: updateData.acceptCash !== undefined ? updateData.acceptCash : r.accept_cash,
           requireVerificationCode: updateData.requireVerificationCode !== undefined ? updateData.requireVerificationCode : r.requireVerificationCode,
-          macros: updateData.deliveryConfig !== undefined
-            ? { ...(r.macros || {}), deliveryConfig: updateData.deliveryConfig }
+          macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined)
+            ? { 
+                ...(r.macros || {}), 
+                ...(updateData.deliveryConfig !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
+                ...(updateData.requireVerificationCode !== undefined ? { requireVerificationCode: updateData.requireVerificationCode } : {})
+              }
             : r.macros,
         } : r)
       );
