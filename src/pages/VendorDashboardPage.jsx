@@ -727,6 +727,8 @@ export default function VendorDashboardPage() {
   const [notifText, setNotifText]     = React.useState('');
   const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
   const [happyHourForm, setHappyHourForm] = React.useState({ startTime: '17:00', endTime: '19:00', discount: 20 });
+  const [flashDishSearch, setFlashDishSearch] = React.useState('');
+  const [flashCategoryFilter, setFlashCategoryFilter] = React.useState('All');
 
   const handleActivatePromo = () => {
     const disc = Number(promoForm.discount);
@@ -4045,50 +4047,113 @@ export default function VendorDashboardPage() {
                             </div>
                             
                             <div className="col-span-2">
+                              {/* Header row */}
                               <div className="flex items-center justify-between mb-2">
                                 <label className="text-xs font-bold text-neutral-500 block">Applicable Dishes</label>
                                 {(() => {
                                   const expanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                  const selectedCount = promoForm.applicableDishes.length;
+                                  const allSelected = selectedCount === expanded.length && expanded.length > 0;
                                   return (
-                                    <button
-                                      onClick={() => {
-                                        if (promoForm.applicableDishes.length === expanded.length) {
-                                          setPromoForm(p => ({...p, applicableDishes: []}));
-                                        } else {
-                                          setPromoForm(p => ({...p, applicableDishes: expanded.map(d => d.id)}));
-                                        }
-                                      }}
-                                      className="text-[10px] font-bold text-[#D4AF37] hover:underline"
-                                    >
-                                      {promoForm.applicableDishes.length === expanded.length ? 'Deselect All' : 'Select All'}
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-[10px] text-neutral-400">{selectedCount} selected</span>
+                                      <button
+                                        onClick={() => {
+                                          if (allSelected) {
+                                            setPromoForm(p => ({...p, applicableDishes: []}));
+                                          } else {
+                                            setPromoForm(p => ({...p, applicableDishes: expanded.map(d => d.id)}));
+                                          }
+                                        }}
+                                        className="text-[10px] font-bold text-[#D4AF37] hover:underline"
+                                      >
+                                        {allSelected ? 'Deselect All' : 'Select All'}
+                                      </button>
+                                    </div>
                                   );
                                 })()}
                               </div>
-                              <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
-                                {expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId)).map(dish => (
-                                  <label key={dish.id} className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={promoForm.applicableDishes.includes(dish.id)}
-                                      onChange={(e) => {
-                                        setPromoForm(p => {
-                                          const checked = e.target.checked;
-                                          const newDishes = checked
-                                            ? [...p.applicableDishes, dish.id]
-                                            : p.applicableDishes.filter(id => id !== dish.id);
-                                          return { ...p, applicableDishes: newDishes };
-                                        });
-                                      }}
-                                      className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm dark:text-neutral-200">{dish.name}</span>
-                                    <span className="text-xs text-neutral-500 ml-auto">₹{Number(dish.price).toFixed(0)}</span>
-                                  </label>
-                                ))}
-                                {dishes.filter(d => d.restId === activeRestId).length === 0 && (
-                                  <div className="text-xs text-neutral-500 text-center py-2">No dishes available. Add dishes first.</div>
+
+                              {/* Search bar */}
+                              <div className="relative mb-2">
+                                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                <input
+                                  type="text"
+                                  placeholder="Search dishes..."
+                                  value={flashDishSearch}
+                                  onChange={e => setFlashDishSearch(e.target.value)}
+                                  className="w-full pl-8 pr-8 py-2 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl text-xs dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 transition-all"
+                                />
+                                {flashDishSearch && (
+                                  <button onClick={() => setFlashDishSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs">✕</button>
                                 )}
+                              </div>
+
+                              {/* Category filter tabs */}
+                              {(() => {
+                                const restDishes = dishes.filter(d => d.restId === activeRestId);
+                                const rawCats = [...new Set(restDishes.map(d => d.category).filter(Boolean))];
+                                const cats = ['All', ...rawCats];
+                                if (cats.length <= 2) return null; // Only show if more than one real category
+                                return (
+                                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-2">
+                                    {cats.map(cat => (
+                                      <button
+                                        key={cat}
+                                        onClick={() => setFlashCategoryFilter(cat)}
+                                        className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                                          flashCategoryFilter === cat
+                                            ? 'bg-[#D4AF37] text-black border-[#D4AF37]'
+                                            : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/50'
+                                        }`}
+                                      >
+                                        {cat}
+                                      </button>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Dish list with search + category filtering */}
+                              <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-48 overflow-y-auto space-y-2">
+                                {(() => {
+                                  const allExpanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                  const filtered = allExpanded.filter(dish => {
+                                    const matchSearch = !flashDishSearch || dish.name.toLowerCase().includes(flashDishSearch.toLowerCase());
+                                    const matchCat = flashCategoryFilter === 'All' || dish.category === flashCategoryFilter;
+                                    return matchSearch && matchCat;
+                                  });
+
+                                  if (allExpanded.length === 0) {
+                                    return <div className="text-xs text-neutral-500 text-center py-4">No dishes available. Add dishes first.</div>;
+                                  }
+                                  if (filtered.length === 0) {
+                                    return <div className="text-xs text-neutral-400 text-center py-4">No dishes match your search.</div>;
+                                  }
+                                  return filtered.map(dish => (
+                                    <label key={dish.id} className="flex items-center gap-2 cursor-pointer group hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors">
+                                      <input
+                                        type="checkbox"
+                                        checked={promoForm.applicableDishes.includes(dish.id)}
+                                        onChange={(e) => {
+                                          setPromoForm(p => {
+                                            const checked = e.target.checked;
+                                            const newDishes = checked
+                                              ? [...p.applicableDishes, dish.id]
+                                              : p.applicableDishes.filter(id => id !== dish.id);
+                                            return { ...p, applicableDishes: newDishes };
+                                          });
+                                        }}
+                                        className="rounded border-neutral-300 text-[#D4AF37] accent-[#D4AF37] focus:ring-[#D4AF37]"
+                                      />
+                                      <span className="text-sm dark:text-neutral-200 flex-1 truncate group-hover:text-white transition-colors">{dish.name}</span>
+                                      {dish.category && (
+                                        <span className="text-[9px] font-bold text-neutral-400 bg-neutral-200 dark:bg-white/5 px-1.5 py-0.5 rounded shrink-0">{dish.category}</span>
+                                      )}
+                                      <span className="text-xs font-bold text-[#D4AF37] ml-auto shrink-0">₹{Number(dish.price).toFixed(0)}</span>
+                                    </label>
+                                  ));
+                                })()}
                               </div>
                             </div>
 
