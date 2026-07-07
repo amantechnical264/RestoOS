@@ -73,10 +73,15 @@ export default function CartPage() {
   const otpResendTimer = React.useRef(null);
   const { t } = useTranslation();
 
-  const isDelivery = tableNumber === 'delivery';
+  const [orderType, setOrderType] = useState(() => (tableNumber === 'delivery' || !tableNumber) ? 'delivery' : 'dine_in');
+  const [manualTableNumber, setManualTableNumber] = useState('');
+
+  const isDelivery = orderType === 'delivery';
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
-  const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
+  const taxRate = currentRestaurant?.taxRate !== undefined 
+    ? currentRestaurant.taxRate / 100 
+    : (currentRestaurant?.tax_rate !== undefined ? currentRestaurant.tax_rate / 100 : 0.08);
 
   // ── Delivery fee config from vendor settings ────────────────────────
   const deliveryConfig = currentRestaurant?.macros?.deliveryConfig || {};
@@ -192,6 +197,11 @@ export default function CartPage() {
   }
 
   const executeCheckout = async ({ overrideName, overridePhone, overrideAddress, overrideCoords } = {}) => {
+    if (!isDelivery && (tableNumber === 'delivery' || !tableNumber) && !manualTableNumber) {
+      showNotification('Please enter your table number.');
+      return;
+    }
+
     const finalName = overrideName || user?.name || (() => { try { return JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}').name; } catch(e) {} })();
     const finalPhone = overridePhone || user?.phone || (() => { try { return JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}').phone; } catch(e) {} })();
     const resolvedCoords = overrideCoords || locationCoords;
@@ -249,7 +259,8 @@ export default function CartPage() {
       contactName: finalName,
       contactPhone: finalPhone,
       specialInstructions: finalSpecialInstructions,
-      metadata: meta
+      metadata: meta,
+      tableNumber: !isDelivery && manualTableNumber ? manualTableNumber : tableNumber
     });
     
     setIsProcessing(false);
@@ -426,6 +437,53 @@ export default function CartPage() {
 
       <div className="flex-1 overflow-y-auto px-6 pt-6 pb-36 z-10 no-scrollbar">
         <motion.div key="cart" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-4">
+          {/* Order Type Toggle (Dine-In vs Delivery/Takeaway) */}
+          <div className="flex bg-neutral-100 dark:bg-white/5 p-1 rounded-2xl border border-neutral-200 dark:border-white/5 mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                setOrderType('dine_in');
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
+                !isDelivery
+                  ? 'bg-[#D4AF37] text-black shadow-md'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Store size={14} />
+              Dine-In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOrderType('delivery');
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
+                isDelivery
+                  ? 'bg-[#D4AF37] text-black shadow-md'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Truck size={14} />
+              Delivery / Takeaway
+            </button>
+          </div>
+
+          {/* Manual Table Number input for Dine-in when no table number scanned */}
+          {!isDelivery && (tableNumber === 'delivery' || !tableNumber) && (
+            <div className="bg-neutral-50 dark:bg-[#111] border border-neutral-200 dark:border-white/5 rounded-[2rem] p-5 shadow-md space-y-2">
+              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider">Table Number *</label>
+              <input
+                type="number"
+                value={manualTableNumber}
+                onChange={e => setManualTableNumber(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter Table Number (e.g. 5)"
+                className="w-full bg-white dark:bg-[#0a0a0a] border border-[#D4AF37]/35 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white"
+              />
+              <p className="text-[10px] text-neutral-400">Please enter your table number to place a dine-in order.</p>
+            </div>
+          )}
+
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-display font-bold text-neutral-900 dark:text-white">Your Order</h2>
           </div>

@@ -639,7 +639,7 @@ export const AppProvider = ({ children }) => {
       total: (cart.reduce((sum, item) => sum + (item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price || 0)), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
       status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
-      table_number: parseInt(tableNumber) || (orderData?.tableNumber ? parseInt(orderData.tableNumber) : null),
+      table_number: orderData?.tableNumber !== undefined ? (parseInt(orderData.tableNumber) || null) : (tableNumber === 'delivery' ? null : (parseInt(tableNumber) || null)),
     };
 
     const contactName = orderData?.contactName || user?.name || dinerProfile?.name || '';

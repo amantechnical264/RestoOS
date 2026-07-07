@@ -845,7 +845,6 @@ export default function MenuPage() {
             <span className="px-3 py-1 rounded-full bg-white/10 border border-neutral-200 dark:border-white/15 text-xs font-bold text-neutral-900 dark:text-white backdrop-blur-md">
               {tableNumber === 'delivery' ? 'Delivery / Takeaway' : `TABLE ${tableNumber || '12'}`}
             </span>
-            <span className="text-xs text-neutral-900 dark:text-white/50">{allDishes.length} dishes available</span>
             {restaurant?.macros?.phoneVerified && restaurant?.macros?.phone && (
               <a
                 href={`tel:${restaurant.macros.phone}`}
