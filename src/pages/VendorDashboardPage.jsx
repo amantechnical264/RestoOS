@@ -1725,9 +1725,18 @@ export default function VendorDashboardPage() {
                             {o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}
                           </span>
                         </div>
-                        <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
-                          {o.items?.map((item, i) => <li key={i}>· {item.name}</li>)}
+                        <ul className="text-xs font-semibold space-y-1 mb-2 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
+                          {o.items?.map((item, i) => (
+                            <li key={i}>
+                              · {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+                            </li>
+                          ))}
                         </ul>
+                        
+                        <div className="flex justify-between items-center mb-3 px-1">
+                          <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
+                          {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
+                        </div>
                         
                         <div className="mb-3 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 rounded-xl p-3">
                           <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">
@@ -1814,7 +1823,7 @@ export default function VendorDashboardPage() {
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
                             {o.items?.map((item, i) => (
                               <li key={i} className="flex flex-col">
-                                <span>· {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                <span>· {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
                                 {item.specialInstructions && (
                                   <span className="text-[10px] text-blue-500 font-bold ml-2 pl-2 border-l-2 border-blue-200 dark:border-blue-800">
                                     Note: {item.specialInstructions}

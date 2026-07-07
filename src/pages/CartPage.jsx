@@ -219,7 +219,8 @@ export default function CartPage() {
     const requireCode = !isDelivery && (currentRestaurant?.requireVerificationCode === true || String(currentRestaurant?.requireVerificationCode) === 'true');
     const code = requireCode ? Math.floor(1000 + Math.random() * 9000).toString() : null;
     // Delivery always goes to 'Pending' (never 'Pending Verification')
-    const status = requireCode ? 'Pending Verification' : 'Pending';
+    // Dine-in always goes to 'Pending Verification' (Awaiting Approval)
+    const status = isDelivery ? 'Pending' : 'Pending Verification';
     const finalPaymentStatus = 'Unpaid';
     
     // Encode GPS into specialInstructions as a fallback (guaranteed to survive any DB schema)
