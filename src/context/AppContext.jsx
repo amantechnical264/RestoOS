@@ -622,12 +622,7 @@ export const AppProvider = ({ children }) => {
     const convenienceFee = orderData?.orderType === 'delivery' ? (Number(deliveryConfig.convenienceFee) || 0) : 0;
     const otherFees = orderData?.orderType === 'delivery' ? (deliveryConfig.otherFees || []) : [];
     const otherFeesTotal = otherFees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
-    const deliveryRanges = deliveryConfig.deliveryRanges || [];
-    const baseDeliveryFee = orderData?.orderType === 'delivery'
-      ? (deliveryRanges.length > 0
-          ? Math.min(...deliveryRanges.map(r => Number(r.fee) || 0))
-          : (Number(deliveryConfig.deliveryFee) || 0))
-      : 0;
+    const baseDeliveryFee = orderData?.orderType === 'delivery' ? (Number(deliveryConfig.deliveryFee) || 0) : 0;
 
     const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
     const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId || user?.phone || dinerProfile.phone || 'anonymous';

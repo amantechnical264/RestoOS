@@ -88,13 +88,7 @@ export default function CartPage() {
   const convenienceFee = isDelivery ? (Number(deliveryConfig.convenienceFee) || 0) : 0;
   const otherFees = isDelivery ? (deliveryConfig.otherFees || []) : [];
   const otherFeesTotal = otherFees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
-  // Show lowest delivery range fee (or flat fee if no ranges)
-  const deliveryRanges = deliveryConfig.deliveryRanges || [];
-  const baseDeliveryFee = isDelivery
-    ? (deliveryRanges.length > 0
-        ? Math.min(...deliveryRanges.map(r => Number(r.fee) || 0))
-        : (Number(deliveryConfig.deliveryFee) || 0))
-    : 0;
+  const baseDeliveryFee = isDelivery ? (Number(deliveryConfig.deliveryFee) || 0) : 0;
   
   useEffect(() => {
     if (!activeRestId) navigate('/', { replace: true });

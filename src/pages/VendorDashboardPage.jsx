@@ -887,7 +887,7 @@ export default function VendorDashboardPage() {
 
   const [settingsForm, setSettingsForm] = React.useState({
     name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00', requireVerificationCode: true,
-    deliveryConfig: { convenienceFee: 0, deliveryFee: 0, deliveryRanges: [], otherFees: [] }
+    deliveryConfig: { convenienceFee: 0, deliveryFee: 0, otherFees: [] }
   });
 
 
@@ -904,7 +904,7 @@ export default function VendorDashboardPage() {
         phone: currentRestaurant.macros?.phone || currentRestaurant.phone || '',
         phoneVerified: currentRestaurant.macros?.phoneVerified || false,
         hours: currentRestaurant.hours || '10:00 - 22:00',
-        deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, deliveryRanges: [], otherFees: [] },
+        deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, otherFees: [] },
       });
       setFormInitializedFor(currentRestaurant.id);
     }
@@ -4727,7 +4727,7 @@ export default function VendorDashboardPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Flat Delivery Fee (₹) <span className="normal-case text-neutral-500 font-normal">(if no ranges)</span></label>
+                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Delivery Fee (₹)</label>
                         <input
                           type="number" min="0" step="0.5"
                           value={settingsForm.deliveryConfig?.deliveryFee ?? 0}
@@ -4736,61 +4736,6 @@ export default function VendorDashboardPage() {
                           placeholder="e.g. 40"
                         />
                       </div>
-                    </div>
-
-                    {/* Distance-based Delivery Ranges */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Distance-Based Delivery Ranges</label>
-                        <button
-                          type="button"
-                          onClick={() => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: [...(f.deliveryConfig.deliveryRanges || []), { minKm: 0, maxKm: 5, fee: 30 }] } }))}
-                          className="text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1"
-                          style={{ background: 'rgba(212,175,55,0.12)', color: GOLD, border: '1px solid rgba(212,175,55,0.3)' }}
-                        >
-                          <Plus size={11}/> Add Range
-                        </button>
-                      </div>
-                      {(settingsForm.deliveryConfig?.deliveryRanges || []).length === 0 ? (
-                        <p className="text-xs text-neutral-500 py-2">No ranges set. Add ranges to override the flat delivery fee above.</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {(settingsForm.deliveryConfig.deliveryRanges).map((range, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <input
-                                type="number" min="0" step="0.5"
-                                value={range.minKm}
-                                onChange={e => setSettingsForm(f => { const rr = [...f.deliveryConfig.deliveryRanges]; rr[i] = { ...rr[i], minKm: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
-                                className="w-20 rounded-xl p-2.5 text-xs text-center"
-                                placeholder="Min km"
-                              />
-                              <span className="text-xs text-neutral-400 font-bold">–</span>
-                              <input
-                                type="number" min="0" step="0.5"
-                                value={range.maxKm}
-                                onChange={e => setSettingsForm(f => { const rr = [...f.deliveryConfig.deliveryRanges]; rr[i] = { ...rr[i], maxKm: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
-                                className="w-20 rounded-xl p-2.5 text-xs text-center"
-                                placeholder="Max km"
-                              />
-                              <span className="text-xs text-neutral-400 font-bold">km → ₹</span>
-                              <input
-                                type="number" min="0" step="0.5"
-                                value={range.fee}
-                                onChange={e => setSettingsForm(f => { const rr = [...f.deliveryConfig.deliveryRanges]; rr[i] = { ...rr[i], fee: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
-                                className="w-24 rounded-xl p-2.5 text-xs text-center"
-                                placeholder="Fee ₹"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setSettingsForm(f => { const rr = f.deliveryConfig.deliveryRanges.filter((_, j) => j !== i); return { ...f, deliveryConfig: { ...f.deliveryConfig, deliveryRanges: rr } }; })}
-                                className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center hover:opacity-80 shrink-0"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
                     {/* Other Fees */}
@@ -4837,6 +4782,17 @@ export default function VendorDashboardPage() {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    {/* Dedicated Save button for Delivery & Fees section */}
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 rounded-xl font-display font-black text-xs text-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition-all"
+                        style={{ background: goldGradient }}
+                      >
+                        <Save size={13} /> Save Delivery Settings
+                      </button>
                     </div>
                   </div>
 
