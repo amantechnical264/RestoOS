@@ -891,6 +891,7 @@ export default function VendorDashboardPage() {
   });
 
 
+  const [isEditingDelivery, setIsEditingDelivery] = React.useState(false);
   const [formInitializedFor, setFormInitializedFor] = React.useState(null);
 
   React.useEffect(() => {
@@ -907,13 +908,25 @@ export default function VendorDashboardPage() {
         deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, otherFees: [] },
       });
       setFormInitializedFor(currentRestaurant.id);
+      setIsEditingDelivery(false);
     }
   }, [currentRestaurant, formInitializedFor]);
 
   const handleSettingsSave = async (e) => {
     e.preventDefault();
     await updateRestaurant(activeRestId, settingsForm);
+    setIsEditingDelivery(false);
     showNotification('Settings saved successfully!');
+  };
+
+  const handleCancelDeliveryEdit = () => {
+    setIsEditingDelivery(false);
+    if (currentRestaurant) {
+      setSettingsForm(prev => ({
+        ...prev,
+        deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, otherFees: [] }
+      }));
+    }
   };
 
   const handleOCRUpload = async (e) => {
@@ -4710,9 +4723,16 @@ export default function VendorDashboardPage() {
 
                   {/* ── Delivery & Fees ── */}
                   <div className="rounded-2xl p-5 space-y-5 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
-                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Package size={13}/> Delivery &amp; Fees
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                        <Package size={13}/> Delivery &amp; Fees
+                      </h3>
+                      {!isEditingDelivery && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border border-neutral-200 dark:border-neutral-800">
+                          Read Only
+                        </span>
+                      )}
+                    </div>
 
                     {/* Convenience Fee */}
                     <div className="grid grid-cols-2 gap-4">
@@ -4720,9 +4740,14 @@ export default function VendorDashboardPage() {
                         <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Convenience Fee (₹)</label>
                         <input
                           type="number" min="0" step="0.5"
+                          disabled={!isEditingDelivery}
                           value={settingsForm.deliveryConfig?.convenienceFee ?? 0}
                           onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, convenienceFee: parseFloat(e.target.value) || 0 } }))}
-                          className="w-full rounded-xl p-3 text-sm"
+                          className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${
+                            !isEditingDelivery
+                              ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
+                              : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
+                          }`}
                           placeholder="e.g. 15"
                         />
                       </div>
@@ -4730,9 +4755,14 @@ export default function VendorDashboardPage() {
                         <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Delivery Fee (₹)</label>
                         <input
                           type="number" min="0" step="0.5"
+                          disabled={!isEditingDelivery}
                           value={settingsForm.deliveryConfig?.deliveryFee ?? 0}
                           onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryFee: parseFloat(e.target.value) || 0 } }))}
-                          className="w-full rounded-xl p-3 text-sm"
+                          className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${
+                            !isEditingDelivery
+                              ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
+                              : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
+                          }`}
                           placeholder="e.g. 40"
                         />
                       </div>
@@ -4742,14 +4772,16 @@ export default function VendorDashboardPage() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Other Fees</label>
-                        <button
-                          type="button"
-                          onClick={() => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: [...(f.deliveryConfig.otherFees || []), { label: '', amount: 0 }] } }))}
-                          className="text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1"
-                          style={{ background: 'rgba(212,175,55,0.12)', color: GOLD, border: '1px solid rgba(212,175,55,0.3)' }}
-                        >
-                          <Plus size={11}/> Add Fee
-                        </button>
+                        {isEditingDelivery && (
+                          <button
+                            type="button"
+                            onClick={() => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: [...(f.deliveryConfig.otherFees || []), { label: '', amount: 0 }] } }))}
+                            className="text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1"
+                            style={{ background: 'rgba(212,175,55,0.12)', color: GOLD, border: '1px solid rgba(212,175,55,0.3)' }}
+                          >
+                            <Plus size={11}/> Add Fee
+                          </button>
+                        )}
                       </div>
                       {(settingsForm.deliveryConfig?.otherFees || []).length === 0 ? (
                         <p className="text-xs text-neutral-500 py-2">No other fees added (e.g. Packaging ₹5, Platform ₹2).</p>
@@ -4759,40 +4791,72 @@ export default function VendorDashboardPage() {
                             <div key={i} className="flex items-center gap-2">
                               <input
                                 type="text"
+                                disabled={!isEditingDelivery}
                                 value={fee.label}
                                 onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], label: e.target.value }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
-                                className="flex-1 rounded-xl p-2.5 text-xs"
+                                className={`flex-1 rounded-xl p-2.5 text-xs transition-all duration-200 ${
+                                  !isEditingDelivery
+                                    ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
+                                    : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
+                                }`}
                                 placeholder="Fee label (e.g. Packaging)"
                               />
                               <input
                                 type="number" min="0" step="0.5"
+                                disabled={!isEditingDelivery}
                                 value={fee.amount}
                                 onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], amount: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
-                                className="w-24 rounded-xl p-2.5 text-xs text-center"
+                                className={`w-24 rounded-xl p-2.5 text-xs text-center transition-all duration-200 ${
+                                  !isEditingDelivery
+                                    ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
+                                    : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
+                                }`}
                                 placeholder="₹ Amount"
                               />
-                              <button
-                                type="button"
-                                onClick={() => setSettingsForm(f => { const ff = f.deliveryConfig.otherFees.filter((_, j) => j !== i); return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
-                                className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center hover:opacity-80 shrink-0"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                              {isEditingDelivery && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSettingsForm(f => { const ff = f.deliveryConfig.otherFees.filter((_, j) => j !== i); return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
+                                  className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center hover:opacity-80 shrink-0"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Dedicated Save button for Delivery & Fees section */}
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="submit"
-                        className="px-5 py-2.5 rounded-xl font-display font-black text-xs text-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition-all"
-                        style={{ background: goldGradient }}
-                      >
-                        <Save size={13} /> Save Delivery Settings
-                      </button>
+                    {/* Dedicated Save/Edit buttons for Delivery & Fees section */}
+                    <div className="flex justify-end gap-3 pt-2">
+                      {isEditingDelivery ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleCancelDeliveryEdit}
+                            className="px-5 py-2.5 rounded-xl font-display font-black text-xs bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-800 dark:text-neutral-300 transition-all border border-neutral-300 dark:border-white/10"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-5 py-2.5 rounded-xl font-display font-black text-xs text-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition-all"
+                            style={{ background: goldGradient }}
+                          >
+                            <Save size={13} /> Save Delivery Settings
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingDelivery(true)}
+                          className="px-5 py-2.5 rounded-xl font-display font-black text-xs text-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition-all"
+                          style={{ background: goldGradient }}
+                        >
+                          <Edit2 size={13} /> Edit Delivery Settings
+                        </button>
+                      )}
                     </div>
                   </div>
 
