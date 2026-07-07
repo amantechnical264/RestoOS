@@ -390,7 +390,7 @@ export const AppProvider = ({ children }) => {
               ...r,
               vendorId: r.vendor_id || r.vendorId,
               cover: r.cover || '',
-              requireVerificationCode: r.macros?.requireVerificationCode !== undefined ? r.macros.requireVerificationCode : true
+              requireVerificationCode: r.macros?.requireVerificationCode !== undefined ? r.macros.requireVerificationCode : false
             }));
             if (fastArrayEquals(prev, mapped)) return prev;
             try {
@@ -462,7 +462,7 @@ export const AppProvider = ({ children }) => {
             ...r,
             vendorId: r.vendor_id || r.vendorId,
             cover: r.cover || '',
-            requireVerificationCode: r.macros?.requireVerificationCode !== undefined ? r.macros.requireVerificationCode : true
+            requireVerificationCode: r.macros?.requireVerificationCode !== undefined ? r.macros.requireVerificationCode : false
           };
           setRestaurants(prev => {
             const exists = prev.some(item => item.id === mapped.id);
@@ -761,7 +761,7 @@ export const AppProvider = ({ children }) => {
         ...data[0],
         vendorId: data[0].vendor_id,
         cover: data[0].cover || '',
-        requireVerificationCode: true,
+        requireVerificationCode: false,
       };
       setRestaurants(prev => [...prev, mapped]);
       return { id: data[0].id };

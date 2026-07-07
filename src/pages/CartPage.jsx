@@ -216,7 +216,7 @@ export default function CartPage() {
     // • DELIVERY: code is NEVER generated — delivery has its own SMS/OTP verification
     //             (enforced via Firebase at the sendOtp/verifyOtp flow above).
     //   The vendor's "Customer Verification Code" toggle has NO effect on delivery.
-    const requireCode = !isDelivery && String(currentRestaurant?.requireVerificationCode) !== 'false';
+    const requireCode = !isDelivery && (currentRestaurant?.requireVerificationCode === true || String(currentRestaurant?.requireVerificationCode) === 'true');
     const code = requireCode ? Math.floor(1000 + Math.random() * 9000).toString() : null;
     // Delivery always goes to 'Pending' (never 'Pending Verification')
     const status = requireCode ? 'Pending Verification' : 'Pending';
