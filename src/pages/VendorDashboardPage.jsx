@@ -157,6 +157,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
     });
 
     totalOrders = yearOrders.length;
+    let totalRevenue = 0;
 
     yearOrders.forEach(o => {
       const d = new Date(o.timestamp);
@@ -176,6 +177,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
       map[dateKey].count += 1;
       map[dateKey].revenue += Number(o.total || 0);
       map[dateKey].orders.push(o);
+      totalRevenue += Number(o.total || 0);
     });
 
     const activeDays = new Set(Object.keys(map));
@@ -207,6 +209,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
     return {
       map,
       totalOrders,
+      totalRevenue,
       activeDaysCount: activeDays.size,
       maxStreak
     };
@@ -230,7 +233,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-100 dark:border-white/5 pb-3">
         <div className="space-y-0.5">
           <div className="text-lg font-display font-black text-neutral-900 dark:text-[#D4AF37]">
-            {yearData.totalOrders} submissions in {selectedYear}
+            {yearData.totalOrders} orders placed in the restaurant in {selectedYear}
           </div>
           <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
             <span>Total active days: <strong className="text-neutral-900 dark:text-white">{yearData.activeDaysCount}</strong></span>
@@ -309,6 +312,22 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Total Revenue and Details Row */}
+      <div className="mt-4 pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-t border-neutral-100 dark:border-white/5">
+        <div className="text-xs text-neutral-500 dark:text-neutral-400 font-semibold">
+          Total Revenue in {selectedYear}: <strong className="text-neutral-905 dark:text-[#D4AF37] text-sm ml-1 font-bold">₹{yearData.totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400">
+          <span>Less</span>
+          <span className="w-2.5 h-2.5 rounded-[2px] bg-neutral-100 dark:bg-neutral-800" />
+          <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-100 dark:bg-emerald-950/80" />
+          <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-300 dark:bg-emerald-800/80" />
+          <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-50 dark:bg-emerald-600/80" />
+          <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-600 dark:bg-emerald-400" />
+          <span>More</span>
         </div>
       </div>
 
