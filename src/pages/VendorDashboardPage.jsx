@@ -70,7 +70,7 @@ const cardStyleLight = {
 };
 
 // ─── Mini Bar Chart (pure SVG, no library) ────────────────────────────
-const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
+const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80, onBarClick }) => {
   const max = Math.max(...data.map(d => d.value), 1);
   const [hovered, setHovered] = React.useState(null);
   return (
@@ -109,7 +109,8 @@ const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80 }) => {
           return (
             <div key={i} className="flex flex-col items-center flex-1 cursor-pointer group"
               onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}>
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => onBarClick && onBarClick(d)}>
               <div
                 className="w-full rounded-t-sm transition-all duration-150"
                 style={{
@@ -925,6 +926,7 @@ export default function VendorDashboardPage() {
 
   // Custom Customer Modal State
   const [showAllCustomersModal, setShowAllCustomersModal] = React.useState(false);
+  const [selectedDateOrders, setSelectedDateOrders] = React.useState(null);
   const [customerModalSort, setCustomerModalSort] = React.useState('most-came'); // 'most-came', 'most-spend'
   const [selectedCustomerIds, setSelectedCustomerIds] = React.useState([]);
 
@@ -1338,7 +1340,8 @@ export default function VendorDashboardPage() {
         dineInValue: dineInRev,
         deliveryValue: deliveryRev,
         orders: dayOrders.length,
-        fullDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        fullDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        allDayOrders: restOrders.filter(o => o.timestamp && new Date(o.timestamp).toLocaleDateString('en-CA') === dayStr)
       };
     });
   }, [restOrders, analyticsRange]);
@@ -2419,7 +2422,7 @@ export default function VendorDashboardPage() {
                         vs prev. {analyticsRange === 'Today' ? 'day' : analyticsRange === 'Week' ? 'week' : 'month'} <span className={`${trendRevenue >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{trendRevenue >= 0 ? '↑' : '↓'} {Math.abs(trendRevenue)}%</span>
                       </span>
                     </div>
-                    <MiniBarChart data={weekData} color="#3B82F6" height={100} />
+                    <MiniBarChart data={weekData} color="#3B82F6" height={100} onBarClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })} />
                     <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(2)}</div>
                   </div>
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
@@ -5568,6 +5571,127 @@ export default function VendorDashboardPage() {
                     </div>
                   </>
                 )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Date Orders Detail Modal */}
+        <AnimatePresence>
+          {selectedDateOrders && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white dark:bg-[#12141D] w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-neutral-200 dark:border-white/10 relative">
+                
+                {/* Modal Header */}
+                <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-black shrink-0 relative z-10">
+                  <div>
+                    <h2 className="font-display font-black text-xl text-neutral-900 dark:text-white">Orders Breakdown</h2>
+                    <p className="text-xs text-neutral-500 mt-1">{selectedDateOrders.dateLabel} • {selectedDateOrders.orders.length} order{selectedDateOrders.orders.length !== 1 ? 's' : ''}</p>
+                  </div>
+                  <button onClick={() => setSelectedDateOrders(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-200/50 dark:bg-white/10 text-neutral-600 dark:text-white hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors">
+                    <CloseIcon size={18} />
+                  </button>
+                </div>
+
+                {/* Modal Body / Orders List */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {selectedDateOrders.orders.length === 0 ? (
+                    <div className="text-center py-10 text-neutral-400">
+                      <p className="text-sm font-semibold">No orders recorded on this date.</p>
+                    </div>
+                  ) : (
+                    selectedDateOrders.orders.map((o) => {
+                      const cName = o.contactName || o.contact_name || 'Guest Diner';
+                      const cPhone = o.contactPhone || o.contact_phone;
+                      const orderTime = o.timestamp ? new Date(o.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Unknown Time';
+                      
+                      // Filter out metadata and location items
+                      const foodItems = (o.items || []).filter(item => 
+                        item.type !== 'metadata' && 
+                        item.type !== 'location_meta' && 
+                        item.id !== '__contact_info' && 
+                        item.id !== '__location' && 
+                        item.id !== '__special_instructions'
+                      );
+
+                      // Badges for Status and Order Type
+                      const statusColor = 
+                        o.status === 'Completed' || o.status === 'Delivered' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                        o.status === 'Cancelled' || o.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                        o.status === 'Preparing' || o.status === 'Ready' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                        'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
+
+                      const typeColor = 
+                        o.orderType === 'dine_in' || o.order_type === 'dine_in' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30' :
+                        o.orderType === 'delivery' || o.order_type === 'delivery' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/30' :
+                        'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200/50 dark:border-purple-900/30';
+
+                      const orderTypeLabel = 
+                        o.orderType === 'dine_in' || o.order_type === 'dine_in' ? `Dine-In ${o.table_number || o.tableNumber ? `(Table ${o.table_number || o.tableNumber})` : ''}` :
+                        o.orderType === 'delivery' || o.order_type === 'delivery' ? 'Delivery' :
+                        'Pre-Order';
+
+                      return (
+                        <div key={o.id} className="p-4 bg-neutral-50 dark:bg-[#181a24] border border-neutral-100 dark:border-white/5 rounded-2xl flex flex-col md:flex-row md:items-start gap-4">
+                          
+                          {/* Left Column: Customer details, Time, Type, Status */}
+                          <div className="flex-1 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-mono font-black text-sm text-neutral-800 dark:text-neutral-200">{getOrderNumber(o)}</span>
+                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${typeColor}`}>
+                                {orderTypeLabel}
+                              </span>
+                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${statusColor}`}>
+                                {o.status}
+                              </span>
+                            </div>
+
+                            <div>
+                              <p className="font-bold text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                <UserCircle size={14} className="text-neutral-400 shrink-0" />
+                                {cName}
+                              </p>
+                              {cPhone && (
+                                <p className="text-xs text-neutral-500 font-mono flex items-center gap-1.5 mt-0.5">
+                                  <Phone size={11} className="text-neutral-400 shrink-0" />
+                                  {cPhone}
+                                </p>
+                              )}
+                              <p className="text-xs text-neutral-400 flex items-center gap-1.5 mt-0.5">
+                                <Clock size={11} className="text-neutral-400 shrink-0" />
+                                Ordered at {orderTime}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Middle Column: Dishes Ordered */}
+                          <div className="md:w-72 shrink-0 bg-white dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 p-3 rounded-xl">
+                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-wider mb-2">Dishes ({foodItems.length})</p>
+                            <ul className="space-y-1.5">
+                              {foodItems.map((item, idx) => (
+                                <li key={idx} className="flex justify-between text-xs">
+                                  <span className="font-semibold text-neutral-700 dark:text-neutral-300">
+                                    <span className="text-neutral-400 font-bold mr-1.5">{item.quantity || 1}x</span>
+                                    {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+                                  </span>
+                                  <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(2)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Right Column: Order Value */}
+                          <div className="shrink-0 text-left md:text-right flex md:flex-col justify-between md:justify-start items-center md:items-end gap-1">
+                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">Value</span>
+                            <span className="font-black text-[#D4AF37] text-lg">₹{(o.total || 0).toFixed(2)}</span>
+                          </div>
+
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
               </motion.div>
             </motion.div>
           )}
