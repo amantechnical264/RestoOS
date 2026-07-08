@@ -187,6 +187,8 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
                       {(item.quantity || item.qty || 1)}x {item.name}
+                      {item.variantName && ` (${item.variantName})`}
+                      {item.selectedCustomizations && item.selectedCustomizations.length > 0 && ` + ${item.selectedCustomizations.map(c => c.name).join(', ')}`}
                     </span>
                     {/* Show average rating for this dish */}
                     {item.id && <DishRatingBadge dishId={item.id} variant="inline" />}
@@ -346,8 +348,18 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
       <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
         <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
           {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => (
-            <li key={i} className="flex justify-between">
-              <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty || 1)}x {item.name}</span>
+            <li key={i} className="flex justify-between items-start">
+              <span className="text-sm font-bold text-neutral-900 dark:text-white flex flex-col">
+                <span>{(item.quantity || item.qty || 1)}x {item.name}</span>
+                {item.variantName && (
+                  <span className="text-xs font-bold text-[#D4AF37]">{item.variantName}</span>
+                )}
+                {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
+                  <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                    + {item.selectedCustomizations.map(c => c.name).join(', ')}
+                  </span>
+                )}
+              </span>
               <span className="font-bold" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>
             </li>
           ))}

@@ -41,6 +41,7 @@ const mapDish = (d) => ({
   serves: d.macros?.serves || d.serves,
   spiceLevel: d.macros?.spiceLevel || d.spiceLevel,
   dietaryPreference: d.macros?.dietaryPreference || d.dietaryPreference,
+  customizationCategories: d.macros?.customizationCategories || [],
   modelUrl: d.model_url || d.modelUrl,
   restId: d.rest_id || d.restId
 });
@@ -611,16 +612,25 @@ export const AppProvider = ({ children }) => {
 
   const addToCart = (dish) => {
     // Stamp the effective price at add-time so every consumer (subtotal, placeOrder, etc.) reads it correctly
-    const effectivePrice = dish.selectedVariant ? Number(dish.selectedVariant.price) : Number(dish.price);
-    setCart(prev => [...prev, { ...dish, price: effectivePrice, cartId: Date.now() }]);
+    let effectivePrice = dish.selectedVariant ? Number(dish.selectedVariant.price) : Number(dish.price);
+    
+    // Add customizations price
+    if (dish.selectedCustomizations && dish.selectedCustomizations.length > 0) {
+      effectivePrice += dish.selectedCustomizations.reduce((sum, cust) => sum + (Number(cust.price) || 0), 0);
+    }
+    
+    const customizationId = dish.selectedCustomizations ? JSON.stringify(dish.selectedCustomizations.map(c => c.id).sort()) : null;
+
+    setCart(prev => [...prev, { ...dish, price: effectivePrice, customizationId, cartId: Date.now() }]);
     showNotification('Added to cart');
   };
 
-  const removeOneFromCart = (dishId, variantName) => {
+  const removeOneFromCart = (dishId, variantName, customizationId) => {
     setCart(prev => {
       const idx = prev.findLastIndex(item => 
         item.id === dishId && 
-        (!variantName || (item.selectedVariant?.name === variantName || item.variantName === variantName))
+        (!variantName || (item.selectedVariant?.name === variantName || item.variantName === variantName)) &&
+        (customizationId === undefined || item.customizationId === customizationId)
       );
       if (idx === -1) return prev;
       return prev.filter((_, i) => i !== idx);
@@ -685,7 +695,7 @@ export const AppProvider = ({ children }) => {
         ...cart,
         ...(orderData?.specialInstructions ? [{ id: '__special_instructions', instructions: orderData.specialInstructions, price: 0, quantity: 0, type: 'metadata' }] : [])
       ],
-      total: (cart.reduce((sum, item) => sum + (item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price || 0)), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
+      total: (cart.reduce((sum, item) => sum + Number(item.price || 0), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
       status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
       table_number: orderData?.tableNumber !== undefined ? (parseInt(orderData.tableNumber) || null) : (tableNumber === 'delivery' ? null : (parseInt(tableNumber) || null)),
@@ -837,7 +847,7 @@ export const AppProvider = ({ children }) => {
         requireVerificationCode: updateData.requireVerificationCode !== undefined
           ? updateData.requireVerificationCode
           : r.requireVerificationCode,
-        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined)
+        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined)
           ? {
               ...(r.macros || {}),
               ...(updateData.deliveryConfig          !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
@@ -845,6 +855,7 @@ export const AppProvider = ({ children }) => {
               ...(updateData.phone                  !== undefined ? { phone: updateData.phone } : {}),
               ...(updateData.phoneVerified           !== undefined ? { phoneVerified: updateData.phoneVerified } : {}),
               ...(updateData.socials                 !== undefined ? { socials: updateData.socials } : {}),
+              ...(updateData.customizations          !== undefined ? { customizations: updateData.customizations } : {}),
             }
           : r.macros,
       } : r);
@@ -871,7 +882,7 @@ export const AppProvider = ({ children }) => {
       // requireVerificationCode and deliveryConfig live here. If the column is missing,
       // the value is already saved in local state + localStorage above, so the toggle
       // still works correctly for the session and across page reloads.
-      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined) {
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined) {
         const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
         const newMacros = { ...currentMacros };
         if (updateData.deliveryConfig          !== undefined) newMacros.deliveryConfig          = updateData.deliveryConfig;
@@ -879,6 +890,7 @@ export const AppProvider = ({ children }) => {
         if (updateData.phone                  !== undefined) newMacros.phone                  = updateData.phone;
         if (updateData.phoneVerified           !== undefined) newMacros.phoneVerified           = updateData.phoneVerified;
         if (updateData.socials                 !== undefined) newMacros.socials                 = updateData.socials;
+        if (updateData.customizations          !== undefined) newMacros.customizations          = updateData.customizations;
 
         const { error: macrosError } = await supabase.from('restaurants')
           .update({ macros: newMacros })
@@ -920,7 +932,8 @@ export const AppProvider = ({ children }) => {
           prepTime: dishData.prepTime,
           serves: dishData.serves,
           spiceLevel: dishData.spiceLevel,
-          dietaryPreference: dishData.dietaryPreference
+          dietaryPreference: dishData.dietaryPreference,
+          customizationCategories: dishData.customizationCategories || [],
         },
         tags: dishData.tags || [],
         allergens: dishData.allergens || [],
@@ -937,6 +950,7 @@ export const AppProvider = ({ children }) => {
         cover: data[0].macros?.cover || '',
         images: data[0].macros?.images || [],
         variants: data[0].macros?.variants || [],
+        customizationCategories: data[0].macros?.customizationCategories || [],
         modelUrl: data[0].model_url || data[0].modelUrl,
         restId: data[0].rest_id || data[0].restId
       }]);
@@ -979,6 +993,7 @@ export const AppProvider = ({ children }) => {
       if (updates.serves !== undefined) dbUpdate.macros.serves = updates.serves;
       if (updates.spiceLevel !== undefined) dbUpdate.macros.spiceLevel = updates.spiceLevel;
       if (updates.dietaryPreference !== undefined) dbUpdate.macros.dietaryPreference = updates.dietaryPreference;
+      if (updates.customizationCategories !== undefined) dbUpdate.macros.customizationCategories = updates.customizationCategories;
       
       if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
       if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;

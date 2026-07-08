@@ -575,6 +575,8 @@ export default function MenuPage() {
   const scrollDirection = useScrollDirection();
   const [variantModalDish, setVariantModalDish] = useState(null);
   const [selectedComboDish, setSelectedComboDish] = useState(null);
+  const [customizeModalDish, setCustomizeModalDish] = useState(null);
+  const [selectedCustomizations, setSelectedCustomizations] = useState([]);
 
   const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
@@ -597,10 +599,16 @@ export default function MenuPage() {
   const handleAddToCart = useCallback((dish) => {
     if (dish.variants && dish.variants.length > 1) {
       setVariantModalDish(dish);
-    } else if (dish.variants && dish.variants.length === 1) {
-      addToCart({ ...dish, selectedVariant: dish.variants[0] });
     } else {
-      addToCart(dish);
+      const dishWithVariant = dish.variants && dish.variants.length === 1
+        ? { ...dish, selectedVariant: dish.variants[0] }
+        : dish;
+      if (dishWithVariant.customizationCategories && dishWithVariant.customizationCategories.length > 0) {
+        setSelectedCustomizations([]);
+        setCustomizeModalDish(dishWithVariant);
+      } else {
+        addToCart(dishWithVariant);
+      }
     }
   }, [addToCart]);
 
@@ -1455,8 +1463,14 @@ export default function MenuPage() {
               <div className="space-y-3">
                 {variantModalDish.variants.map((v, i) => (
                   <button key={i} onClick={() => {
-                    addToCart({ ...variantModalDish, selectedVariant: v });
+                    const dishWithVariant = { ...variantModalDish, selectedVariant: v };
                     setVariantModalDish(null);
+                    if (dishWithVariant.customizationCategories && dishWithVariant.customizationCategories.length > 0) {
+                      setSelectedCustomizations([]);
+                      setCustomizeModalDish(dishWithVariant);
+                    } else {
+                      addToCart(dishWithVariant);
+                    }
                   }} className="w-full flex justify-between items-center p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all text-left">
                     <span className="font-bold text-sm text-neutral-900 dark:text-white">{v.name}</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
@@ -1476,6 +1490,126 @@ export default function MenuPage() {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {customizeModalDish && (() => {
+          const currentRestaurant = restaurants.find(r => r.id === activeRestId);
+          const allCustomizations = currentRestaurant?.macros?.customizations || [];
+          const dishCategories = allCustomizations.filter(c => (customizeModalDish.customizationCategories || []).includes(c.id));
+          
+          const basePrice = customizeModalDish.selectedVariant ? Number(customizeModalDish.selectedVariant.price) : Number(customizeModalDish.price);
+          const selectedPrice = selectedCustomizations.reduce((sum, opt) => sum + (Number(opt.price) || 0), 0);
+          const totalPrice = basePrice + selectedPrice;
+
+          return (
+            <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-sm" onClick={() => { setCustomizeModalDish(null); setSelectedCustomizations([]); }}>
+              <motion.div
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-[#12141D] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-neutral-200 dark:border-white/10 max-h-[90vh] overflow-y-auto flex flex-col"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-display font-black text-xl text-neutral-900 dark:text-white flex items-center gap-2">
+                      Customize Dish
+                    </h3>
+                    <p className="text-sm text-neutral-500 mt-1">{customizeModalDish.name}</p>
+                    {customizeModalDish.selectedVariant && (
+                      <span className="inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">
+                        {customizeModalDish.selectedVariant.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-6 my-4 overflow-y-auto flex-1 pr-1">
+                  {dishCategories.map(cat => (
+                    <div key={cat.id} className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-sm text-neutral-700 dark:text-neutral-300">{cat.name}</h4>
+                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-neutral-100 dark:bg-white/5 text-neutral-500">
+                          {cat.type === 'single' ? 'Choose 1' : 'Optional'}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {cat.options.map(opt => {
+                          const isSelected = selectedCustomizations.some(o => o.id === opt.id);
+                          return (
+                            <button
+                              key={opt.id}
+                              onClick={() => {
+                                if (cat.type === 'single') {
+                                  const filtered = selectedCustomizations.filter(o => !cat.options.some(x => x.id === o.id));
+                                  setSelectedCustomizations([...filtered, opt]);
+                                } else {
+                                  if (isSelected) {
+                                    setSelectedCustomizations(selectedCustomizations.filter(o => o.id !== opt.id));
+                                  } else {
+                                    setSelectedCustomizations([...selectedCustomizations, opt]);
+                                  }
+                                }
+                              }}
+                              className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left ${
+                                isSelected
+                                  ? 'border-emerald-500 bg-emerald-500/5 text-emerald-900 dark:text-emerald-300'
+                                  : 'border-neutral-200 dark:border-white/5 bg-neutral-50 dark:bg-[#0d0d10] hover:border-neutral-300 dark:hover:border-white/20'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                                  isSelected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-neutral-300 dark:border-white/20'
+                                }`}>
+                                  {isSelected && (
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="font-bold text-sm">{opt.name}</span>
+                              </div>
+                              <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                                {opt.price > 0 ? `+₹${Number(opt.price).toFixed(2)}` : 'Free'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4 border-t border-neutral-100 dark:border-white/5 space-y-3">
+                  <button
+                    onClick={() => {
+                      addToCart({
+                        ...customizeModalDish,
+                        selectedCustomizations: selectedCustomizations
+                      });
+                      setCustomizeModalDish(null);
+                      setSelectedCustomizations([]);
+                    }}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-base font-black transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 flex items-center justify-between px-5"
+                  >
+                    <span>Add to Cart</span>
+                    <span>₹{totalPrice.toFixed(2)}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCustomizeModalDish(null);
+                      setSelectedCustomizations([]);
+                    }}
+                    className="w-full py-3 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       <AnimatePresence>

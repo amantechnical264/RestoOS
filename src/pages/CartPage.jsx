@@ -144,18 +144,16 @@ export default function CartPage() {
   };
 
   const subtotal = cart.reduce((sum, item) => {
-    const itemPrice = item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price);
-    return sum + itemPrice;
+    return sum + Number(item.price);
   }, 0);
   const taxAmount = subtotal * taxRate;
   const total = subtotal + taxAmount + convenienceFee + baseDeliveryFee + otherFeesTotal;
   
   const groupedCart = Object.values(cart.reduce((acc, item) => {
-    const groupId = item.id + (item.selectedVariant ? '-' + item.selectedVariant.name : '');
+    const groupId = item.id + (item.selectedVariant ? '-' + item.selectedVariant.name : '') + (item.customizationId ? '-' + item.customizationId : '');
     if (!acc[groupId]) {
       acc[groupId] = { ...item, quantity: 0, cartIds: [], groupId };
       if (item.selectedVariant) {
-        acc[groupId].price = item.selectedVariant.price;
         acc[groupId].variantName = item.selectedVariant.name;
       }
     }
@@ -495,6 +493,11 @@ export default function CartPage() {
                       {item.variantName && (
                         <p className="text-xs font-bold text-[#D4AF37] mb-1">{item.variantName}</p>
                       )}
+                      {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-tight mb-1">
+                          + {item.selectedCustomizations.map(c => c.name).join(', ')}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2">
                         {dishes.find(d => d.id === item.id)?.tags?.includes('sold_out') && (
                           <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-[9px] uppercase tracking-wider">
@@ -515,7 +518,7 @@ export default function CartPage() {
                     </div>
                     {/* Stepper */}
                     <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg overflow-hidden">
-                      <button onClick={(e) => { e.stopPropagation(); removeOneFromCart(item.id, item.variantName); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); removeOneFromCart(item.id, item.variantName, item.customizationId); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
                         <Minus size={14} strokeWidth={2.5} />
                       </button>
                       <span className="px-2 text-sm font-bold text-emerald-700 dark:text-emerald-300 w-6 text-center">{item.quantity}</span>

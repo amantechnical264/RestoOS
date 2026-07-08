@@ -9,7 +9,7 @@ import {
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
   TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle, Search, MapPin, Phone
 } from 'lucide-react';
-import { Share2, Globe } from 'lucide-react';
+import { Share2, Globe, Layers, PlusCircle, Trash } from 'lucide-react';
 
 // Custom Social Media SVG Icons
 const InstagramIcon = ({ size = 20, className = "" }) => (
@@ -826,6 +826,7 @@ export default function VendorDashboardPage() {
   const [editingDish, setEditingDish] = React.useState(null);
   const [editingEvent, setEditingEvent] = React.useState(null);
   const [viewingRsvpsEvent, setviewingRsvpsEvent] = React.useState(null);
+  const [editingCustomization, setEditingCustomization] = React.useState(null);
   const [managingCategories, setManagingCategories] = React.useState(false);
   const [newCategoryName, setNewCategoryName] = React.useState('');
   const [selectedEditCategory, setSelectedEditCategory] = React.useState('All');
@@ -1643,10 +1644,11 @@ export default function VendorDashboardPage() {
     { key: 'floor',     icon: Bell,         label: 'Floor',    badge: serviceAlerts.length },
     { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
     { key: 'menu',      icon: Utensils,     label: 'Menu' },
+    { key: 'editmenu',  icon: BookOpen,     label: 'Edit Menu' },
+    { key: 'customize', icon: Layers,       label: 'Add-ons' },
     { key: 'growth',    icon: Zap,          label: 'Growth' },
     { key: 'customers', icon: Users,        label: 'Customers' },
     { key: 'events',    icon: Calendar,     label: 'Events' },
-    { key: 'editmenu',  icon: BookOpen,     label: 'Edit Menu' },
     { key: 'combos',    icon: Gift,         label: 'Combos' },
     { key: 'qr',        icon: QrIcon,       label: 'Tables' },
     { key: 'settings',  icon: Settings,     label: 'Settings' },
@@ -1669,14 +1671,24 @@ export default function VendorDashboardPage() {
     const printTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const restName = currentRestaurant?.name || 'Restaurant';
 
-    const itemsHtml = (order.items || []).map(item => `
-      <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
-        <span style="flex: 1;">${item.quantity || 1} x ${item.name}</span>
-        <span>${(Number(item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
-      </div>
-    `).join('');
+    const foodItems = (order.items || []).filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions');
 
-    const subtotal = (order.items || []).reduce((acc, item) => acc + (Number(item.price || 0) * (item.quantity || 1)), 0);
+    const itemsHtml = foodItems.map(item => {
+      const variantText = item.selectedVariant?.name || item.variantName ? `<div style="font-size: 10px; color: #666; margin-left: 12px;">(${item.selectedVariant?.name || item.variantName})</div>` : '';
+      const customizationsText = item.selectedCustomizations && item.selectedCustomizations.length > 0 ? `<div style="font-size: 10px; color: #666; margin-left: 12px;">+ ${item.selectedCustomizations.map(c => c.name).join(', ')}</div>` : '';
+      return `
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="flex: 1; font-weight: bold;">${item.quantity || 1} x ${item.name}</span>
+            <span>${(Number(item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+          </div>
+          ${variantText}
+          ${customizationsText}
+        </div>
+      `;
+    }).join('');
+
+    const subtotal = foodItems.reduce((acc, item) => acc + (Number(item.price || 0) * (item.quantity || 1)), 0);
     const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
     const taxAmount = subtotal * taxRate;
     const totalAmount = (order.total || (subtotal + taxAmount)).toFixed(2);
@@ -2172,7 +2184,11 @@ export default function VendorDashboardPage() {
                         
                         const itemsList = order.items
                           .filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location')
-                          .map(i => `  • ${i.quantity || 1}x ${i.name}${i.selectedVariant ? ` (${i.selectedVariant.name})` : ''}`)
+                          .map(i => {
+                            const variantStr = i.selectedVariant?.name || i.variantName ? ` (${i.selectedVariant?.name || i.variantName})` : '';
+                            const customizationsStr = i.selectedCustomizations && i.selectedCustomizations.length > 0 ? ` [ + ${i.selectedCustomizations.map(c => c.name).join(', ')} ]` : '';
+                            return `  • ${i.quantity || 1}x ${i.name}${variantStr}${customizationsStr}`;
+                          })
                           .join('\n');
 
                         const waMessage = [
@@ -3619,6 +3635,142 @@ export default function VendorDashboardPage() {
             )}
           </AnimatePresence>
 
+          {/* ── CUSTOMIZE TAB ── */}
+          {vendorTab === 'customize' && (
+            <motion.div key="customize" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-y-auto p-4 sm:p-6 bg-[#fafafa] dark:bg-[#0a0a0a]">
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-neutral-900 dark:text-white flex items-center gap-2">
+                      <Layers className="text-emerald-500" /> Add-ons & Toppings
+                    </h2>
+                    <p className="text-sm text-neutral-500 mt-1">Create customization options like extra toppings, crust types, or spice levels.</p>
+                  </div>
+                  <button
+                    onClick={() => setEditingCustomization({ id: Date.now().toString(), name: '', type: 'multiple', options: [] })}
+                    className="shrink-0 bg-neutral-900 dark:bg-white text-white dark:text-black px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                  >
+                    <PlusCircle size={16} /> New Category
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(currentRestaurant?.macros?.customizations || []).map(cat => (
+                    <div key={cat.id} className="bg-white dark:bg-[#12141D] rounded-2xl border border-neutral-200 dark:border-white/10 p-5 cursor-pointer hover:border-emerald-500 transition-colors"
+                      onClick={() => setEditingCustomization(JSON.parse(JSON.stringify(cat)))}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-bold text-neutral-900 dark:text-white text-lg">{cat.name}</h3>
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-neutral-100 dark:bg-white/5 text-neutral-500">{cat.type} selection</span>
+                      </div>
+                      <div className="space-y-2">
+                        {cat.options.map((opt, i) => (
+                          <div key={i} className="flex justify-between text-sm">
+                            <span className="text-neutral-600 dark:text-neutral-400">{opt.name}</span>
+                            <span className="font-bold text-emerald-600">+{opt.price > 0 ? `$${Number(opt.price).toFixed(2)}` : 'Free'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {(currentRestaurant?.macros?.customizations || []).length === 0 && (
+                     <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-3xl">
+                       <Layers size={48} className="text-neutral-300 dark:text-white/20 mb-4" />
+                       <h3 className="font-bold text-neutral-700 dark:text-white/80 mb-1">No Add-ons yet</h3>
+                       <p className="text-sm text-neutral-500">Create your first customization category above.</p>
+                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CUSTOMIZATION EDITOR MODAL */}
+              <AnimatePresence>
+                {editingCustomization && (
+                  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setEditingCustomization(null)}>
+                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-white dark:bg-[#12141D] w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-neutral-200 dark:border-white/10 max-h-[90vh] overflow-y-auto flex flex-col">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black text-neutral-900 dark:text-white">{currentRestaurant?.macros?.customizations?.some(c => c.id === editingCustomization.id) ? 'Edit Add-on' : 'New Add-on'}</h3>
+                        <button onClick={() => setEditingCustomization(null)} className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
+                          <CloseIcon size={20} className="text-neutral-500" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-4 flex-1">
+                        <div>
+                          <label className="text-xs font-bold text-neutral-500 mb-1 block">Category Name (e.g. Toppings, Size)</label>
+                          <input type="text" value={editingCustomization.name} onChange={e => setEditingCustomization(p => ({ ...p, name: e.target.value }))} className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" placeholder="Extra Toppings" />
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-bold text-neutral-500 mb-1 block">Selection Type</label>
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingCustomization(p => ({ ...p, type: 'multiple' }))} className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-colors ${editingCustomization.type === 'multiple' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-transparent border-neutral-200 dark:border-white/10 text-neutral-500'}`}>Multiple (Checkboxes)</button>
+                            <button onClick={() => setEditingCustomization(p => ({ ...p, type: 'single' }))} className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-colors ${editingCustomization.type === 'single' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-transparent border-neutral-200 dark:border-white/10 text-neutral-500'}`}>Single (Radios)</button>
+                          </div>
+                        </div>
+
+                        <div className="pt-2">
+                          <div className="flex justify-between items-center mb-2">
+                            <label className="text-xs font-bold text-neutral-500 block">Options</label>
+                            <button onClick={() => setEditingCustomization(p => ({ ...p, options: [...p.options, { id: Date.now().toString(), name: '', price: 0 }] }))} className="text-xs font-bold text-emerald-500 flex items-center gap-1"><PlusCircle size={12} /> Add Option</button>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {editingCustomization.options.map((opt, i) => (
+                              <div key={opt.id} className="flex gap-2 items-center">
+                                <input type="text" value={opt.name} onChange={e => { const newOpts = [...editingCustomization.options]; newOpts[i].name = e.target.value; setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="flex-1 bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm dark:text-white" placeholder="Option Name" />
+                                <div className="relative w-24">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">$</span>
+                                  <input type="number" min="0" step="0.01" value={opt.price} onChange={e => { const newOpts = [...editingCustomization.options]; newOpts[i].price = e.target.value; setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 pl-7 text-sm dark:text-white" placeholder="0.00" />
+                                </div>
+                                <button onClick={() => { const newOpts = [...editingCustomization.options]; newOpts.splice(i, 1); setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="p-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
+                                  <Trash size={16} />
+                                </button>
+                              </div>
+                            ))}
+                            {editingCustomization.options.length === 0 && (
+                              <div className="text-center py-4 text-xs text-neutral-400">No options added yet.</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex gap-3">
+                        <button onClick={async () => {
+                          const existing = currentRestaurant?.macros?.customizations || [];
+                          const isExisting = existing.some(c => c.id === editingCustomization.id);
+                          
+                          // Ensure options have valid numeric prices
+                          const cleaned = {
+                            ...editingCustomization,
+                            options: editingCustomization.options.filter(o => o.name.trim() !== '').map(o => ({...o, price: Number(o.price) || 0}))
+                          };
+
+                          const newArr = isExisting 
+                            ? existing.map(c => c.id === editingCustomization.id ? cleaned : c)
+                            : [...existing, cleaned];
+                            
+                          await updateRestaurant(activeRestId, { customizations: newArr });
+                          setEditingCustomization(null);
+                        }} className="flex-1 py-3 rounded-xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-600 transition-colors">Save Add-on</button>
+                        
+                        {currentRestaurant?.macros?.customizations?.some(c => c.id === editingCustomization.id) && (
+                          <button onClick={async () => {
+                            if (window.confirm('Delete this customization category?')) {
+                              const existing = currentRestaurant?.macros?.customizations || [];
+                              await updateRestaurant(activeRestId, { customizations: existing.filter(c => c.id !== editingCustomization.id) });
+                              setEditingCustomization(null);
+                            }
+                          }} className="px-4 rounded-xl border border-red-200 dark:border-red-500/30 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-500/10">Delete</button>
+                        )}
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
           {/* ── COMBOS TAB ── */}
           {vendorTab === 'combos' && (
             <motion.div key="combos" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-0 overflow-y-auto p-6 bg-[#fafafa] dark:bg-black">
@@ -4129,6 +4281,32 @@ export default function VendorDashboardPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Customization Categories */}
+                  {(currentRestaurant?.macros?.customizations || []).length > 0 && (
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-3">
+                      <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider flex items-center gap-2"><Layers size={14} className="text-emerald-500" /> Add-on Categories</h3>
+                      <p className="text-[11px] text-neutral-400">Select which add-on categories apply to this dish.</p>
+                      <div className="space-y-2">
+                        {(currentRestaurant?.macros?.customizations || []).map(cat => {
+                          const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
+                          return (
+                            <label key={cat.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isChecked ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:hover:border-white/20'}`}>
+                              <input type="checkbox" checked={isChecked} onChange={() => {
+                                const prev = editingDish.customizationCategories || [];
+                                const next = isChecked ? prev.filter(id => id !== cat.id) : [...prev, cat.id];
+                                setEditingDish({...editingDish, customizationCategories: next});
+                              }} className="accent-emerald-500 w-4 h-4" />
+                              <div className="flex-1">
+                                <span className="text-sm font-bold text-neutral-900 dark:text-white">{cat.name}</span>
+                                <span className="text-[10px] text-neutral-400 ml-2">({cat.options.length} options)</span>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 3D Model */}
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
@@ -5906,7 +6084,17 @@ export default function VendorDashboardPage() {
                       <ul className="space-y-2">
                         {foodItems.map((item, idx) => (
                           <li key={idx} className="flex justify-between text-sm">
-                            <span className="font-semibold text-neutral-700 dark:text-neutral-300"><span className="text-neutral-400 font-bold mr-1">{item.quantity || 1}x</span>{item.name}{item.selectedVariant ? ` (${item.selectedVariant.name})` : ''}</span>
+                            <span className="font-semibold text-neutral-700 dark:text-neutral-300 flex flex-col">
+                              <span><span className="text-neutral-400 font-bold mr-1">{item.quantity || 1}x</span>{item.name}</span>
+                              {(item.selectedVariant?.name || item.variantName) && (
+                                <span className="text-xs font-bold text-[#D4AF37] ml-6">{item.selectedVariant?.name || item.variantName}</span>
+                              )}
+                              {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
+                                <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 ml-6">
+                                  + {item.selectedCustomizations.map(c => c.name).join(', ')}
+                                </span>
+                              )}
+                            </span>
                             <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(2)}</span>
                           </li>
                         ))}
