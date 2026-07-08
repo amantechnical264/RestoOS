@@ -2157,128 +2157,134 @@ export default function VendorDashboardPage() {
                         const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
 
                         const isCancelledOrder = order.status === 'Cancelled';
-                        const orderCancelReason = order.metadata?.cancelReason ||
-                          order.items?.find(i => i.id === '__cancel_reason')?.reason || null;
 
                         return (
-                          <div key={order.id} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl shadow-sm relative overflow-hidden">
+                          <div key={order.id} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none" />
                             
                             {/* Cancelled overlay */}
                             {isCancelledOrder && (
-                              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-2xl gap-3" style={{ backdropFilter: 'blur(3px)', backgroundColor: 'rgba(0,0,0,0.45)' }}>
-                                <div className="rotate-[-15deg] select-none pointer-events-none text-center">
-                                  <p className="text-red-500 font-black text-3xl sm:text-4xl tracking-wider drop-shadow-lg" style={{ textShadow: '0 0 30px rgba(239,68,68,0.6)', WebkitTextStroke: '1px rgba(239,68,68,0.4)' }}>ORDER CANCELLED</p>
+                              <div className="absolute inset-0 z-30 flex items-center justify-center rounded-3xl" style={{ backdropFilter: 'blur(3px)', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+                                <div className="rotate-[-20deg] select-none pointer-events-none text-center">
+                                  <p className="text-red-500 font-black text-4xl sm:text-5xl tracking-wider drop-shadow-lg" style={{ textShadow: '0 0 30px rgba(239,68,68,0.6)', WebkitTextStroke: '1px rgba(239,68,68,0.5)' }}>ORDER</p>
+                                  <p className="text-red-500 font-black text-4xl sm:text-5xl tracking-wider drop-shadow-lg" style={{ textShadow: '0 0 30px rgba(239,68,68,0.6)', WebkitTextStroke: '1px rgba(239,68,68,0.5)' }}>CANCELLED</p>
                                 </div>
-                                <button
-                                  onClick={() => setDeliveryDetailOrder({ ...order, _cancelReason: orderCancelReason })}
-                                  className="pointer-events-auto flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl bg-white/20 text-white border border-white/30 hover:bg-white/30 transition-colors backdrop-blur-sm"
-                                >
-                                  <Eye size={13} /> View Details
-                                </button>
                               </div>
                             )}
 
-                            {/* Compact card body */}
-                            <div className="p-4 flex items-center gap-4 relative z-10">
-                              {/* Left: customer info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md ${isCancelledOrder ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}`}>
-                                    {isCancelledOrder ? 'Cancelled' : 'Delivery'}
-                                  </span>
-                                  <span className="text-[10px] text-neutral-400 font-bold">{new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <div className="flex-1 space-y-4 relative z-10">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md ${isCancelledOrder ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}`}>{isCancelledOrder ? 'Cancelled' : 'Delivery Order'}</span>
+                                    <span className="text-xs text-neutral-400 font-bold">{new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                  </div>
+                                  <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white">{order.contactName || 'Guest'}</h3>
+                                  {order.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-1.5"><Phone size={12}/> {order.contactPhone}</p>}
                                 </div>
-                                <h3 className="font-display font-black text-base text-neutral-900 dark:text-white leading-tight truncate">{order.contactName || 'Guest'}</h3>
-                                {order.contactPhone && <p className="text-xs font-bold text-neutral-400 flex items-center gap-1 mt-0.5"><Phone size={10}/> {order.contactPhone}</p>}
+                                <div className="text-right flex flex-col items-end gap-2">
+                                  <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(2)}</p>
+                                  <button
+                                    onClick={() => setDeliveryDetailOrder(order)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black rounded-lg bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors relative z-40 shadow-sm"
+                                  >
+                                    <Eye size={12} /> View Details
+                                  </button>
+                                  {order.verificationCode && (
+                                    <p className="text-xs font-bold font-mono text-neutral-400 mt-1">Code: {order.verificationCode}</p>
+                                  )}
+                                </div>
                               </div>
-
-                              {/* Center: order value */}
-                              <div className="text-right shrink-0">
-                                <p className="text-xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(2)}</p>
-                                {order.verificationCode && <p className="text-[10px] font-mono text-neutral-400 mt-0.5">#{order.verificationCode}</p>}
+                            </div>
+                            
+                            {/* Delivery Progress Tracker */}
+                            <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5">
+                              <div className="relative flex items-center justify-between px-1">
+                                {/* track line */}
+                                <div className="absolute top-4 left-4 right-4 h-0.5 rounded-full bg-neutral-200 dark:bg-white/10 z-0" />
+                                {[
+                                  { id: 'Pending',        label: 'Received',       icon: Clock },
+                                  { id: 'Preparing',      label: 'Preparing',      icon: ChefHat },
+                                  { id: 'OutForDelivery', label: 'Out for\nDelivery', icon: Package },
+                                  { id: 'Delivered',      label: 'Delivered',      icon: CheckCircle },
+                                ].map((step, idx, arr) => {
+                                  const statusOrder = ['Pending', 'Preparing', 'OutForDelivery', 'Delivered'];
+                                  const curIdx = statusOrder.indexOf(order.status);
+                                  const stepIdx = statusOrder.indexOf(step.id);
+                                  const done = stepIdx <= curIdx;
+                                  const active = stepIdx === curIdx;
+                                  return (
+                                    <div key={step.id} className="relative z-10 flex flex-col items-center gap-1 flex-1">
+                                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                                        done
+                                          ? 'text-black shadow-md'
+                                          : 'bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-neutral-600'
+                                      } ${active ? 'scale-110' : ''}`}
+                                        style={done ? { background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', boxShadow: '0 3px 10px rgba(212,175,55,0.35)' } : {}}>
+                                        <step.icon size={13} />
+                                      </div>
+                                      <span className="text-[9px] font-bold text-center leading-tight whitespace-pre-line"
+                                        style={{ color: active ? '#D4AF37' : done ? 'rgba(212,175,55,0.6)' : 'rgba(150,150,150,0.6)' }}>
+                                        {step.label}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </div>
-
-                              {/* Right: View Details button */}
-                              {!isCancelledOrder && (
+                            </div>
+                            
+                            {/* Actions sidebar */}
+                            <div className="md:w-52 shrink-0 flex flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-neutral-100 dark:border-white/5 pt-4 md:pt-0 md:pl-6 relative z-10">
+                              <a 
+                                href={waUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="w-full py-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-[#25D366]/20"
+                              >
+                                <MessageSquare size={16} /> Share to WhatsApp
+                              </a>
+                              
+                              {order.status === 'Pending' && (
+                                <div className="flex flex-col gap-2 w-full">
+                                  <button
+                                    onClick={() => updateOrderStatus(order.id, 'Preparing')}
+                                    className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors"
+                                  >
+                                    ✓ Accept Order
+                                  </button>
+                                  <button
+                                    onClick={() => { setRejectReasonOrder(order); setRejectReasonText(''); }}
+                                    className="w-full py-3 bg-red-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5"
+                                  >
+                                    ✕ Reject Order
+                                  </button>
+                                </div>
+                              )}
+                              
+                              {order.status === 'Preparing' && (
                                 <button
-                                  onClick={() => setDeliveryDetailOrder(order)}
-                                  className="shrink-0 flex items-center gap-1 px-3 py-2 text-[11px] font-black rounded-xl bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors"
+                                  onClick={() => updateOrderStatus(order.id, 'OutForDelivery')}
+                                  className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                                 >
-                                  <Eye size={12} /> Details
+                                  <Package size={15}/> Out for Delivery
                                 </button>
                               )}
+                              
+                              {order.status === 'OutForDelivery' && (
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, 'Delivered')}
+                                  className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <CheckCircle size={15}/> Mark Delivered
+                                </button>
+                              )}
+
+                              {order.status === 'Delivered' && (
+                                <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center gap-2">
+                                  <CheckCircle size={15}/> Order Delivered
+                                </div>
+                              )}
                             </div>
-
-                            {/* Status tracker + actions — compact row */}
-                            {!isCancelledOrder && (
-                              <div className="px-4 pb-4 space-y-3 relative z-10">
-                                {/* Compact progress dots */}
-                                <div className="relative flex items-center justify-between px-1">
-                                  <div className="absolute top-3.5 left-3.5 right-3.5 h-0.5 rounded-full bg-neutral-200 dark:bg-white/10 z-0" />
-                                  {[
-                                    { id: 'Pending', label: 'Received', icon: Clock },
-                                    { id: 'Preparing', label: 'Preparing', icon: ChefHat },
-                                    { id: 'OutForDelivery', label: 'On Way', icon: Package },
-                                    { id: 'Delivered', label: 'Done', icon: CheckCircle },
-                                  ].map((step) => {
-                                    const statusOrder = ['Pending', 'Preparing', 'OutForDelivery', 'Delivered'];
-                                    const curIdx = statusOrder.indexOf(order.status);
-                                    const stepIdx = statusOrder.indexOf(step.id);
-                                    const done = stepIdx <= curIdx;
-                                    const active = stepIdx === curIdx;
-                                    return (
-                                      <div key={step.id} className="relative z-10 flex flex-col items-center gap-0.5 flex-1">
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${active ? 'scale-110' : ''}`}
-                                          style={done ? { background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#000', boxShadow: '0 2px 8px rgba(212,175,55,0.35)' } : { background: 'rgba(150,150,150,0.1)', color: 'rgba(150,150,150,0.5)' }}>
-                                          <step.icon size={12} />
-                                        </div>
-                                        <span className="text-[8px] font-bold text-center leading-tight"
-                                          style={{ color: active ? '#D4AF37' : done ? 'rgba(212,175,55,0.6)' : 'rgba(150,150,150,0.5)' }}>
-                                          {step.label}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-
-                                {/* Action buttons row */}
-                                <div className="flex gap-2">
-                                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                                    className="flex-1 py-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 border border-[#25D366]/20">
-                                    <MessageSquare size={12} /> WhatsApp
-                                  </a>
-                                  {order.status === 'Pending' && (
-                                    <>
-                                      <button onClick={() => updateOrderStatus(order.id, 'Preparing')}
-                                        className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-black text-[11px] hover:bg-emerald-600 transition-colors">
-                                        ✓ Accept
-                                      </button>
-                                      <button onClick={() => { setRejectReasonOrder(order); setRejectReasonText(''); }}
-                                        className="flex-1 py-2 bg-red-500 text-white rounded-xl font-black text-[11px] hover:bg-red-600 transition-colors">
-                                        ✕ Reject
-                                      </button>
-                                    </>
-                                  )}
-                                  {order.status === 'Preparing' && (
-                                    <button onClick={() => updateOrderStatus(order.id, 'OutForDelivery')}
-                                      className="flex-1 py-2 bg-blue-500 text-white rounded-xl font-black text-[11px] hover:bg-blue-600 transition-colors flex items-center justify-center gap-1">
-                                      <Package size={12}/> Out for Delivery
-                                    </button>
-                                  )}
-                                  {order.status === 'OutForDelivery' && (
-                                    <button onClick={() => updateOrderStatus(order.id, 'Delivered')}
-                                      className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-black text-[11px] hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1">
-                                      <CheckCircle size={12}/> Mark Delivered
-                                    </button>
-                                  )}
-                                  {order.status === 'Delivered' && (
-                                    <div className="flex-1 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-[11px] border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center gap-1">
-                                      <CheckCircle size={12}/> Delivered
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
                           </div>
                         );
                       })}
@@ -5725,19 +5731,14 @@ export default function VendorDashboardPage() {
             const displayAddr = _rawAddr.replace(/\s*\[GPS:[\d.,\-]+\]/, '').trim();
             const detailMapUrl = _loc.lat && _loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${_loc.lat},${_loc.lng}` : null;
             const orderNote = getOrderNote(od);
-            const popupCancelReason = od._cancelReason || od.metadata?.cancelReason || od.items?.find(i => i.id === '__cancel_reason')?.reason || null;
-            const isPopupCancelled = od.status === 'Cancelled';
-            const foodItems = (od.items || []).filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location' && i.id !== '__special_instructions' && i.id !== '__cancel_reason');
+            const foodItems = (od.items || []).filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location' && i.id !== '__special_instructions');
             return (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setDeliveryDetailOrder(null)}>
                 <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }} transition={{ type: 'spring', damping: 25 }} onClick={e => e.stopPropagation()}
                   className="bg-white dark:bg-[#12141D] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
                   <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center shrink-0">
                     <div>
-                      <h2 className="font-display font-black text-lg text-neutral-900 dark:text-white flex items-center gap-2">
-                        Order Details
-                        {isPopupCancelled && <span className="text-[10px] font-black px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-md uppercase tracking-wider">Cancelled</span>}
-                      </h2>
+                      <h2 className="font-display font-black text-lg text-neutral-900 dark:text-white">Order Details</h2>
                       <p className="text-xs text-neutral-500 mt-0.5">{od.contactName || 'Guest'} · ₹{parseFloat(od.total).toFixed(2)}</p>
                     </div>
                     <button onClick={() => setDeliveryDetailOrder(null)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 transition-colors"><CloseIcon size={16} /></button>
@@ -5750,6 +5751,17 @@ export default function VendorDashboardPage() {
                       {od.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-2"><Phone size={14} className="text-neutral-400" /> {od.contactPhone}</p>}
                       <p className="text-xs text-neutral-400 flex items-center gap-2"><Clock size={12} className="text-neutral-400" /> {new Date(od.timestamp).toLocaleString()}</p>
                     </div>
+                    {/* Cancellation Reason if cancelled */}
+                    {od.status === 'Cancelled' && (
+                      <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/30">
+                        <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <AlertTriangle size={10} /> Cancellation Reason
+                        </p>
+                        <p className="text-sm font-bold text-red-800 dark:text-red-300">
+                          {od.metadata?.cancelReason || od.items?.find(i => i.id === '__cancel_reason')?.reason || 'No cancellation reason specified.'}
+                        </p>
+                      </div>
+                    )}
                     {/* Location */}
                     {(displayAddr || detailMapUrl) && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/30">
@@ -5761,13 +5773,6 @@ export default function VendorDashboardPage() {
                             <MapPin size={12} /> Navigate in Google Maps
                           </a>
                         )}
-                      </div>
-                    )}
-                    {/* Cancel Reason */}
-                    {isPopupCancelled && (
-                      <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/30">
-                        <p className="text-[10px] font-black text-red-500 uppercase tracking-wider mb-1 flex items-center gap-1"><XCircle size={10} /> Cancellation Reason</p>
-                        <p className="text-sm font-bold text-red-700 dark:text-red-300">{popupCancelReason || 'No reason provided.'}</p>
                       </div>
                     )}
                     {/* Note */}
