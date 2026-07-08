@@ -2772,7 +2772,19 @@ export default function VendorDashboardPage() {
                             <div className="flex-1 min-w-0 pr-2">
                               <h3 className="font-bold text-sm leading-tight flex items-start min-w-0">
                                 <span className="mt-0.5 shrink-0"><DietIcon type={dish.dietaryPreference} /></span>
-                                <span className="line-clamp-3 break-words whitespace-normal">{dish.name}</span>
+                                <span 
+                                  className="break-words" 
+                                  style={{
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 3,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word'
+                                  }}
+                                >
+                                  {dish.name}
+                                </span>
                               </h3>
                               {dish.chef && <p className="text-xs text-neutral-500 mt-0.5 truncate">{dish.chef}</p>}
                             </div>
