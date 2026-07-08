@@ -970,24 +970,23 @@ export default function MenuPage() {
         </div>
 
         <div className="flex justify-between items-center px-5 mt-2 mb-4 flex-shrink-0">
-          <div className="text-[10px] font-black text-neutral-500 uppercase tracking-wider shrink-0 mr-3">
+          <div className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">
             {totalItemsCount} items
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 flex-1 mask-linear-fade">
-            {['Veg', 'Vegan', 'High Protein', 'Low Calorie', 'Spicy'].map(f => {
-              const isActive = activeDietaryFilters.includes(f);
-              return (
-                <button key={f} onClick={() => setActiveDietaryFilters(prev => isActive ? prev.filter(x => x !== f) : [...prev, f])}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold transition-all duration-300 ${
-                    isActive
-                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                      : 'bg-white dark:bg-[#0a0a0a] text-neutral-500 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/10'
-                  }`}>
-                  {f}
-                </button>
-              );
-            })}
-          </div>
+          
+          <button 
+            onClick={() => setActiveDietaryFilters(prev => prev.includes('Veg') ? [] : ['Veg'])}
+            className="flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#0a0a0a] hover:bg-neutral-100 dark:hover:bg-white/5 transition-all duration-300"
+          >
+            <span className="inline-flex items-center justify-center w-[12px] h-[12px] border border-green-600 bg-white rounded-[2px] shrink-0">
+              <span className="w-[5px] h-[5px] rounded-full bg-green-600"></span>
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-600 dark:text-neutral-300">Veg Only</span>
+            
+            <div className={`relative w-8 h-4 rounded-full transition-colors duration-300 ${activeDietaryFilters.includes('Veg') ? 'bg-green-600' : 'bg-neutral-300 dark:bg-neutral-800'}`}>
+              <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-300 shadow-sm ${activeDietaryFilters.includes('Veg') ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+          </button>
         </div>
 
 
