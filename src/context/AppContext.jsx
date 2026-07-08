@@ -568,9 +568,12 @@ export const AppProvider = ({ children }) => {
     showNotification('Added to cart');
   };
 
-  const removeOneFromCart = (dishId) => {
+  const removeOneFromCart = (dishId, variantName) => {
     setCart(prev => {
-      const idx = prev.findLastIndex(item => item.id === dishId);
+      const idx = prev.findLastIndex(item => 
+        item.id === dishId && 
+        (!variantName || (item.selectedVariant?.name === variantName || item.variantName === variantName))
+      );
       if (idx === -1) return prev;
       return prev.filter((_, i) => i !== idx);
     });

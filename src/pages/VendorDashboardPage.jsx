@@ -613,6 +613,37 @@ const ReviewsAnalytics = ({ reviews }) => {
 };
 
 
+const resolveDishOrVariant = (dishIdOrStr, dishesList, keepBaseId = false) => {
+  const [dishId, variantName] = (typeof dishIdOrStr === 'string' ? dishIdOrStr : '').split('::');
+  const targetId = dishId || dishIdOrStr;
+  const d = dishesList.find(x => x.id === targetId);
+  if (!d) return null;
+  
+  if (d.variants && d.variants.length > 0) {
+    const v = variantName 
+      ? d.variants.find(varItem => varItem.name === variantName)
+      : d.variants[0];
+    const actualVariantName = variantName || v?.name || '';
+    return {
+      ...d,
+      id: keepBaseId ? d.id : `${d.id}-${actualVariantName}`,
+      originalId: d.id,
+      name: `${d.name} (${actualVariantName})`,
+      price: parseFloat(v?.price) || 0,
+      isVariant: true,
+      variantName: actualVariantName,
+      selectedVariant: v
+    };
+  }
+  
+  return {
+    ...d,
+    originalId: d.id,
+    price: parseFloat(d.price) || 0
+  };
+};
+
+
 const expandDishesWithVariants = (dishesList) => {
   const result = [];
   dishesList.forEach(dish => {
@@ -3003,36 +3034,22 @@ export default function VendorDashboardPage() {
                   )}
                   {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).map(parentDish => {
                     const recIds = parentDish.macros.comboRecommendations || [];
-                    const recDishes = recIds.map(ridStr => {
-                      const [dishId, variantName] = ridStr.split('::');
-                      const d = vendDishes.find(x => x.id === dishId);
-                      if (!d) return null;
-                      if (variantName) {
-                        const v = d.variants?.find(varItem => varItem.name === variantName);
-                        return {
-                          ...d,
-                          id: `${d.id}-${variantName}`,
-                          originalId: d.id,
-                          name: `${d.name} (${variantName})`,
-                          price: parseFloat(v?.price || d.price) || 0,
-                          isVariant: true,
-                          variantName
-                        };
-                      }
-                      return {
-                        ...d,
-                        originalId: d.id,
-                        price: parseFloat(d.price) || 0
-                      };
-                    }).filter(Boolean);
+                    const recDishes = recIds.map(rid => resolveDishOrVariant(rid, vendDishes)).filter(Boolean);
+                    const parentDisplayName = parentDish.macros?.comboParentVariant
+                      ? `${parentDish.name} (${parentDish.macros.comboParentVariant})`
+                      : parentDish.name;
                     return (
                       <div key={parentDish.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-100 dark:border-white/5">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-black text-neutral-900 dark:text-white truncate flex-1 mr-2">{parentDish.name}</span>
+                          <span className="text-[11px] font-black text-neutral-900 dark:text-white truncate flex-1 mr-2">{parentDisplayName}</span>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => {
-                                setComboParent(parentDish);
+                                const parentIdStr = parentDish.macros?.comboParentVariant 
+                                  ? `${parentDish.id}::${parentDish.macros.comboParentVariant}`
+                                  : parentDish.id;
+                                const pDish = resolveDishOrVariant(parentIdStr, vendDishes);
+                                setComboParent(pDish);
                                 setComboRecs(recDishes);
                                 setShowComboDialog(true);
                               }}
@@ -3161,7 +3178,8 @@ export default function VendorDashboardPage() {
                              await updateDish(parentId, {
                                macros: {
                                  ...(originalParent.macros || {}),
-                                 comboRecommendations: comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id)
+                                 comboRecommendations: comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id),
+                                 comboParentVariant: comboParent && comboParent.isVariant ? comboParent.variantName : undefined
                                }
                              });
                              showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
@@ -3181,7 +3199,7 @@ export default function VendorDashboardPage() {
                          <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
                          <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                            {expandDishesWithVariants(vendDishes).map(d => {
-                             const isParent = comboParent && (comboParent.id === d.id || comboParent.id === d.originalId || comboParent.originalId === d.id || (comboParent.originalId && comboParent.originalId === d.originalId));
+                             const isParent = comboParent && comboParent.id === d.id;
                              const isRec = comboRecs.some(r => r.id === d.id);
                              const parentId = d.originalId || d.id;
                              const originalD = vendDishes.find(x => x.id === parentId);

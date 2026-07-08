@@ -9,6 +9,36 @@ import DishRatingBadge from '../components/DishRatingBadge';
 
 const ALLERGEN_ICONS = { Gluten: '🌾', Nuts: '🥜', Dairy: '🥛', Eggs: '🥚', Shellfish: '🦐', Soy: '🫘', Fish: '🐟' };
 
+const resolveDishOrVariant = (dishIdOrStr, dishesList, keepBaseId = false) => {
+  const [dishId, variantName] = (typeof dishIdOrStr === 'string' ? dishIdOrStr : '').split('::');
+  const targetId = dishId || dishIdOrStr;
+  const d = dishesList.find(x => x.id === targetId);
+  if (!d) return null;
+  
+  if (d.variants && d.variants.length > 0) {
+    const v = variantName 
+      ? d.variants.find(varItem => varItem.name === variantName)
+      : d.variants[0];
+    const actualVariantName = variantName || v?.name || '';
+    return {
+      ...d,
+      id: keepBaseId ? d.id : `${d.id}-${actualVariantName}`,
+      originalId: d.id,
+      name: `${d.name} (${actualVariantName})`,
+      price: parseFloat(v?.price) || 0,
+      isVariant: true,
+      variantName: actualVariantName,
+      selectedVariant: v
+    };
+  }
+  
+  return {
+    ...d,
+    originalId: d.id,
+    price: parseFloat(d.price) || 0
+  };
+};
+
 export default function Dish3DPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -55,24 +85,7 @@ export default function Dish3DPage() {
   const sameRestDishes = dishes.filter(d => d.id !== id && (d.restId === activeRestId || d.rest_id === activeRestId));
   const comboIds = dish.macros?.comboRecommendations || [];
   const recommendedDishes = comboIds.length > 0
-    ? comboIds.map(cidStr => {
-        const [dishId, variantName] = cidStr.split('::');
-        const d = sameRestDishes.find(x => x.id === dishId);
-        if (!d) return null;
-        if (variantName) {
-          const v = d.variants?.find(varItem => varItem.name === variantName);
-          return {
-            ...d,
-            id: d.id, // Base ID for cart matching
-            name: `${d.name} (${variantName})`,
-            price: parseFloat(v?.price || d.price) || 0,
-            selectedVariant: v,
-            isVariant: true,
-            variantName
-          };
-        }
-        return d;
-      }).filter(Boolean)
+    ? comboIds.map(cid => resolveDishOrVariant(cid, sameRestDishes, true)).filter(Boolean)
     : [];
 
 
@@ -375,7 +388,7 @@ export default function Dish3DPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                removeOneFromCart(rec.id);
+                                removeOneFromCart(rec.id, rec.variantName);
                               }}
                               className="flex-1 py-1.5 flex items-center justify-center text-white hover:bg-emerald-700 transition-colors"
                             >

@@ -546,7 +546,7 @@ export default function CartPage() {
                     </div>
                     {/* Stepper */}
                     <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg overflow-hidden">
-                      <button onClick={(e) => { e.stopPropagation(); removeOneFromCart(item.id); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); removeOneFromCart(item.id, item.variantName); }} className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors">
                         <Minus size={14} strokeWidth={2.5} />
                       </button>
                       <span className="px-2 text-sm font-bold text-emerald-700 dark:text-emerald-300 w-6 text-center">{item.quantity}</span>
