@@ -1041,132 +1041,7 @@ function CustomizationGroupCard({ group, dishes, categories, onUpdate, onDelete,
   );
 }
 
-function CustomizationsPanel({ groups: initialGroups, dishes, categories, onSave }) {
-  const [groups, setGroups] = React.useState(initialGroups);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [hasChanges, setHasChanges] = React.useState(false);
 
-  // Sync if parent data changes (e.g. after save)
-  React.useEffect(() => { setGroups(initialGroups); setHasChanges(false); }, [JSON.stringify(initialGroups)]);
-
-  const markChanged = (newGroups) => { setGroups(newGroups); setHasChanges(true); };
-
-  const addGroup = () => {
-    const newGroup = {
-      id: `cg_${Date.now()}`,
-      name: '',
-      selectionType: 'multi',
-      minSelections: 0,
-      maxSelections: 0,
-      isRequired: false,
-      targetType: 'categories',
-      targetCategories: [],
-      targetDishes: [],
-      items: [],
-    };
-    markChanged([...groups, newGroup]);
-  };
-
-  const updateGroup = (idx, updated) => markChanged(groups.map((g, i) => i === idx ? updated : g));
-  const deleteGroup = (idx) => markChanged(groups.filter((_, i) => i !== idx));
-  const duplicateGroup = (idx) => {
-    const orig = groups[idx];
-    markChanged([...groups, { ...orig, id: `cg_${Date.now()}`, name: `${orig.name} (Copy)` }]);
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    await onSave(groups);
-    setIsSaving(false);
-    setHasChanges(false);
-  };
-
-  return (
-    <React.Fragment>
-      <motion.div key="customizations" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-        className="absolute inset-0 overflow-y-auto p-6"
-      >
-        <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h2 className="font-display font-black text-2xl">Menu Customizations</h2>
-              <p className="text-sm text-neutral-500 mt-1">
-                Create add-on groups (Toppings, Crust, Sauces…) and apply them to specific categories or dishes. Diners will see these options when adding a dish to their cart.
-              </p>
-            </div>
-            <button onClick={handleSave} disabled={!hasChanges || isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-all shrink-0"
-              style={hasChanges
-                ? { background: goldGradient, color: '#000' }
-                : { background: 'rgba(212,175,55,0.08)', color: 'rgba(212,175,55,0.4)', border: '1px solid rgba(212,175,55,0.15)' }
-              }
-            >
-              <Save size={15} />
-              {isSaving ? 'Saving…' : hasChanges ? 'Save Changes' : 'Saved'}
-            </button>
-          </div>
-
-          {/* Empty state */}
-          {groups.length === 0 && (
-            <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-white/10 rounded-2xl">
-              <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}>
-                <Sliders size={28} style={{ color: GOLD }} />
-              </div>
-              <p className="font-bold text-neutral-800 dark:text-white text-lg mb-1">No customization groups yet</p>
-              <p className="text-sm text-neutral-500 mb-5">Create groups like "Toppings", "Add-ons", or "Spice Level" and assign them to your dishes.</p>
-              <button onClick={addGroup}
-                className="px-6 py-2.5 rounded-xl text-sm font-black inline-flex items-center gap-2"
-                style={{ background: goldGradient, color: '#000' }}
-              >
-                <Plus size={16} /> Create Your First Group
-              </button>
-            </div>
-          )}
-
-          {/* Groups list */}
-          <div className="space-y-3">
-            {groups.map((group, idx) => (
-              <CustomizationGroupCard
-                key={group.id}
-                group={group}
-                dishes={dishes}
-                categories={categories}
-                onUpdate={(updated) => updateGroup(idx, updated)}
-                onDelete={() => deleteGroup(idx)}
-                onDuplicate={() => duplicateGroup(idx)}
-              />
-            ))}
-          </div>
-
-          {/* Add group button */}
-          {groups.length > 0 && (
-            <button onClick={addGroup}
-              className="w-full mt-4 py-3 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 text-sm font-bold text-neutral-500 hover:text-[#D4AF37] hover:border-[rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2"
-            >
-              <Plus size={16} /> Add Customization Group
-            </button>
-          )}
-
-          {/* Info cards */}
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { icon: '🎯', title: 'Category Targeting', desc: 'Apply a group to an entire category — all dishes in "Pizzas" will show your Toppings group.' },
-              { icon: '🍽️', title: 'Dish-Level Control', desc: 'Need ultra-specific control? Apply a group to individual dishes for a tailored experience.' },
-              { icon: '⚡', title: 'Live Price Updates', desc: 'Diners see the total cost update in real-time as they configure their order.' },
-            ].map(card => (
-              <div key={card.title} className="p-4 rounded-xl bg-white dark:bg-[#0e0e12] border border-neutral-100 dark:border-white/5">
-                <div className="text-2xl mb-2">{card.icon}</div>
-                <p className="font-bold text-sm text-neutral-900 dark:text-white mb-1">{card.title}</p>
-                <p className="text-xs text-neutral-500">{card.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-    </React.Fragment>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════
 export default function VendorDashboardPage() {
@@ -2051,7 +1926,7 @@ export default function VendorDashboardPage() {
     { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
     { key: 'menu',      icon: Utensils,     label: 'Menu' },
     { key: 'editmenu',  icon: BookOpen,     label: 'Edit Menu' },
-    { key: 'customize', icon: Layers,       label: 'Add-ons' },
+    { key: 'customize', icon: Sliders,      label: 'Customize' },
     { key: 'growth',    icon: Zap,          label: 'Growth' },
     { key: 'customers', icon: Users,        label: 'Customers' },
     { key: 'events',    icon: Calendar,     label: 'Events' },
@@ -5284,35 +5159,7 @@ export default function VendorDashboardPage() {
             </motion.div>
           )}
 
-          {/* ════════════════════ MENU CUSTOMIZATIONS ════════════════════ */}
-          {vendorTab === 'customizations' && (() => {
-            // Load customization groups from restaurant macros
-            const currentRest = restaurants.find(r => r.id === activeRestId);
-            const savedGroups = currentRest?.macros?.customizationGroups || [];
 
-            // Derive available categories & dishes for targeting
-            const vendDishes = dishes.filter(d => d.restaurantId === activeRestId && !d.macros?.isCombo);
-            let rawCats = currentRest?.macros?.categories;
-            const dishCategories = rawCats
-              ? (Array.isArray(rawCats) ? rawCats : Object.keys(rawCats))
-              : [...new Set(vendDishes.map(d => d.category).filter(Boolean))];
-
-            return (
-              <CustomizationsPanel
-                key="customizations"
-                groups={savedGroups}
-                dishes={vendDishes}
-                categories={dishCategories}
-                onSave={async (updatedGroups) => {
-                  const currentMacros = currentRest?.macros || {};
-                  await updateRestaurant(activeRestId, {
-                    macros: { ...currentMacros, customizationGroups: updatedGroups }
-                  });
-                  showNotification('✅ Customizations saved!');
-                }}
-              />
-            );
-          })()}
 
           {/* ════════════════════ TABLES & QR ════════════════════ */}
           {vendorTab === 'qr' && (
