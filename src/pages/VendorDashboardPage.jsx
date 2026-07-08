@@ -1135,6 +1135,10 @@ export default function VendorDashboardPage() {
   const [happyHourForm, setHappyHourForm] = React.useState({ startTime: '17:00', endTime: '19:00', discount: 20 });
   const [flashDishSearch, setFlashDishSearch] = React.useState('');
   const [flashCategoryFilter, setFlashCategoryFilter] = React.useState('All');
+  const [addonDishSearch, setAddonDishSearch] = React.useState('');
+  React.useEffect(() => {
+    setAddonDishSearch('');
+  }, [editingCustomization]);
   const [socialsForm, setSocialsForm] = React.useState({ instagram: '', facebook: '', youtube: '', reddit: '' });
 
   // ── Vendor Phone Verification OTP State ──────────────────────────────
@@ -4012,64 +4016,112 @@ export default function VendorDashboardPage() {
                         <div>
                           <label className="text-xs font-bold text-neutral-500 mb-2 block">Apply to Dishes</label>
                           <p className="text-[11px] text-neutral-400 mb-2">Select the exact dish (or variant) where this add-on will appear when a customer adds it to cart.</p>
+                          
+                          {/* Search Bar for Dishes */}
+                          <div className="relative mb-3">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                              <Search size={14} />
+                            </span>
+                            <input
+                              type="text"
+                              value={addonDishSearch}
+                              onChange={e => setAddonDishSearch(e.target.value)}
+                              placeholder="Search dishes..."
+                              className="w-full pl-9 pr-8 py-2 rounded-xl bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 focus:outline-none focus:border-emerald-500 text-xs dark:text-white"
+                            />
+                            {addonDishSearch && (
+                              <button onClick={() => setAddonDishSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-neutral-200 dark:hover:bg-white/10">
+                                <CloseIcon size={12} className="text-neutral-500" />
+                              </button>
+                            )}
+                          </div>
+
                           <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
-                            {vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).length === 0 ? (
-                              <div className="p-4 text-xs text-neutral-400 text-center">No dishes in your menu yet.</div>
-                            ) : (
-                              vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).flatMap(dish => {
+                            {(() => {
+                              const selectableItems = vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).flatMap(dish => {
                                 const hasVariants = dish.variants && dish.variants.length > 0;
                                 if (hasVariants) {
-                                  // Show each variant as a separate row
                                   return dish.variants.map(v => {
                                     const key = `${dish.id}::${v.name}`;
                                     const isLinked = (editingCustomization.linkedDishes || []).includes(key);
-                                    return (
-                                      <label key={key} className="flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
-                                        <input
-                                          type="checkbox"
-                                          checked={isLinked}
-                                          onChange={() => {
-                                            const prev = editingCustomization.linkedDishes || [];
-                                            const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
-                                            setEditingCustomization(p => ({ ...p, linkedDishes: next }));
-                                          }}
-                                          className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
-                                        />
-                                        <div className="min-w-0 flex-1">
-                                          <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dish.name}</span>
-                                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>{v.name}</span>
-                                        </div>
-                                        <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{Number(v.price).toFixed(0)}</span>
-                                      </label>
-                                    );
+                                    return {
+                                      key,
+                                      isLinked,
+                                      dishName: dish.name,
+                                      variantName: v.name,
+                                      category: dish.category || null,
+                                      price: Number(v.price),
+                                      dish,
+                                      variant: v
+                                    };
                                   });
                                 } else {
-                                  // No variants — show dish directly
                                   const key = dish.id;
                                   const isLinked = (editingCustomization.linkedDishes || []).includes(key)
                                     || (dish.customizationCategories || []).includes(editingCustomization.id);
-                                  return [(
-                                    <label key={key} className="flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
-                                      <input
-                                        type="checkbox"
-                                        checked={isLinked}
-                                        onChange={() => {
-                                          const prev = editingCustomization.linkedDishes || [];
-                                          const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
-                                          setEditingCustomization(p => ({ ...p, linkedDishes: next }));
-                                        }}
-                                        className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
-                                      />
-                                      <div className="min-w-0 flex-1">
-                                        <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dish.name}</span>
-                                        {dish.category && <span className="text-[10px] text-neutral-400">{dish.category}</span>}
-                                      </div>
-                                      <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{Number(dish.price).toFixed(0)}</span>
-                                    </label>
-                                  )];
+                                  return [{
+                                    key,
+                                    isLinked,
+                                    dishName: dish.name,
+                                    variantName: null,
+                                    category: dish.category || null,
+                                    price: Number(dish.price),
+                                    dish,
+                                    variant: null
+                                  }];
                                 }
-                              })
-                            )}
+                              });
+
+                              const filteredItems = selectableItems.filter(item => {
+                                if (!addonDishSearch) return true;
+                                const q = addonDishSearch.toLowerCase();
+                                return item.dishName.toLowerCase().includes(q)
+                                  || (item.variantName && item.variantName.toLowerCase().includes(q))
+                                  || (item.category && item.category.toLowerCase().includes(q));
+                              });
+
+                              const sortedItems = [...filteredItems].sort((a, b) => {
+                                if (a.isLinked === b.isLinked) {
+                                  return a.dishName.localeCompare(b.dishName);
+                                }
+                                return a.isLinked ? -1 : 1;
+                              });
+
+                              if (sortedItems.length === 0) {
+                                return (
+                                  <div className="p-4 text-xs text-neutral-400 text-center">
+                                    {addonDishSearch ? 'No matching dishes.' : 'No dishes in your menu yet.'}
+                                  </div>
+                                );
+                              }
+
+                              return sortedItems.map(item => {
+                                const { key, isLinked, dishName, variantName, price, dish } = item;
+                                return (
+                                  <label key={key} className="flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={isLinked}
+                                      onChange={() => {
+                                        const prev = editingCustomization.linkedDishes || [];
+                                        const next = isLinked ? prev.filter(k => k !== key) : [...prev, key];
+                                        setEditingCustomization(p => ({ ...p, linkedDishes: next }));
+                                      }}
+                                      className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dishName}</span>
+                                      {variantName ? (
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>{variantName}</span>
+                                      ) : (
+                                        dish.category && <span className="text-[10px] text-neutral-400">{dish.category}</span>
+                                      )}
+                                    </div>
+                                    <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{price.toFixed(0)}</span>
+                                  </label>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       </div>
