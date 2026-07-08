@@ -179,8 +179,8 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
             const isItemReviewed = itemRating > 0;
             
             return (
-              <div key={i} className="flex items-center gap-3">
-                <div className="shrink-0 mt-0.5 flex items-center justify-center w-3 h-3 rounded-sm border" style={{ borderColor: iconColor }}>
+              <div key={i} className="flex items-start gap-3">
+                <div className="shrink-0 mt-1 flex items-center justify-center w-3 h-3 rounded-sm border" style={{ borderColor: iconColor }}>
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: iconColor }} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -193,6 +193,16 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                     {/* Show average rating for this dish */}
                     {item.id && <DishRatingBadge dishId={item.id} variant="inline" />}
                   </div>
+                  {/* Customization tags */}
+                  {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {item.selectedCustomizations.map((c, ci) => (
+                        <span key={ci} className="px-1.5 py-0.5 rounded-md text-[9px] font-bold" style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.18)' }}>
+                          {c.name}{Number(c.price) > 0 ? ` +₹${Number(c.price).toFixed(0)}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {/* Per-item review button removed per request */}
                 </div>
               </div>
@@ -349,18 +359,22 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
         <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
           {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => (
             <li key={i} className="flex justify-between items-start">
-              <span className="text-sm font-bold text-neutral-900 dark:text-white flex flex-col">
-                <span>{(item.quantity || item.qty || 1)}x {item.name}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty || 1)}x {item.name}</span>
                 {item.variantName && (
-                  <span className="text-xs font-bold text-[#D4AF37]">{item.variantName}</span>
+                  <div className="text-xs font-bold text-[#D4AF37]">{item.variantName}</div>
                 )}
                 {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
-                  <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
-                    + {item.selectedCustomizations.map(c => c.name).join(', ')}
-                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {item.selectedCustomizations.map((c, ci) => (
+                      <span key={ci} className="px-1.5 py-0.5 rounded-md text-[9px] font-bold" style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.18)' }}>
+                        {c.name}{Number(c.price) > 0 ? ` +₹${Number(c.price).toFixed(0)}` : ''}
+                      </span>
+                    ))}
+                  </div>
                 )}
-              </span>
-              <span className="font-bold" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>
+              </div>
+              <span className="font-bold ml-2 shrink-0" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>
             </li>
           ))}
         </ul>

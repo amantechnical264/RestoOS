@@ -7,7 +7,7 @@ import {
   Zap, Bell, Tag, Star, Eye, EyeOff, BarChart2, Activity, Megaphone,
   Clock, DollarSign, ShoppingBag, Repeat, ArrowUpRight, BrainCircuit,
   ArrowDownRight, Package, MessageSquare, Percent, Gift, Target, ToggleLeft, ToggleRight,
-  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle, Search, MapPin, Phone
+  TrendingDown, Calendar, Filter, CheckCircle, XCircle, Flame, SlidersHorizontal, BookOpen, ChevronUp, ChevronDown, GripVertical, ArrowDown, UserCircle, Search, MapPin, Phone, Sliders, ChevronRight, Minus as MinusIcon
 } from 'lucide-react';
 import { Share2, Globe, Layers, PlusCircle, Trash } from 'lucide-react';
 
@@ -761,6 +761,412 @@ const expandDishesWithVariants = (dishesList) => {
   return result;
 };
 
+
+// ══════════════════════════════════════════════════════════════════════
+// CUSTOMIZATIONS PANEL COMPONENT
+// ══════════════════════════════════════════════════════════════════════
+
+
+
+function CustomizationItemRow({ item, onUpdate, onDelete }) {
+  return (
+    <div className="flex items-center gap-2 group">
+      <input
+        type="text"
+        value={item.name}
+        onChange={e => onUpdate({ ...item, name: e.target.value })}
+        placeholder="Option name (e.g. Extra Cheese)"
+        className="flex-1 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white transition-colors"
+      />
+      <div className="flex items-center gap-1 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 shrink-0">
+        <span className="text-neutral-500 dark:text-neutral-400 text-sm font-bold">₹</span>
+        <input
+          type="number"
+          value={item.price}
+          onChange={e => onUpdate({ ...item, price: e.target.value })}
+          placeholder="0"
+          className="w-16 bg-transparent text-sm focus:outline-none dark:text-white"
+          min="0"
+        />
+      </div>
+      <select
+        value={item.type || 'veg'}
+        onChange={e => onUpdate({ ...item, type: e.target.value })}
+        className="bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-2 py-2 text-xs focus:outline-none dark:text-white shrink-0"
+      >
+        <option value="veg">🟢 Veg</option>
+        <option value="non-veg">🔴 Non-Veg</option>
+      </select>
+      <button
+        onClick={onDelete}
+        className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+      >
+        <MinusIcon size={14} />
+      </button>
+    </div>
+  );
+}
+
+function CustomizationGroupCard({ group, dishes, categories, onUpdate, onDelete, onDuplicate }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [targetType, setTargetType] = React.useState(group.targetType || 'categories');
+
+  const addItem = () => {
+    onUpdate({ ...group, items: [...(group.items || []), { id: Date.now().toString(), name: '', price: 0, type: 'veg' }] });
+  };
+
+  const updateItem = (idx, updated) => {
+    const newItems = [...group.items];
+    newItems[idx] = updated;
+    onUpdate({ ...group, items: newItems });
+  };
+
+  const deleteItem = (idx) => {
+    onUpdate({ ...group, items: group.items.filter((_, i) => i !== idx) });
+  };
+
+  const toggleCategory = (cat) => {
+    const current = group.targetCategories || [];
+    const next = current.includes(cat) ? current.filter(c => c !== cat) : [...current, cat];
+    onUpdate({ ...group, targetCategories: next });
+  };
+
+  const toggleDish = (dishId) => {
+    const current = group.targetDishes || [];
+    const next = current.includes(dishId) ? current.filter(d => d !== dishId) : [...current, dishId];
+    onUpdate({ ...group, targetDishes: next });
+  };
+
+  const itemCount = (group.items || []).filter(i => i.name).length;
+  const targetCount = targetType === 'categories'
+    ? (group.targetCategories || []).length
+    : (group.targetDishes || []).length;
+
+  return (
+    <div className="rounded-2xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0e0e12] overflow-hidden transition-all shadow-sm">
+      {/* Header */}
+      <div
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.25)' }}>
+          <Sliders size={18} style={{ color: GOLD }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-bold text-sm text-neutral-900 dark:text-white">{group.name || 'Untitled Group'}</p>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(212,175,55,0.1)', color: GOLD }}>
+              {itemCount} option{itemCount !== 1 ? 's' : ''}
+            </span>
+            {group.isRequired && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400">Required</span>
+            )}
+            {targetCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400">
+                Applied to {targetCount} {targetType === 'categories' ? 'categor' : 'dish'}{targetCount !== 1 ? (targetType === 'categories' ? 'ies' : 'es') : (targetType === 'categories' ? 'y' : '')}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            {group.selectionType === 'single' ? 'Single choice' : `Multi-select (max ${group.maxSelections || '∞'})`}
+            {group.minSelections > 0 ? ` · Min ${group.minSelections}` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-400 transition-colors" title="Duplicate">
+            <RefreshCw size={13} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-400 hover:text-red-400 transition-colors" title="Delete">
+            <Trash2 size={13} />
+          </button>
+          {isExpanded ? <ChevronUp size={16} className="text-neutral-400" /> : <ChevronDown size={16} className="text-neutral-400" />}
+        </div>
+      </div>
+
+      {/* Expanded body */}
+      {isExpanded && (
+        <div className="border-t border-neutral-100 dark:border-white/5 p-4 space-y-5">
+          {/* Group settings */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Group Name</label>
+              <input
+                type="text"
+                value={group.name}
+                onChange={e => onUpdate({ ...group, name: e.target.value })}
+                placeholder="e.g. Toppings, Add-ons, Crust Type"
+                className="w-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Selection Type</label>
+              <div className="flex gap-2">
+                {['single', 'multi'].map(type => (
+                  <button key={type} onClick={() => onUpdate({ ...group, selectionType: type })}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all"
+                    style={group.selectionType === type
+                      ? { background: 'rgba(212,175,55,0.1)', borderColor: 'rgba(212,175,55,0.4)', color: GOLD }
+                      : { background: 'transparent', borderColor: 'rgba(212,175,55,0.15)', color: '#9ca3af' }
+                    }
+                  >
+                    {type === 'single' ? '⚬ Single' : '☑ Multi'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {group.selectionType === 'multi' && (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Min Selections</label>
+                  <input type="number" min="0" value={group.minSelections || 0}
+                    onChange={e => onUpdate({ ...group, minSelections: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Max Selections (0 = unlimited)</label>
+                  <input type="number" min="0" value={group.maxSelections || 0}
+                    onChange={e => onUpdate({ ...group, maxSelections: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white"
+                  />
+                </div>
+              </>
+            )}
+            <div className="flex items-center gap-3 sm:col-span-2">
+              <button onClick={() => onUpdate({ ...group, isRequired: !group.isRequired })}
+                className="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-xl border transition-all"
+                style={group.isRequired
+                  ? { background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)', color: '#f87171' }
+                  : { background: 'transparent', borderColor: 'rgba(212,175,55,0.15)', color: '#9ca3af' }
+                }
+              >
+                {group.isRequired ? '✓ Required Selection' : 'Make Required'}
+              </button>
+              <p className="text-[11px] text-neutral-400">Required groups force the diner to make a selection before adding to cart.</p>
+            </div>
+          </div>
+
+          {/* Options list */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Options / Items</label>
+              <button onClick={addItem}
+                className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: 'rgba(212,175,55,0.1)', color: GOLD, border: '1px solid rgba(212,175,55,0.25)' }}
+              >
+                <Plus size={12} /> Add Option
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(group.items || []).map((item, idx) => (
+                <CustomizationItemRow key={item.id || idx} item={item}
+                  onUpdate={(updated) => updateItem(idx, updated)}
+                  onDelete={() => deleteItem(idx)}
+                />
+              ))}
+              {(group.items || []).length === 0 && (
+                <div className="text-center py-6 text-neutral-400 text-sm border border-dashed border-neutral-200 dark:border-white/10 rounded-xl">
+                  No options yet. Click "Add Option" to get started.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Target: Categories or Dishes */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Apply To</label>
+              <div className="flex gap-1 bg-neutral-100 dark:bg-white/5 rounded-xl p-0.5">
+                {['categories', 'dishes'].map(t => (
+                  <button key={t} onClick={() => { setTargetType(t); onUpdate({ ...group, targetType: t }); }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                    style={targetType === t
+                      ? { background: goldGradient, color: '#000' }
+                      : { color: '#9ca3af' }
+                    }
+                  >
+                    {t === 'categories' ? '📁 Categories' : '🍽️ Dishes'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {targetType === 'categories' ? (
+              <div className="flex flex-wrap gap-2">
+                {categories.map(cat => {
+                  const isSelected = (group.targetCategories || []).includes(cat);
+                  return (
+                    <button key={cat} onClick={() => toggleCategory(cat)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
+                      style={isSelected
+                        ? { background: 'rgba(212,175,55,0.12)', borderColor: 'rgba(212,175,55,0.4)', color: GOLD }
+                        : { background: 'transparent', borderColor: 'rgba(212,175,55,0.15)', color: '#9ca3af' }
+                      }
+                    >
+                      {isSelected ? '✓ ' : ''}{cat}
+                    </button>
+                  );
+                })}
+                {categories.length === 0 && (
+                  <p className="text-xs text-neutral-400">No categories found. Add dishes with categories first.</p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                {dishes.map(dish => {
+                  const isSelected = (group.targetDishes || []).includes(dish.id);
+                  return (
+                    <button key={dish.id} onClick={() => toggleDish(dish.id)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border text-left transition-all"
+                      style={isSelected
+                        ? { background: 'rgba(212,175,55,0.08)', borderColor: 'rgba(212,175,55,0.35)', color: GOLD }
+                        : { background: 'transparent', borderColor: 'rgba(212,175,55,0.1)', color: '#9ca3af' }
+                      }
+                    >
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-[#D4AF37]' : 'bg-neutral-400'}`} />
+                      <span className="truncate text-neutral-800 dark:text-neutral-200 font-semibold">{dish.name}</span>
+                      {dish.category && <span className="text-neutral-400 shrink-0">· {dish.category}</span>}
+                    </button>
+                  );
+                })}
+                {dishes.length === 0 && (
+                  <p className="text-xs text-neutral-400">No dishes in your menu yet.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomizationsPanel({ groups: initialGroups, dishes, categories, onSave }) {
+  const [groups, setGroups] = React.useState(initialGroups);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [hasChanges, setHasChanges] = React.useState(false);
+
+  // Sync if parent data changes (e.g. after save)
+  React.useEffect(() => { setGroups(initialGroups); setHasChanges(false); }, [JSON.stringify(initialGroups)]);
+
+  const markChanged = (newGroups) => { setGroups(newGroups); setHasChanges(true); };
+
+  const addGroup = () => {
+    const newGroup = {
+      id: `cg_${Date.now()}`,
+      name: '',
+      selectionType: 'multi',
+      minSelections: 0,
+      maxSelections: 0,
+      isRequired: false,
+      targetType: 'categories',
+      targetCategories: [],
+      targetDishes: [],
+      items: [],
+    };
+    markChanged([...groups, newGroup]);
+  };
+
+  const updateGroup = (idx, updated) => markChanged(groups.map((g, i) => i === idx ? updated : g));
+  const deleteGroup = (idx) => markChanged(groups.filter((_, i) => i !== idx));
+  const duplicateGroup = (idx) => {
+    const orig = groups[idx];
+    markChanged([...groups, { ...orig, id: `cg_${Date.now()}`, name: `${orig.name} (Copy)` }]);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onSave(groups);
+    setIsSaving(false);
+    setHasChanges(false);
+  };
+
+  return (
+    <React.Fragment>
+      <motion.div key="customizations" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 overflow-y-auto p-6"
+      >
+        <div className="max-w-3xl mx-auto">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="font-display font-black text-2xl">Menu Customizations</h2>
+              <p className="text-sm text-neutral-500 mt-1">
+                Create add-on groups (Toppings, Crust, Sauces…) and apply them to specific categories or dishes. Diners will see these options when adding a dish to their cart.
+              </p>
+            </div>
+            <button onClick={handleSave} disabled={!hasChanges || isSaving}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-all shrink-0"
+              style={hasChanges
+                ? { background: goldGradient, color: '#000' }
+                : { background: 'rgba(212,175,55,0.08)', color: 'rgba(212,175,55,0.4)', border: '1px solid rgba(212,175,55,0.15)' }
+              }
+            >
+              <Save size={15} />
+              {isSaving ? 'Saving…' : hasChanges ? 'Save Changes' : 'Saved'}
+            </button>
+          </div>
+
+          {/* Empty state */}
+          {groups.length === 0 && (
+            <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-white/10 rounded-2xl">
+              <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                <Sliders size={28} style={{ color: GOLD }} />
+              </div>
+              <p className="font-bold text-neutral-800 dark:text-white text-lg mb-1">No customization groups yet</p>
+              <p className="text-sm text-neutral-500 mb-5">Create groups like "Toppings", "Add-ons", or "Spice Level" and assign them to your dishes.</p>
+              <button onClick={addGroup}
+                className="px-6 py-2.5 rounded-xl text-sm font-black inline-flex items-center gap-2"
+                style={{ background: goldGradient, color: '#000' }}
+              >
+                <Plus size={16} /> Create Your First Group
+              </button>
+            </div>
+          )}
+
+          {/* Groups list */}
+          <div className="space-y-3">
+            {groups.map((group, idx) => (
+              <CustomizationGroupCard
+                key={group.id}
+                group={group}
+                dishes={dishes}
+                categories={categories}
+                onUpdate={(updated) => updateGroup(idx, updated)}
+                onDelete={() => deleteGroup(idx)}
+                onDuplicate={() => duplicateGroup(idx)}
+              />
+            ))}
+          </div>
+
+          {/* Add group button */}
+          {groups.length > 0 && (
+            <button onClick={addGroup}
+              className="w-full mt-4 py-3 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 text-sm font-bold text-neutral-500 hover:text-[#D4AF37] hover:border-[rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2"
+            >
+              <Plus size={16} /> Add Customization Group
+            </button>
+          )}
+
+          {/* Info cards */}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { icon: '🎯', title: 'Category Targeting', desc: 'Apply a group to an entire category — all dishes in "Pizzas" will show your Toppings group.' },
+              { icon: '🍽️', title: 'Dish-Level Control', desc: 'Need ultra-specific control? Apply a group to individual dishes for a tailored experience.' },
+              { icon: '⚡', title: 'Live Price Updates', desc: 'Diners see the total cost update in real-time as they configure their order.' },
+            ].map(card => (
+              <div key={card.title} className="p-4 rounded-xl bg-white dark:bg-[#0e0e12] border border-neutral-100 dark:border-white/5">
+                <div className="text-2xl mb-2">{card.icon}</div>
+                <p className="font-bold text-sm text-neutral-900 dark:text-white mb-1">{card.title}</p>
+                <p className="text-xs text-neutral-500">{card.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </React.Fragment>
+  );
+}
 
 // ══════════════════════════════════════════════════════════════════════
 export default function VendorDashboardPage() {
@@ -4877,6 +5283,36 @@ export default function VendorDashboardPage() {
               )}
             </motion.div>
           )}
+
+          {/* ════════════════════ MENU CUSTOMIZATIONS ════════════════════ */}
+          {vendorTab === 'customizations' && (() => {
+            // Load customization groups from restaurant macros
+            const currentRest = restaurants.find(r => r.id === activeRestId);
+            const savedGroups = currentRest?.macros?.customizationGroups || [];
+
+            // Derive available categories & dishes for targeting
+            const vendDishes = dishes.filter(d => d.restaurantId === activeRestId && !d.macros?.isCombo);
+            let rawCats = currentRest?.macros?.categories;
+            const dishCategories = rawCats
+              ? (Array.isArray(rawCats) ? rawCats : Object.keys(rawCats))
+              : [...new Set(vendDishes.map(d => d.category).filter(Boolean))];
+
+            return (
+              <CustomizationsPanel
+                key="customizations"
+                groups={savedGroups}
+                dishes={vendDishes}
+                categories={dishCategories}
+                onSave={async (updatedGroups) => {
+                  const currentMacros = currentRest?.macros || {};
+                  await updateRestaurant(activeRestId, {
+                    macros: { ...currentMacros, customizationGroups: updatedGroups }
+                  });
+                  showNotification('✅ Customizations saved!');
+                }}
+              />
+            );
+          })()}
 
           {/* ════════════════════ TABLES & QR ════════════════════ */}
           {vendorTab === 'qr' && (
