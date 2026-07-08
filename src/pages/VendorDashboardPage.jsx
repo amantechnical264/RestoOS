@@ -1913,6 +1913,12 @@ export default function VendorDashboardPage() {
                           <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
                           {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                         </div>
+                        {o.metadata?.specialInstructions && (
+                          <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
+                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
+                            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{o.metadata.specialInstructions}</p>
+                          </div>
+                        )}
                         
                         <div className="mb-3 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 rounded-xl p-3">
                           <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">

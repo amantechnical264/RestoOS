@@ -526,18 +526,7 @@ export default function CartPage() {
                   </div>
                 </div>
                 
-                {/* Per-item instructions */}
-                <div className="mt-1 pt-3 border-t border-neutral-200 dark:border-white/5">
-                  <input
-                    type="text"
-                    value={item.specialInstructions || ''}
-                    onChange={(e) => {
-                      setCart(prev => prev.map(c => item.cartIds.includes(c.cartId) ? { ...c, specialInstructions: e.target.value } : c));
-                    }}
-                    placeholder="Add note (e.g. less spicy)..."
-                    className="w-full bg-transparent text-xs text-neutral-700 dark:text-neutral-300 placeholder:text-neutral-400 focus:outline-none"
-                  />
-                </div>
+
               </div>
             </motion.div>
             );
