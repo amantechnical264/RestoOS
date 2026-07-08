@@ -2770,9 +2770,9 @@ export default function VendorDashboardPage() {
                         <div className="p-4">
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex-1 min-w-0 pr-2">
-                              <h3 className="font-bold text-sm leading-tight flex items-center min-w-0">
-                                <DietIcon type={dish.dietaryPreference} />
-                                <span className="truncate">{dish.name}</span>
+                              <h3 className="font-bold text-sm leading-tight flex items-start min-w-0">
+                                <span className="mt-0.5 shrink-0"><DietIcon type={dish.dietaryPreference} /></span>
+                                <span className="line-clamp-3 break-words whitespace-normal">{dish.name}</span>
                               </h3>
                               {dish.chef && <p className="text-xs text-neutral-500 mt-0.5 truncate">{dish.chef}</p>}
                             </div>
