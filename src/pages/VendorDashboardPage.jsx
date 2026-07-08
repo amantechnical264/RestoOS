@@ -4011,34 +4011,63 @@ export default function VendorDashboardPage() {
                         {/* Link to Dishes */}
                         <div>
                           <label className="text-xs font-bold text-neutral-500 mb-2 block">Apply to Dishes</label>
-                          <p className="text-[11px] text-neutral-400 mb-2">Select dishes where this add-on category will appear when a customer adds them to cart.</p>
-                          <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                          <p className="text-[11px] text-neutral-400 mb-2">Select the exact dish (or variant) where this add-on will appear when a customer adds it to cart.</p>
+                          <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
                             {vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).length === 0 ? (
                               <div className="p-4 text-xs text-neutral-400 text-center">No dishes in your menu yet.</div>
                             ) : (
-                              vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).map(dish => {
-                                const isLinked = (editingCustomization.customizationCategories || []).includes(editingCustomization.id)
-                                  || (dish.customizationCategories || []).includes(editingCustomization.id)
-                                  || (editingCustomization.linkedDishes || []).includes(dish.id);
-                                return (
-                                  <label key={dish.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
-                                    <input
-                                      type="checkbox"
-                                      checked={isLinked}
-                                      onChange={() => {
-                                        const prev = editingCustomization.linkedDishes || [];
-                                        const next = prev.includes(dish.id) ? prev.filter(id => id !== dish.id) : [...prev, dish.id];
-                                        setEditingCustomization(p => ({ ...p, linkedDishes: next }));
-                                      }}
-                                      className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
-                                    />
-                                    <div className="min-w-0">
-                                      <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dish.name}</span>
-                                      {dish.category && <span className="text-[10px] text-neutral-400">{dish.category}</span>}
-                                    </div>
-                                    <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{Number(dish.price).toFixed(0)}</span>
-                                  </label>
-                                );
+                              vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).flatMap(dish => {
+                                const hasVariants = dish.variants && dish.variants.length > 0;
+                                if (hasVariants) {
+                                  // Show each variant as a separate row
+                                  return dish.variants.map(v => {
+                                    const key = `${dish.id}::${v.name}`;
+                                    const isLinked = (editingCustomization.linkedDishes || []).includes(key);
+                                    return (
+                                      <label key={key} className="flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
+                                        <input
+                                          type="checkbox"
+                                          checked={isLinked}
+                                          onChange={() => {
+                                            const prev = editingCustomization.linkedDishes || [];
+                                            const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
+                                            setEditingCustomization(p => ({ ...p, linkedDishes: next }));
+                                          }}
+                                          className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                          <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dish.name}</span>
+                                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>{v.name}</span>
+                                        </div>
+                                        <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{Number(v.price).toFixed(0)}</span>
+                                      </label>
+                                    );
+                                  });
+                                } else {
+                                  // No variants — show dish directly
+                                  const key = dish.id;
+                                  const isLinked = (editingCustomization.linkedDishes || []).includes(key)
+                                    || (dish.customizationCategories || []).includes(editingCustomization.id);
+                                  return [(
+                                    <label key={key} className="flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
+                                      <input
+                                        type="checkbox"
+                                        checked={isLinked}
+                                        onChange={() => {
+                                          const prev = editingCustomization.linkedDishes || [];
+                                          const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
+                                          setEditingCustomization(p => ({ ...p, linkedDishes: next }));
+                                        }}
+                                        className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
+                                      />
+                                      <div className="min-w-0 flex-1">
+                                        <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dish.name}</span>
+                                        {dish.category && <span className="text-[10px] text-neutral-400">{dish.category}</span>}
+                                      </div>
+                                      <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{Number(dish.price).toFixed(0)}</span>
+                                    </label>
+                                  )];
+                                }
                               })
                             )}
                           </div>
@@ -4060,11 +4089,16 @@ export default function VendorDashboardPage() {
                             : [...existing, cleaned];
                           await updateRestaurant(activeRestId, { customizations: newArr });
 
-                          // Also update customizationCategories on each linked/unlinked dish
+                          // Derive the set of base dish IDs that are linked (strip ::variantName suffix)
+                          const linkedBaseDishIds = new Set(
+                            (cleaned.linkedDishes || []).map(k => k.includes('::') ? k.split('::')[0] : k)
+                          );
+
+                          // Update customizationCategories on each dish accordingly
                           const allDishes = vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent);
                           for (const dish of allDishes) {
                             const prevCats = dish.customizationCategories || [];
-                            const shouldLink = (cleaned.linkedDishes || []).includes(dish.id);
+                            const shouldLink = linkedBaseDishIds.has(dish.id);
                             const isCurrentlyLinked = prevCats.includes(cleaned.id);
                             if (shouldLink && !isCurrentlyLinked) {
                               await updateDish(dish.id, { customizationCategories: [...prevCats, cleaned.id] });
