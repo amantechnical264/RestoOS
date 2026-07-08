@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ListOrdered, TrendingUp, Utensils, QrCode as QrIcon,
@@ -286,14 +287,12 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
                           }}
                           onMouseEnter={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
-                            const container = e.currentTarget.closest('.contribution-grid-container');
-                            const containerRect = container.getBoundingClientRect();
                             setHoveredDay({
                               dateStr: new Date(selectedYear, monthIndex, dayNum).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                               count: dayStats.count,
                               revenue: dayStats.revenue,
-                              x: rect.left - containerRect.left + (rect.width / 2),
-                              y: rect.top - containerRect.top
+                              left: rect.left + window.scrollX + (rect.width / 2),
+                              top: rect.top + window.scrollY - 65
                             });
                           }}
                           onMouseLeave={() => setHoveredDay(null)}
@@ -313,16 +312,17 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
         </div>
       </div>
 
-      {/* Dynamic Tooltip */}
-      {hoveredDay && (
+      {/* Dynamic Tooltip via React Portal */}
+      {hoveredDay && createPortal(
         <div
-          className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 shadow-2xl pointer-events-none whitespace-nowrap"
+          className="absolute z-[9999] px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 shadow-2xl pointer-events-none whitespace-nowrap"
           style={{
-            left: `${hoveredDay.x}px`,
-            top: `${hoveredDay.y - 65}px`,
+            left: `${hoveredDay.left}px`,
+            top: `${hoveredDay.top}px`,
             transform: 'translateX(-50%)',
             backgroundColor: '#0a0a0a',
-            borderColor: '#262626'
+            borderColor: '#262626',
+            position: 'absolute'
           }}
         >
           <div className="flex items-center gap-2 mb-1 pb-1 border-b" style={{ borderColor: '#262626' }}>
@@ -336,7 +336,8 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
             )}
           </div>
           <div className="text-[9px] font-semibold" style={{ color: '#a3a3a3' }}>{hoveredDay.dateStr}</div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
