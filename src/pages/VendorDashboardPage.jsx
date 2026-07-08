@@ -2769,24 +2769,24 @@ export default function VendorDashboardPage() {
                         </div>
                         <div className="p-4">
                           <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1 pr-2">
-                              <h3 className="font-bold text-sm leading-tight flex items-center">
+                            <div className="flex-1 min-w-0 pr-2">
+                              <h3 className="font-bold text-sm leading-tight flex items-center min-w-0">
                                 <DietIcon type={dish.dietaryPreference} />
                                 <span className="truncate">{dish.name}</span>
                               </h3>
-                              {dish.chef && <p className="text-xs text-neutral-500 mt-0.5">{dish.chef}</p>}
+                              {dish.chef && <p className="text-xs text-neutral-500 mt-0.5 truncate">{dish.chef}</p>}
                             </div>
                             {dish.variants && dish.variants.length > 0 ? (
-                              <div className="flex flex-col items-end gap-1">
+                              <div className="flex flex-col items-end gap-1 shrink-0">
                                 {dish.variants.map((v, idx) => (
-                                  <div key={idx} className="flex items-center gap-1.5">
+                                  <div key={idx} className="flex items-center gap-1.5 shrink-0">
                                     <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{v.name}</span>
                                     <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(v.price || 0).toFixed(2)}</span>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <span className="font-display font-black text-base text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
+                              <span className="font-display font-black text-base text-[#D4AF37] shrink-0">₹{Number(dish.price).toFixed(2)}</span>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-4">
@@ -3848,17 +3848,10 @@ export default function VendorDashboardPage() {
 
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
                     <h3 className="text-xs font-black text-neutral-500 uppercase tracking-wider">Basic Info</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Name *</label>
                         <input required type="text" value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})}
-                          className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Base Price (₹) *</label>
-                        <input required={!(editingDish.variants?.length > 0)} type="number" step="0.01" value={editingDish.price || ''} onChange={e => setEditingDish({...editingDish, price: e.target.value})}
-                          placeholder="199.00"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
 

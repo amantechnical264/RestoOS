@@ -904,7 +904,13 @@ export const AppProvider = ({ children }) => {
     try {
       const dbUpdate = {};
       if (updates.name !== undefined) dbUpdate.name = updates.name;
-      if (updates.price !== undefined) dbUpdate.price = parseFloat(updates.price) || 0;
+      if (updates.price !== undefined) {
+        dbUpdate.price = parseFloat(updates.price) || 0;
+      }
+      // Sync base price with the first variant if variants are updated/created
+      if (updates.variants !== undefined) {
+        dbUpdate.price = updates.variants.length > 0 ? parseFloat(updates.variants[0].price) || 0 : (parseFloat(updates.price || currentDish?.price) || 0);
+      }
       if (updates.description !== undefined) dbUpdate.description = updates.description;
       if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
       if (updates.modelUrl !== undefined) dbUpdate.model_url = updates.modelUrl;
