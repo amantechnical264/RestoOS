@@ -124,6 +124,220 @@ const cardStyleLight = {
   boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
 };
 
+// ─── Yearly Contribution Grid Chart ────────────────────────────────────
+const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
+  const [selectedYear, setSelectedYear] = React.useState(() => new Date().getFullYear());
+  const [hoveredDay, setHoveredDay] = React.useState(null);
+
+  // Get available years from order dates (minimum: 2024)
+  const availableYears = React.useMemo(() => {
+    const years = new Set([new Date().getFullYear()]);
+    orders.forEach(o => {
+      if (o.timestamp) {
+        const y = new Date(o.timestamp).getFullYear();
+        if (y >= 2024) years.add(y);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [orders]);
+
+  // Filter orders for the selected year and group by YYYY-MM-DD
+  const yearData = React.useMemo(() => {
+    const map = {};
+    let totalOrders = 0;
+    
+    // Filter completed/delivered orders
+    const yearOrders = orders.filter(o => {
+      if (!o.timestamp) return false;
+      const orderDate = new Date(o.timestamp);
+      const isYear = orderDate.getFullYear() === selectedYear;
+      const isCompleted = o.status === 'Completed' || o.status === 'Delivered';
+      return isYear && isCompleted;
+    });
+
+    totalOrders = yearOrders.length;
+
+    yearOrders.forEach(o => {
+      const d = new Date(o.timestamp);
+      // Format as YYYY-MM-DD in local time
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateKey = `${y}-${m}-${day}`;
+
+      if (!map[dateKey]) {
+        map[dateKey] = {
+          count: 0,
+          revenue: 0,
+          orders: []
+        };
+      }
+      map[dateKey].count += 1;
+      map[dateKey].revenue += Number(o.total || 0);
+      map[dateKey].orders.push(o);
+    });
+
+    const activeDays = new Set(Object.keys(map));
+    
+    // Calculate max streak
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let prevDate = null;
+    const sortedActiveDays = Array.from(activeDays).sort();
+
+    for (let i = 0; i < sortedActiveDays.length; i++) {
+      const curr = new Date(sortedActiveDays[i]);
+      if (prevDate === null) {
+        currentStreak = 1;
+      } else {
+        const diffTime = Math.abs(curr - prevDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          currentStreak += 1;
+        } else if (diffDays > 1) {
+          maxStreak = Math.max(maxStreak, currentStreak);
+          currentStreak = 1;
+        }
+      }
+      prevDate = curr;
+    }
+    maxStreak = Math.max(maxStreak, currentStreak);
+
+    return {
+      map,
+      totalOrders,
+      activeDaysCount: activeDays.size,
+      maxStreak
+    };
+  }, [orders, selectedYear]);
+
+  // Months name array
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Helper to determine color level
+  const getColorLevelClass = (count) => {
+    if (!count || count === 0) return 'bg-neutral-100 dark:bg-neutral-800 hover:ring-1 hover:ring-neutral-400';
+    if (count <= 2) return 'bg-emerald-100 dark:bg-emerald-950/80 hover:ring-1 hover:ring-emerald-400';
+    if (count <= 5) return 'bg-emerald-300 dark:bg-emerald-800/80 hover:ring-1 hover:ring-emerald-300';
+    if (count <= 9) return 'bg-emerald-500 dark:bg-emerald-600/80 hover:ring-1 hover:ring-emerald-200';
+    return 'bg-emerald-600 dark:bg-emerald-400 hover:ring-1 hover:ring-emerald-100';
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      {/* Top Header Row */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-100 dark:border-white/5 pb-3">
+        <div className="space-y-0.5">
+          <div className="text-lg font-display font-black text-neutral-900 dark:text-[#D4AF37]">
+            {yearData.totalOrders} submissions in {selectedYear}
+          </div>
+          <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+            <span>Total active days: <strong className="text-neutral-900 dark:text-white">{yearData.activeDaysCount}</strong></span>
+            <span>Max streak: <strong className="text-neutral-900 dark:text-white">{yearData.maxStreak} days</strong></span>
+          </div>
+        </div>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          className="bg-neutral-50 dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+        >
+          {availableYears.map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Grid Container */}
+      <div className="relative overflow-x-auto no-scrollbar pb-2">
+        <div className="flex gap-4 min-w-[760px] justify-between">
+          {months.map((monthName, monthIndex) => {
+            // Calculate calendar details for this month
+            const startDayOfWeek = new Date(selectedYear, monthIndex, 1).getDay(); // 0 = Sun, 6 = Sat
+            const totalDays = new Date(selectedYear, monthIndex + 1, 0).getDate();
+            const numCols = Math.ceil((startDayOfWeek + totalDays) / 7);
+
+            return (
+              <div key={monthName} className="flex flex-col items-center flex-1">
+                {/* Month grid */}
+                <div className="grid grid-flow-col gap-[3px]" style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}>
+                  {[...Array(numCols)].map((_, colIndex) => {
+                    return [...Array(7)].map((_, rowIndex) => {
+                      const dayNum = (colIndex * 7) + rowIndex - startDayOfWeek + 1;
+                      const isValidDay = dayNum >= 1 && dayNum <= totalDays;
+
+                      if (!isValidDay) {
+                        return <div key={`${colIndex}-${rowIndex}`} className="w-[10px] h-[10px] bg-transparent" />;
+                      }
+
+                      // Date formatting for key
+                      const dateKey = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                      const dayStats = yearData.map[dateKey] || { count: 0, revenue: 0, orders: [] };
+
+                      return (
+                        <div
+                          key={dateKey}
+                          onClick={() => {
+                            if (dayStats.count > 0 && onDayClick) {
+                              onDayClick({
+                                fullDate: new Date(selectedYear, monthIndex, dayNum).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                                allDayOrders: dayStats.orders
+                              });
+                            }
+                          }}
+                          onMouseEnter={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const container = e.currentTarget.closest('.relative');
+                            const containerRect = container.getBoundingClientRect();
+                            setHoveredDay({
+                              dateStr: new Date(selectedYear, monthIndex, dayNum).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                              count: dayStats.count,
+                              revenue: dayStats.revenue,
+                              x: rect.left - containerRect.left + (rect.width / 2),
+                              y: rect.top - containerRect.top
+                            });
+                          }}
+                          onMouseLeave={() => setHoveredDay(null)}
+                          className={`w-[10px] h-[10px] rounded-[2px] transition-all cursor-pointer ${getColorLevelClass(dayStats.count)}`}
+                        />
+                      );
+                    });
+                  })}
+                </div>
+                {/* Month Label */}
+                <div className="text-[10px] text-neutral-400 dark:text-neutral-500 font-semibold mt-2">
+                  {monthName}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Dynamic Tooltip */}
+        {hoveredDay && (
+          <div
+            className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-[11px] font-bold shadow-xl pointer-events-none whitespace-nowrap border border-white/10 dark:border-black/5"
+            style={{
+              left: `${hoveredDay.x}px`,
+              top: `${hoveredDay.y - 65}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <div className="flex items-center gap-1.5 mb-1 border-b border-white/10 dark:border-black/10 pb-1">
+              <span className="text-[12px]">{hoveredDay.count} order{hoveredDay.count !== 1 ? 's' : ''}</span>
+              {hoveredDay.count > 0 && (
+                <span className="text-[10px] font-medium opacity-70 bg-white/10 dark:bg-black/10 px-1.5 py-0.5 rounded-md">
+                  ₹{hoveredDay.revenue.toFixed(0)}
+                </span>
+              )}
+            </div>
+            <div className="text-[9px] opacity-50">{hoveredDay.dateStr}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 // ─── Mini Bar Chart (pure SVG, no library) ────────────────────────────
 const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80, onBarClick }) => {
   const max = Math.max(...data.map(d => d.value), 1);
@@ -1554,6 +1768,9 @@ export default function VendorDashboardPage() {
         const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30);
         return new Date(o.timestamp) >= cutoff;
       }
+      if (analyticsRange === 'Year') {
+        return new Date(o.timestamp).getFullYear() === now.getFullYear();
+      }
       return true;
     });
   }, [restOrders, analyticsRange]);
@@ -1573,6 +1790,9 @@ export default function VendorDashboardPage() {
       if (analyticsRange === 'Month') {
         const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30);
         return new Date(o.timestamp) >= cutoff;
+      }
+      if (analyticsRange === 'Year') {
+        return new Date(o.timestamp).getFullYear() === now.getFullYear();
       }
       return true;
     });
@@ -1605,6 +1825,22 @@ export default function VendorDashboardPage() {
       const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
       const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
   
+      return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
+    }
+
+    if (analyticsRange === 'Year') {
+      const prevYear = now.getFullYear() - 1;
+      const prevCompleted = restOrders.filter(o => {
+        if ((o.status !== 'Completed' && o.status !== 'Delivered') || !o.timestamp) return false;
+        return new Date(o.timestamp).getFullYear() === prevYear;
+      });
+      const prevAll = restOrders.filter(o => {
+        if (!o.timestamp) return false;
+        return new Date(o.timestamp).getFullYear() === prevYear;
+      });
+      const prevRevenue = prevCompleted.reduce((s, o) => s + (o.total || 0), 0);
+      const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
+      const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
       return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
     }
     
@@ -1670,6 +1906,7 @@ export default function VendorDashboardPage() {
 
   // Revenue chart — adapts to selected range
   const weekData = React.useMemo(() => {
+    if (analyticsRange === 'Year') return [];
     const days = analyticsRange === 'Month' ? 30 : analyticsRange === 'Week' ? 7 : 1;
     return [...Array(days)].map((_, i) => {
       const d = new Date();
@@ -2757,7 +2994,7 @@ export default function VendorDashboardPage() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Deep insights into your restaurant's performance</p>
                   </div>
                   <div className="flex gap-2">
-                    {['Today','Week','Month'].map(r => (
+                    {['Today','Week','Month','Year'].map(r => (
                       <button key={r} onClick={() => setAnalyticsRange(r)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${analyticsRange === r ? 'bg-neutral-900 dark:bg-white text-white dark:text-black' : 'bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500'}`}>
                         {r}
@@ -2772,7 +3009,7 @@ export default function VendorDashboardPage() {
                     Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
                   ) : (
                     <>
-                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange === 'Week' ? "This Week's" : "This Month's"} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={trendRevenue} />
+                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange === 'Week' ? "This Week's" : analyticsRange === 'Month' ? "This Month's" : "This Year's"} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={trendRevenue} />
                       <KpiCard icon={ShoppingBag}  label="Orders Completed" value={rangedCompleted.length}                  color="bg-blue-500"    trend={trendOrders} />
                       <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={trendAvg} />
                       <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={trendCancel} />
@@ -2783,14 +3020,23 @@ export default function VendorDashboardPage() {
                 {/* Revenue Chart + Order Split */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === 'Week' ? '7 Days' : '30 Days'}</h3>
-                      <span className="text-xs font-semibold text-neutral-400">
-                        vs prev. {analyticsRange === 'Today' ? 'day' : analyticsRange === 'Week' ? 'week' : 'month'} <span className={`${trendRevenue >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{trendRevenue >= 0 ? '↑' : '↓'} {Math.abs(trendRevenue)}%</span>
-                      </span>
-                    </div>
-                    <MiniBarChart data={weekData} color="#3B82F6" height={100} onBarClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })} />
-                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(0)}</div>
+                    {analyticsRange === 'Year' ? (
+                      <YearlyContributionGrid
+                        orders={restOrders}
+                        onDayClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })}
+                      />
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === 'Week' ? '7 Days' : '30 Days'}</h3>
+                          <span className="text-xs font-semibold text-neutral-400">
+                            vs prev. {analyticsRange === 'Today' ? 'day' : analyticsRange === 'Week' ? 'week' : 'month'} <span className={`${trendRevenue >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{trendRevenue >= 0 ? '↑' : '↓'} {Math.abs(trendRevenue)}%</span>
+                          </span>
+                        </div>
+                        <MiniBarChart data={weekData} color="#3B82F6" height={100} onBarClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })} />
+                        <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(0)}</div>
+                      </>
+                    )}
                   </div>
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <h3 className="font-display font-black text-base mb-6">Order Types</h3>
