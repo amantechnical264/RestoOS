@@ -315,22 +315,26 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
         {/* Dynamic Tooltip */}
         {hoveredDay && (
           <div
-            className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-white text-[11px] font-bold shadow-2xl pointer-events-none whitespace-nowrap"
+            className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 shadow-2xl pointer-events-none whitespace-nowrap"
             style={{
               left: `${hoveredDay.x}px`,
               top: `${hoveredDay.y - 65}px`,
-              transform: 'translateX(-50%)'
+              transform: 'translateX(-50%)',
+              backgroundColor: '#0a0a0a',
+              borderColor: '#262626'
             }}
           >
-            <div className="flex items-center gap-2 mb-1 border-b border-neutral-800 pb-1">
-              <span className="text-[12px] text-white">{hoveredDay.count} order{hoveredDay.count !== 1 ? 's' : ''}</span>
+            <div className="flex items-center gap-2 mb-1 pb-1 border-b" style={{ borderColor: '#262626' }}>
+              <span className="text-[12px] font-bold" style={{ color: '#ffffff' }}>
+                {hoveredDay.count} {hoveredDay.count === 1 ? 'order' : 'orders'}
+              </span>
               {hoveredDay.count > 0 && (
-                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-950/50 border border-emerald-800/30 px-1.5 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border" style={{ color: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', borderColor: 'rgba(52, 211, 153, 0.2)' }}>
                   ₹{hoveredDay.revenue.toFixed(0)}
                 </span>
               )}
             </div>
-            <div className="text-[9px] text-neutral-400 font-semibold">{hoveredDay.dateStr}</div>
+            <div className="text-[9px] font-semibold" style={{ color: '#a3a3a3' }}>{hoveredDay.dateStr}</div>
           </div>
         )}
       </div>
