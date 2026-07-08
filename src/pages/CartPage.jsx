@@ -495,6 +495,16 @@ export default function CartPage() {
                       {item.variantName && (
                         <p className="text-xs font-bold text-[#D4AF37] mb-1">{item.variantName}</p>
                       )}
+                      {/* Customization pills */}
+                      {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {item.selectedCustomizations.map((c, ci) => (
+                            <span key={ci} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold" style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
+                              {c.name}{Number(c.price) > 0 ? ` +₹${Number(c.price).toFixed(0)}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         {dishes.find(d => d.id === item.id)?.tags?.includes('sold_out') && (
                           <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-[9px] uppercase tracking-wider">

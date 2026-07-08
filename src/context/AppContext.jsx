@@ -611,10 +611,13 @@ export const AppProvider = ({ children }) => {
 
   const addToCart = (dish) => {
     // Stamp the effective price at add-time so every consumer (subtotal, placeOrder, etc.) reads it correctly
-    const effectivePrice = dish.selectedVariant ? Number(dish.selectedVariant.price) : Number(dish.price);
+    const basePrice = dish.selectedVariant ? Number(dish.selectedVariant.price) : Number(dish.price);
+    const customizationsTotal = (dish.selectedCustomizations || []).reduce((sum, c) => sum + Number(c.price || 0), 0);
+    const effectivePrice = basePrice + customizationsTotal;
     setCart(prev => [...prev, { ...dish, price: effectivePrice, cartId: Date.now() }]);
     showNotification('Added to cart');
   };
+
 
   const removeOneFromCart = (dishId, variantName) => {
     setCart(prev => {
