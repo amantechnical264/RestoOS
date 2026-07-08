@@ -3970,39 +3970,32 @@ export default function VendorDashboardPage() {
                   <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setEditingCustomization(null)}>
                     <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-white dark:bg-[#12141D] w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-neutral-200 dark:border-white/10 max-h-[90vh] overflow-y-auto flex flex-col">
                       <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-black text-neutral-900 dark:text-white">{currentRestaurant?.macros?.customizations?.some(c => c.id === editingCustomization.id) ? 'Edit Add-on' : 'New Add-on'}</h3>
+                        <h3 className="text-xl font-black text-neutral-900 dark:text-white">{currentRestaurant?.macros?.customizations?.some(c => c.id === editingCustomization.id) ? 'Edit Add-on Category' : 'New Add-on Category'}</h3>
                         <button onClick={() => setEditingCustomization(null)} className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
                           <CloseIcon size={20} className="text-neutral-500" />
                         </button>
                       </div>
 
-                      <div className="space-y-4 flex-1">
+                      <div className="space-y-5 flex-1">
+                        {/* Category Name */}
                         <div>
                           <label className="text-xs font-bold text-neutral-500 mb-1 block">Category Name (e.g. Toppings, Size)</label>
                           <input type="text" value={editingCustomization.name} onChange={e => setEditingCustomization(p => ({ ...p, name: e.target.value }))} className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" placeholder="Extra Toppings" />
                         </div>
-                        
-                        <div>
-                          <label className="text-xs font-bold text-neutral-500 mb-1 block">Selection Type</label>
-                          <div className="flex gap-2">
-                            <button onClick={() => setEditingCustomization(p => ({ ...p, type: 'multiple' }))} className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-colors ${editingCustomization.type === 'multiple' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-transparent border-neutral-200 dark:border-white/10 text-neutral-500'}`}>Multiple (Checkboxes)</button>
-                            <button onClick={() => setEditingCustomization(p => ({ ...p, type: 'single' }))} className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-colors ${editingCustomization.type === 'single' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-transparent border-neutral-200 dark:border-white/10 text-neutral-500'}`}>Single (Radios)</button>
-                          </div>
-                        </div>
 
-                        <div className="pt-2">
+                        {/* Options */}
+                        <div>
                           <div className="flex justify-between items-center mb-2">
-                            <label className="text-xs font-bold text-neutral-500 block">Options</label>
+                            <label className="text-xs font-bold text-neutral-500 block">Add-on Options</label>
                             <button onClick={() => setEditingCustomization(p => ({ ...p, options: [...p.options, { id: Date.now().toString(), name: '', price: 0 }] }))} className="text-xs font-bold text-emerald-500 flex items-center gap-1"><PlusCircle size={12} /> Add Option</button>
                           </div>
-                          
                           <div className="space-y-2">
                             {editingCustomization.options.map((opt, i) => (
                               <div key={opt.id} className="flex gap-2 items-center">
-                                <input type="text" value={opt.name} onChange={e => { const newOpts = [...editingCustomization.options]; newOpts[i].name = e.target.value; setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="flex-1 bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm dark:text-white" placeholder="Option Name" />
+                                <input type="text" value={opt.name} onChange={e => { const newOpts = [...editingCustomization.options]; newOpts[i].name = e.target.value; setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="flex-1 bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm dark:text-white" placeholder="e.g. Extra Cheese" />
                                 <div className="relative w-24">
-                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">$</span>
-                                  <input type="number" min="0" step="0.01" value={opt.price} onChange={e => { const newOpts = [...editingCustomization.options]; newOpts[i].price = e.target.value; setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 pl-7 text-sm dark:text-white" placeholder="0.00" />
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm font-bold">₹</span>
+                                  <input type="number" min="0" step="1" value={opt.price} onChange={e => { const newOpts = [...editingCustomization.options]; newOpts[i].price = e.target.value; setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 pl-7 text-sm dark:text-white" placeholder="0" />
                                 </div>
                                 <button onClick={() => { const newOpts = [...editingCustomization.options]; newOpts.splice(i, 1); setEditingCustomization(p => ({ ...p, options: newOpts })); }} className="p-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
                                   <Trash size={16} />
@@ -4010,7 +4003,43 @@ export default function VendorDashboardPage() {
                               </div>
                             ))}
                             {editingCustomization.options.length === 0 && (
-                              <div className="text-center py-4 text-xs text-neutral-400">No options added yet.</div>
+                              <div className="text-center py-4 text-xs text-neutral-400">No options added yet. Click "Add Option" to start.</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Link to Dishes */}
+                        <div>
+                          <label className="text-xs font-bold text-neutral-500 mb-2 block">Apply to Dishes</label>
+                          <p className="text-[11px] text-neutral-400 mb-2">Select dishes where this add-on category will appear when a customer adds them to cart.</p>
+                          <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                            {vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).length === 0 ? (
+                              <div className="p-4 text-xs text-neutral-400 text-center">No dishes in your menu yet.</div>
+                            ) : (
+                              vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent).map(dish => {
+                                const isLinked = (editingCustomization.customizationCategories || []).includes(editingCustomization.id)
+                                  || (dish.customizationCategories || []).includes(editingCustomization.id)
+                                  || (editingCustomization.linkedDishes || []).includes(dish.id);
+                                return (
+                                  <label key={dish.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer border-b border-neutral-100 dark:border-white/5 last:border-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={isLinked}
+                                      onChange={() => {
+                                        const prev = editingCustomization.linkedDishes || [];
+                                        const next = prev.includes(dish.id) ? prev.filter(id => id !== dish.id) : [...prev, dish.id];
+                                        setEditingCustomization(p => ({ ...p, linkedDishes: next }));
+                                      }}
+                                      className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                      <span className="text-sm font-bold text-neutral-800 dark:text-white truncate block">{dish.name}</span>
+                                      {dish.category && <span className="text-[10px] text-neutral-400">{dish.category}</span>}
+                                    </div>
+                                    <span className="ml-auto text-xs font-bold text-emerald-600 shrink-0">₹{Number(dish.price).toFixed(0)}</span>
+                                  </label>
+                                );
+                              })
                             )}
                           </div>
                         </div>
@@ -4020,27 +4049,48 @@ export default function VendorDashboardPage() {
                         <button onClick={async () => {
                           const existing = currentRestaurant?.macros?.customizations || [];
                           const isExisting = existing.some(c => c.id === editingCustomization.id);
-                          
-                          // Ensure options have valid numeric prices
                           const cleaned = {
                             ...editingCustomization,
-                            options: editingCustomization.options.filter(o => o.name.trim() !== '').map(o => ({...o, price: Number(o.price) || 0}))
+                            type: 'multiple',
+                            options: editingCustomization.options.filter(o => o.name.trim() !== '').map(o => ({...o, price: Number(o.price) || 0})),
+                            linkedDishes: editingCustomization.linkedDishes || [],
                           };
-
-                          const newArr = isExisting 
+                          const newArr = isExisting
                             ? existing.map(c => c.id === editingCustomization.id ? cleaned : c)
                             : [...existing, cleaned];
-                            
                           await updateRestaurant(activeRestId, { customizations: newArr });
+
+                          // Also update customizationCategories on each linked/unlinked dish
+                          const allDishes = vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent);
+                          for (const dish of allDishes) {
+                            const prevCats = dish.customizationCategories || [];
+                            const shouldLink = (cleaned.linkedDishes || []).includes(dish.id);
+                            const isCurrentlyLinked = prevCats.includes(cleaned.id);
+                            if (shouldLink && !isCurrentlyLinked) {
+                              await updateDish(dish.id, { customizationCategories: [...prevCats, cleaned.id] });
+                            } else if (!shouldLink && isCurrentlyLinked) {
+                              await updateDish(dish.id, { customizationCategories: prevCats.filter(id => id !== cleaned.id) });
+                            }
+                          }
+
                           setEditingCustomization(null);
+                          showNotification('✅ Add-on category saved!');
                         }} className="flex-1 py-3 rounded-xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-600 transition-colors">Save Add-on</button>
-                        
+
                         {currentRestaurant?.macros?.customizations?.some(c => c.id === editingCustomization.id) && (
                           <button onClick={async () => {
                             if (window.confirm('Delete this customization category?')) {
                               const existing = currentRestaurant?.macros?.customizations || [];
                               await updateRestaurant(activeRestId, { customizations: existing.filter(c => c.id !== editingCustomization.id) });
+                              // Unlink from all dishes
+                              for (const dish of vendDishes) {
+                                const prevCats = dish.customizationCategories || [];
+                                if (prevCats.includes(editingCustomization.id)) {
+                                  await updateDish(dish.id, { customizationCategories: prevCats.filter(id => id !== editingCustomization.id) });
+                                }
+                              }
                               setEditingCustomization(null);
+                              showNotification('Deleted.');
                             }
                           }} className="px-4 rounded-xl border border-red-200 dark:border-red-500/30 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-500/10">Delete</button>
                         )}
