@@ -1000,17 +1000,17 @@ export default function MenuPage() {
       {(() => {
         const socials = restaurant?.macros?.socials || {};
         const platforms = [
-          { key: 'instagram', label: 'Instagram', icon: InstagramIcon, color: 'text-pink-500 hover:text-pink-600 bg-pink-500/10 hover:bg-pink-500/20' },
-          { key: 'facebook', label: 'Facebook', icon: FacebookIcon, color: 'text-blue-600 hover:text-blue-700 bg-blue-500/10 hover:bg-blue-500/20' },
-          { key: 'youtube', label: 'YouTube', icon: YoutubeIcon, color: 'text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20' },
-          { key: 'reddit', label: 'Reddit', icon: RedditIcon, color: 'text-orange-500 hover:text-orange-600 bg-orange-500/10 hover:bg-orange-500/20' }
+          { key: 'instagram', label: 'Instagram', icon: InstagramIcon, color: 'text-pink-500 hover:text-pink-600' },
+          { key: 'facebook', label: 'Facebook', icon: FacebookIcon, color: 'text-blue-600 hover:text-blue-700' },
+          { key: 'youtube', label: 'YouTube', icon: YoutubeIcon, color: 'text-red-600 hover:text-red-700' },
+          { key: 'reddit', label: 'Reddit', icon: RedditIcon, color: 'text-orange-500 hover:text-orange-600' }
         ];
         const activeSocials = platforms.filter(p => socials[p.key] && socials[p.key].trim() !== '');
         if (activeSocials.length === 0) return null;
         
         return (
           <div className="px-4 mt-3 flex-shrink-0">
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200/50 dark:border-white/5 shadow-sm">
+            <div className="flex items-center gap-3 px-1 py-1">
               <span className="text-[11px] font-black uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Follow us on :</span>
               <div className="flex items-center gap-2">
                 {activeSocials.map(p => {
