@@ -1179,6 +1179,8 @@ export default function VendorDashboardPage() {
     });
   }, [kitchenOrders]);
   const cancelled = React.useMemo(() => restOrders.filter(o => o.status === 'Cancelled'), [restOrders]);
+  const deliveryOrdersMemo = React.useMemo(() => restOrders.filter(o => o.orderType === 'delivery' || o.order_type === 'delivery'), [restOrders]);
+  const activeDeliveryOrders = React.useMemo(() => deliveryOrdersMemo.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && o.status !== 'Completed'), [deliveryOrdersMemo]);
 
   const getOrderNumber = React.useCallback((order) => {
     const sorted = [...restOrders].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -1573,7 +1575,7 @@ export default function VendorDashboardPage() {
 
   const FULL_TAB_CONFIG = [
     { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
-    { key: 'delivery',  icon: Package,      label: 'Delivery' },
+    { key: 'delivery',  icon: Package,      label: 'Delivery',    badge: activeDeliveryOrders.length },
     { key: 'floor',     icon: Bell,         label: 'Floor',    badge: serviceAlerts.length },
     { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
     { key: 'menu',      icon: Utensils,     label: 'Menu' },
