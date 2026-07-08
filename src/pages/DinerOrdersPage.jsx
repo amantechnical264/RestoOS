@@ -73,6 +73,9 @@ function OrderTimeline({ currentStatus, orderType }) {
  */
 function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview, dishes, user }) {
   const isCancelled = order.status === 'Cancelled';
+  // Resolve cancel reason from metadata OR items array fallback
+  const cancelReason = order.metadata?.cancelReason ||
+    order.items?.find(i => i.id === '__cancel_reason')?.reason || null;
 
   // Track which dish has the review modal open
   const [reviewingDish, setReviewingDish] = useState(null);
@@ -169,7 +172,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
 
         {/* Items List with per-dish review buttons */}
         <div className="p-4 space-y-3">
-          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location').map((item, i) => {
+          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => {
             const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
             const iconColor = isNonVeg ? '#E23744' : '#22c55e';
             const itemRating = reviewedItems[item.id] || reviewedItems['order'] || 0;
@@ -210,6 +213,11 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
               ₹{Number(order.total).toFixed(2)} &rsaquo;
             </span>
           </div>
+          {isCancelled && cancelReason && (
+            <div className="mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+              <p className="text-[12px] font-bold text-red-400">Reason: <span className="font-semibold text-red-500">{cancelReason}</span></p>
+            </div>
+          )}
         </div>
 
         {/* Review Summary Footer */}
@@ -310,30 +318,34 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
       )}
 
       {/* Cancelled */}
-      {order.status === 'Cancelled' && (
-        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
-          <div className="rounded-2xl p-4 flex items-start gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-              <XCircle size={20} className="text-red-400" />
+      {order.status === 'Cancelled' && (() => {
+        const reason = order.metadata?.cancelReason ||
+          order.items?.find(i => i.id === '__cancel_reason')?.reason || null;
+        return (
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
+            <div className="rounded-2xl p-4 flex items-start gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <XCircle size={20} className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-400">Order Cancelled</p>
+                {reason ? (
+                  <p className="text-xs text-neutral-400 mt-1"><span className="font-bold text-neutral-500">Reason: </span>{reason}</p>
+                ) : (
+                  <p className="text-xs text-neutral-500">This order was cancelled by the restaurant.</p>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-red-400">Order Cancelled</p>
-              {order.metadata?.cancelReason ? (
-                <p className="text-xs text-neutral-400 mt-1"><span className="font-bold text-neutral-500">Reason: </span>{order.metadata.cancelReason}</p>
-              ) : (
-                <p className="text-xs text-neutral-500">This order was cancelled by the restaurant.</p>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        );
+      })()}
 
       <OrderTimeline currentStatus={order.status} orderType={order.orderType} />
 
       {/* Items list */}
       <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
         <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
-          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location').map((item, i) => (
+          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => (
             <li key={i} className="flex justify-between">
               <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty || 1)}x {item.name}</span>
               <span className="font-bold" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>

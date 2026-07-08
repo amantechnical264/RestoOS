@@ -499,7 +499,12 @@ export const AppProvider = ({ children }) => {
     ordersChannel
       .on('broadcast', { event: 'status-update' }, (payload) => {
         if (payload?.payload?.orderId && payload?.payload?.newStatus) {
-          setOrders(prev => prev.map(o => o.id === payload.payload.orderId ? { ...o, status: payload.payload.newStatus } : o));
+          const { orderId, newStatus, cancelReason } = payload.payload;
+          setOrders(prev => prev.map(o => o.id === orderId ? {
+            ...o,
+            status: newStatus,
+            ...(cancelReason ? { metadata: { ...(o.metadata || {}), cancelReason } } : {}),
+          } : o));
         }
       }).subscribe();
     
@@ -1055,20 +1060,33 @@ export const AppProvider = ({ children }) => {
       ordersChannelRef.current.send({
         type: 'broadcast',
         event: 'status-update',
-        payload: { orderId, newStatus },
+        payload: { orderId, newStatus, ...(cancelReason ? { cancelReason } : {}) },
       });
     }
     
     try {
-      // Build DB update payload
-      const dbUpdate = { status: newStatus };
       if (cancelReason) {
-        // Fetch current metadata first to merge safely
+        // Strategy 1: Try to save in metadata column
         const existing = orders.find(o => o.id === orderId);
-        dbUpdate.metadata = { ...(existing?.metadata || {}), cancelReason };
+        const newMetadata = { ...(existing?.metadata || {}), cancelReason };
+        const { error: metaErr } = await supabase.from('orders').update({ status: newStatus, metadata: newMetadata }).eq('id', orderId);
+        
+        if (metaErr && (metaErr.message?.includes('column') || metaErr.code === '42703')) {
+          // Strategy 2: metadata column doesn't exist — embed in items array
+          const existingItems = existing?.items || [];
+          const filteredItems = existingItems.filter(i => i.id !== '__cancel_reason');
+          const newItems = [...filteredItems, { id: '__cancel_reason', reason: cancelReason, price: 0, quantity: 0, type: 'metadata' }];
+          // Also update local state to include cancelReason in items
+          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, items: newItems } : o));
+          const { error: itemErr } = await supabase.from('orders').update({ status: newStatus, items: newItems }).eq('id', orderId);
+          if (itemErr) throw itemErr;
+        } else if (metaErr) {
+          throw metaErr;
+        }
+      } else {
+        const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+        if (error) throw error;
       }
-      const { error } = await supabase.from('orders').update(dbUpdate).eq('id', orderId);
-      if (error) throw error;
       showNotification(`Order moved to: ${newStatus}`);
     } catch (error) { 
       console.error(error);
