@@ -3002,8 +3002,29 @@ export default function VendorDashboardPage() {
                     </div>
                   )}
                   {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).map(parentDish => {
-                    const recIds = parentDish.macros.comboRecommendations;
-                    const recDishes = recIds.map(rid => vendDishes.find(d => d.id === rid)).filter(Boolean);
+                    const recIds = parentDish.macros.comboRecommendations || [];
+                    const recDishes = recIds.map(ridStr => {
+                      const [dishId, variantName] = ridStr.split('::');
+                      const d = vendDishes.find(x => x.id === dishId);
+                      if (!d) return null;
+                      if (variantName) {
+                        const v = d.variants?.find(varItem => varItem.name === variantName);
+                        return {
+                          ...d,
+                          id: `${d.id}-${variantName}`,
+                          originalId: d.id,
+                          name: `${d.name} (${variantName})`,
+                          price: parseFloat(v?.price || d.price) || 0,
+                          isVariant: true,
+                          variantName
+                        };
+                      }
+                      return {
+                        ...d,
+                        originalId: d.id,
+                        price: parseFloat(d.price) || 0
+                      };
+                    }).filter(Boolean);
                     return (
                       <div key={parentDish.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-100 dark:border-white/5">
                         <div className="flex items-center justify-between mb-2">
@@ -3034,7 +3055,9 @@ export default function VendorDashboardPage() {
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {recDishes.map(r => (
-                            <span key={r.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30">{r.name}</span>
+                            <span key={r.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30">
+                              {r.name} - ₹{Number(r.price).toFixed(2)}
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -3112,13 +3135,16 @@ export default function VendorDashboardPage() {
                             ) : (
                               comboRecs.map(rec => (
                                 <div key={rec.id} className="flex items-center justify-between bg-white dark:bg-white/5 rounded-xl px-3 py-2 border border-neutral-100 dark:border-white/5">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
                                     <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
                                       {(rec.cover || rec.images?.[0]) ? <img src={rec.cover || rec.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={12} className="text-neutral-400" /></div>}
                                     </div>
-                                    <span className="font-bold text-xs truncate">{rec.name}</span>
+                                    <div className="min-w-0 flex-1">
+                                      <span className="font-bold text-xs truncate block">{rec.name}</span>
+                                      <span className="text-[10px] text-neutral-500 block">₹{Number(rec.price || 0).toFixed(2)}</span>
+                                    </div>
                                   </div>
-                                  <button onClick={() => setComboRecs(prev => prev.filter(r => r.id !== rec.id))} className="p-1 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><CloseIcon size={12} /></button>
+                                  <button onClick={() => setComboRecs(prev => prev.filter(r => r.id !== rec.id))} className="p-1 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 shrink-0"><CloseIcon size={12} /></button>
                                 </div>
                               ))
                             )}
@@ -3135,7 +3161,7 @@ export default function VendorDashboardPage() {
                              await updateDish(parentId, {
                                macros: {
                                  ...(originalParent.macros || {}),
-                                 comboRecommendations: comboRecs.map(r => r.originalId || r.id)
+                                 comboRecommendations: comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id)
                                }
                              });
                              showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
@@ -3155,7 +3181,7 @@ export default function VendorDashboardPage() {
                          <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
                          <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                            {expandDishesWithVariants(vendDishes).map(d => {
-                             const isParent = comboParent?.id === d.id;
+                             const isParent = comboParent && (comboParent.id === d.id || comboParent.id === d.originalId || comboParent.originalId === d.id || (comboParent.originalId && comboParent.originalId === d.originalId));
                              const isRec = comboRecs.some(r => r.id === d.id);
                              const parentId = d.originalId || d.id;
                              const originalD = vendDishes.find(x => x.id === parentId);
@@ -5326,8 +5352,12 @@ export default function VendorDashboardPage() {
                               />
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                                 dish.dietaryPreference === 'Vegetarian' || dish.dietaryPreference === 'Vegan'
-                                  ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                                  : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400'
+                                  : dish.dietaryPreference === 'Eggitarian'
+                                    ? 'bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'
+                                    : dish.dietaryPreference === 'Non-Vegetarian'
+                                      ? 'bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400'
+                                      : 'bg-neutral-100 dark:bg-neutral-900/20 text-neutral-500'
                               }`}>{dish.dietaryPreference || 'N/A'}</span>
                             </div>
 

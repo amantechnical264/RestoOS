@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Heart, ShoppingCart, Flame, Clock, MapPin, AlertTriangle, Star, ChefHat, Leaf, Droplets, Box } from 'lucide-react';
+import { ChevronLeft, Heart, ShoppingCart, Flame, Clock, MapPin, AlertTriangle, Star, ChefHat, Leaf, Droplets, Box, Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import ModelViewer from '../components/ModelViewer';
@@ -12,10 +12,11 @@ const ALLERGEN_ICONS = { Gluten: '🌾', Nuts: '🥜', Dairy: '🥛', Eggs: '�
 export default function Dish3DPage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { activeRestId, dishes, addToCart, favorites, toggleFavorite } = useAppContext();
+  const { activeRestId, dishes, addToCart, favorites, toggleFavorite, cart, removeOneFromCart } = useAppContext();
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [showARCamera, setShowARCamera] = useState(false);
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [variantModalDish, setVariantModalDish] = useState(null);
   const arContainerRef = useRef(null);
 
   useEffect(() => {
@@ -54,7 +55,24 @@ export default function Dish3DPage() {
   const sameRestDishes = dishes.filter(d => d.id !== id && (d.restId === activeRestId || d.rest_id === activeRestId));
   const comboIds = dish.macros?.comboRecommendations || [];
   const recommendedDishes = comboIds.length > 0
-    ? comboIds.map(cid => sameRestDishes.find(d => d.id === cid)).filter(Boolean)
+    ? comboIds.map(cidStr => {
+        const [dishId, variantName] = cidStr.split('::');
+        const d = sameRestDishes.find(x => x.id === dishId);
+        if (!d) return null;
+        if (variantName) {
+          const v = d.variants?.find(varItem => varItem.name === variantName);
+          return {
+            ...d,
+            id: d.id, // Base ID for cart matching
+            name: `${d.name} (${variantName})`,
+            price: parseFloat(v?.price || d.price) || 0,
+            selectedVariant: v,
+            isVariant: true,
+            variantName
+          };
+        }
+        return d;
+      }).filter(Boolean)
     : [];
 
 
@@ -205,11 +223,19 @@ export default function Dish3DPage() {
                   <Flame size={12} /> {dish.spiceLevel}
                 </div>
               )}
-              {dish.dietaryPreference && (
-                <div className="px-3 py-1.5 rounded-full border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 text-[11px] font-bold flex items-center gap-1.5">
-                  <Leaf size={12} /> {dish.dietaryPreference}
-                </div>
-              )}
+              {dish.dietaryPreference && (() => {
+                let badgeClass = "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30";
+                if (dish.dietaryPreference === 'Non-Vegetarian') {
+                  badgeClass = "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30";
+                } else if (dish.dietaryPreference === 'Eggitarian') {
+                  badgeClass = "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/30";
+                }
+                return (
+                  <div className={`px-3 py-1.5 rounded-full border text-[11px] font-bold flex items-center gap-1.5 ${badgeClass}`}>
+                    <Leaf size={12} /> {dish.dietaryPreference}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -301,19 +327,82 @@ export default function Dish3DPage() {
             <div className="mb-5">
               <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white mb-4">People Also Ordered</h3>
               <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                {recommendedDishes.map(rec => (
-                  <div key={rec.id} onClick={() => navigate(`/dish/${rec.id}`)} className="shrink-0 w-36 cursor-pointer">
-                    <div className="w-full h-36 rounded-2xl overflow-hidden mb-2 relative bg-neutral-100 dark:bg-[#1a1a1f]">
-                      {(rec.images?.[0] || rec.cover) ? (
-                        <img src={rec.images?.[0] || rec.cover} alt={rec.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center"><ChefHat size={24} className="text-neutral-400" /></div>
-                      )}
+                {recommendedDishes.map(rec => {
+                  const recQty = (() => {
+                    if (rec.isVariant && rec.selectedVariant) {
+                      return cart.filter(c => c.id === rec.id && c.selectedVariant?.name === rec.selectedVariant.name).length;
+                    }
+                    return cart.filter(c => c.id === rec.id && !c.selectedVariant).length;
+                  })();
+                  const itemKey = rec.isVariant ? `${rec.id}-${rec.variantName}` : rec.id;
+                  
+                  return (
+                    <div key={itemKey} onClick={() => navigate(`/dish/${rec.id}`)} className="shrink-0 w-36 cursor-pointer flex flex-col justify-between">
+                      <div>
+                        <div className="w-full h-36 rounded-2xl overflow-hidden mb-2 relative bg-neutral-100 dark:bg-[#1a1a1f]">
+                          {(rec.images?.[0] || rec.cover) ? (
+                            <img src={rec.images?.[0] || rec.cover} alt={rec.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><ChefHat size={24} className="text-neutral-400" /></div>
+                          )}
+                        </div>
+                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{rec.name}</h4>
+                        <p className="text-accent-blue font-black text-sm">₹{Number(rec.price).toFixed(2)}</p>
+                      </div>
+
+                      {/* Add to Cart Stepper */}
+                      <div className="mt-2" onClick={e => e.stopPropagation()}>
+                        {recQty === 0 ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (rec.variants && rec.variants.length > 1 && !rec.isVariant) {
+                                setVariantModalDish(rec);
+                              } else if (rec.variants && rec.variants.length === 1 && !rec.isVariant) {
+                                addToCart({ ...rec, selectedVariant: rec.variants[0] });
+                              } else if (rec.isVariant && rec.selectedVariant) {
+                                addToCart({ ...rec, selectedVariant: rec.selectedVariant });
+                              } else {
+                                addToCart(rec);
+                              }
+                            }}
+                            className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 uppercase tracking-wider shadow-sm"
+                          >
+                            Add +
+                          </button>
+                        ) : (
+                          <div className="w-full flex items-center justify-between bg-emerald-600 rounded-xl overflow-hidden shadow-sm">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeOneFromCart(rec.id);
+                              }}
+                              className="flex-1 py-1.5 flex items-center justify-center text-white hover:bg-emerald-700 transition-colors"
+                            >
+                              <Minus size={12} strokeWidth={3} />
+                            </button>
+                            <span className="flex-1 text-center text-white font-extrabold text-xs select-none">
+                              {recQty}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (rec.isVariant && rec.selectedVariant) {
+                                  addToCart({ ...rec, selectedVariant: rec.selectedVariant });
+                                } else {
+                                  addToCart(rec);
+                                }
+                              }}
+                              className="flex-1 py-1.5 flex items-center justify-center text-white hover:bg-emerald-700 transition-colors"
+                            >
+                              <Plus size={12} strokeWidth={3} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{rec.name}</h4>
-                    <p className="text-accent-blue font-black text-sm">₹{Number(rec.price).toFixed(2)}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -393,6 +482,36 @@ export default function Dish3DPage() {
               ))}
             </div>
             <button onClick={() => setShowVariantModal(false)} className="w-full mt-4 py-3 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
+              Cancel
+            </button>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+
+    <AnimatePresence>
+      {variantModalDish && (
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-sm" onClick={() => setVariantModalDish(null)}>
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white dark:bg-[#12141D] w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-neutral-200 dark:border-white/10"
+          >
+            <h3 className="font-display font-black text-xl mb-4 text-neutral-900 dark:text-white">Choose Variant</h3>
+            <div className="space-y-3">
+              {variantModalDish.variants.map((v, i) => (
+                <button key={i} onClick={() => {
+                  addToCart({ ...variantModalDish, selectedVariant: v });
+                  setVariantModalDish(null);
+                }} className="w-full flex justify-between items-center p-4 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all text-left">
+                  <span className="font-bold text-sm text-neutral-900 dark:text-white">{v.name}</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{Number(v.price).toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setVariantModalDish(null)} className="w-full mt-4 py-3 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
               Cancel
             </button>
           </motion.div>
