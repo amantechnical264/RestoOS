@@ -6717,6 +6717,21 @@ export default function VendorDashboardPage() {
             const detailMapUrl = _loc.lat && _loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${_loc.lat},${_loc.lng}` : null;
             const orderNote = getOrderNote(od);
             const foodItems = (od.items || []).filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location' && i.id !== '__special_instructions');
+            
+            const isDeliveryOrder = od.order_type === 'delivery' || od.orderType === 'delivery';
+            const deliveryConfig = currentRestaurant?.macros?.deliveryConfig || {};
+            const deliveryFee = isDeliveryOrder
+              ? (od.metadata?.deliveryFee !== undefined ? Number(od.metadata.deliveryFee) : (Number(deliveryConfig.deliveryFee) || 0))
+              : 0;
+            const convenienceFee = isDeliveryOrder
+              ? (od.metadata?.convenienceFee !== undefined ? Number(od.metadata.convenienceFee) : (Number(deliveryConfig.convenienceFee) || 0))
+              : 0;
+            const otherFees = isDeliveryOrder
+              ? (od.metadata?.otherFees || deliveryConfig.otherFees || [])
+              : [];
+            const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
+            const subtotal = foodItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0);
+            const taxAmount = subtotal * taxRate;
             return (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setDeliveryDetailOrder(null)}>
                 <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }} transition={{ type: 'spring', damping: 25 }} onClick={e => e.stopPropagation()}
@@ -6788,6 +6803,39 @@ export default function VendorDashboardPage() {
                           </li>
                         ))}
                       </ul>
+                      {/* Subtotal & Additional Charges breakdown */}
+                      {(isDeliveryOrder || taxAmount > 0) && (
+                        <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-white/10 space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                          <div className="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>₹{subtotal.toFixed(0)}</span>
+                          </div>
+                          {taxAmount > 0 && (
+                            <div className="flex justify-between">
+                              <span>Tax ({Math.round(taxRate * 100)}%)</span>
+                              <span>₹{taxAmount.toFixed(0)}</span>
+                            </div>
+                          )}
+                          {isDeliveryOrder && deliveryFee > 0 && (
+                            <div className="flex justify-between">
+                              <span>Delivery Fee</span>
+                              <span>₹{deliveryFee.toFixed(0)}</span>
+                            </div>
+                          )}
+                          {isDeliveryOrder && convenienceFee > 0 && (
+                            <div className="flex justify-between">
+                              <span>Convenience Fee</span>
+                              <span>₹{convenienceFee.toFixed(0)}</span>
+                            </div>
+                          )}
+                          {isDeliveryOrder && otherFees.map((fee, fIdx) => (
+                            <div key={fIdx} className="flex justify-between">
+                              <span>{fee.name || 'Other Fee'}</span>
+                              <span>₹{Number(fee.amount || 0).toFixed(0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-white/10 flex justify-between">
                         <span className="text-sm font-black text-neutral-800 dark:text-white">Total</span>
                         <span className="text-sm font-black text-[#D4AF37]">₹{parseFloat(od.total).toFixed(0)}</span>

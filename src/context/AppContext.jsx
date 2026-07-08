@@ -717,11 +717,17 @@ export const AppProvider = ({ children }) => {
     if (contactPhone)                 newOrder.contact_phone     = contactPhone;
     if (orderData?.scheduledTime)     newOrder.scheduled_time    = orderData.scheduledTime;
     if (orderData?.tipAmount != null) newOrder.tip_amount        = orderData.tipAmount;
-    if (orderData?.specialInstructions || orderData?.metadata) {
-      newOrder.metadata = { 
-        ...(orderData.specialInstructions ? { specialInstructions: orderData.specialInstructions } : {}),
-        ...(orderData.metadata || {})
-      };
+    const finalMetadata = {
+      ...(orderData.specialInstructions ? { specialInstructions: orderData.specialInstructions } : {}),
+      ...(orderData.metadata || {}),
+      ...(orderData?.orderType === 'delivery' ? {
+        deliveryFee: baseDeliveryFee,
+        convenienceFee: convenienceFee,
+        otherFees: otherFees
+      } : {})
+    };
+    if (Object.keys(finalMetadata).length > 0) {
+      newOrder.metadata = finalMetadata;
     }
 
     // Always encode location into items as a resilient fallback (survives metadata column being absent)
