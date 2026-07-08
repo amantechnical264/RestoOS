@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles, Truck } from 'lucide-react';
+import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles, Truck, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -185,10 +185,15 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200">
-                      {(item.quantity || item.qty || 1)}x {item.name}
-                      {item.variantName && ` (${item.variantName})`}
-                      {item.selectedCustomizations && item.selectedCustomizations.length > 0 && ` + ${item.selectedCustomizations.map(c => c.name).join(', ')}`}
+                                        <span className="text-[14px] font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 flex-wrap">
+                      <span>{(item.quantity || item.qty || 1)}x {item.name}</span>
+                      {item.variantName && <span className="text-neutral-500 font-normal">({item.variantName})</span>}
+                      {item.selectedCustomizations && item.selectedCustomizations.length > 0 && <span className="text-neutral-400 font-normal"> + {item.selectedCustomizations.map(c => c.name).join(', ')}</span>}
+                      {(item.isFree || item.type === 'free_dish') && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 ml-1.5">
+                          <Gift size={9} /> free
+                        </span>
+                      )}
                     </span>
                     {/* Show average rating for this dish */}
                     {item.id && <DishRatingBadge dishId={item.id} variant="inline" />}
@@ -360,7 +365,14 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
           {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => (
             <li key={i} className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-bold text-neutral-900 dark:text-white">{(item.quantity || item.qty || 1)}x {item.name}</span>
+                                <span className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                  <span>{(item.quantity || item.qty || 1)}x {item.name}</span>
+                  {(item.isFree || item.type === 'free_dish') && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 ml-1.5">
+                      <Gift size={9} /> free
+                    </span>
+                  )}
+                </span>
                 {item.variantName && (
                   <div className="text-xs font-bold text-[#D4AF37]">{item.variantName}</div>
                 )}

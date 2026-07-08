@@ -2575,8 +2575,13 @@ export default function VendorDashboardPage() {
                         </div>
                         <ul className="text-xs font-semibold space-y-1 mb-2 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
                           {o.items?.filter(item => item.type !== 'metadata' && item.type !== 'location_meta' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__special_instructions').map((item, i) => (
-                            <li key={i}>
-                              · {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+                            <li key={i} className="flex items-center gap-1.5 flex-wrap">
+                              <span>· {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                              {(item.isFree || item.type === 'free_dish') && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                  <Gift size={9} /> free
+                                </span>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -2677,7 +2682,14 @@ export default function VendorDashboardPage() {
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
                             {o.items?.filter(item => item.type !== 'metadata' && item.type !== 'location_meta' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__special_instructions').map((item, i) => (
                               <li key={i} className="flex flex-col">
-                                <span>· {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                <span className="flex items-center gap-1.5 flex-wrap">
+                                  · {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+                                  {(item.isFree || item.type === 'free_dish') && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                      <Gift size={9} /> free
+                                    </span>
+                                  )}
+                                </span>
                                 {item.specialInstructions && (
                                   <span className="text-[10px] text-blue-500 font-bold ml-2 pl-2 border-l-2 border-blue-200 dark:border-blue-800">
                                     Note: {item.specialInstructions}
@@ -6940,11 +6952,15 @@ export default function VendorDashboardPage() {
                           <div className="md:w-72 shrink-0 bg-white dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 p-3 rounded-xl">
                             <p className="text-[10px] font-black text-neutral-400 uppercase tracking-wider mb-2">Dishes ({foodItems.length})</p>
                             <ul className="space-y-1.5">
-                              {foodItems.map((item, idx) => (
+                                                            {foodItems.map((item, idx) => (
                                 <li key={idx} className="flex justify-between text-xs">
-                                  <span className="font-semibold text-neutral-700 dark:text-neutral-300">
-                                    <span className="text-neutral-400 font-bold mr-1.5">{item.quantity || 1}x</span>
-                                    {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+                                  <span className="font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1 flex-wrap">
+                                    <span><span className="text-neutral-400 font-bold mr-1.5">{item.quantity || 1}x</span>{item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                    {(item.isFree || item.type === 'free_dish') && (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 ml-1">
+                                        <Gift size={9} /> free
+                                      </span>
+                                    )}
                                   </span>
                                   <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(0)}</span>
                                 </li>
@@ -7053,7 +7069,14 @@ export default function VendorDashboardPage() {
                         {foodItems.map((item, idx) => (
                           <li key={idx} className="flex justify-between text-sm">
                             <span className="font-semibold text-neutral-700 dark:text-neutral-300 flex flex-col">
-                              <span><span className="text-neutral-400 font-bold mr-1">{item.quantity || 1}x</span>{item.name}</span>
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                <span><span className="text-neutral-400 font-bold mr-1">{item.quantity || 1}x</span>{item.name}</span>
+                                {(item.isFree || item.type === 'free_dish') && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 ml-1">
+                                    <Gift size={9} /> free
+                                  </span>
+                                )}
+                              </span>
                               {(item.selectedVariant?.name || item.variantName) && (
                                 <span className="text-xs font-bold text-[#D4AF37] ml-6">{item.selectedVariant?.name || item.variantName}</span>
                               )}

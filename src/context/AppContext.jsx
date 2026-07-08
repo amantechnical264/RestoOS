@@ -688,15 +688,27 @@ export const AppProvider = ({ children }) => {
     const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
     const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId || user?.phone || dinerProfile.phone || 'anonymous';
 
-    // Check if free dish offer is met
-    const offersConfig = rest?.macros?.offers;
-    const isOfferActive = offersConfig?.active && Number(offersConfig?.minOrderValue) > 0 && offersConfig?.freeDishId;
+        // Check if free dish offer is met (supporting single and multi-offers)
+    const rawOffers = rest?.macros?.offers;
+    const allOffers = Array.isArray(rawOffers)
+      ? rawOffers
+      : (rawOffers && rawOffers.freeDishId ? [rawOffers] : []);
+    
     const regularSubtotal = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-    const hasFreeDish = isOfferActive && regularSubtotal >= Number(offersConfig.minOrderValue);
+    
+    const activeOffers = allOffers.filter(
+      o => o.active && Number(o.minOrderValue) > 0 && o.freeDishId
+    );
+    
+    // Pick qualifying offer with the highest minOrderValue
+    const qualifyingOffers = activeOffers.filter(o => regularSubtotal >= Number(o.minOrderValue));
+    const matchedOffer = qualifyingOffers.length > 0
+      ? qualifyingOffers.reduce((best, o) => Number(o.minOrderValue) > Number(best.minOrderValue) ? o : best, qualifyingOffers[0])
+      : null;
     
     let orderItems = [...cart];
-    if (hasFreeDish) {
-      const [dishId, variantName] = offersConfig.freeDishId.split('::');
+    if (matchedOffer) {
+      const [dishId, variantName] = matchedOffer.freeDishId.split('::');
       const d = dishes.find(x => x.id === dishId);
       if (d) {
         let name = d.name;
