@@ -644,6 +644,41 @@ const resolveDishOrVariant = (dishIdOrStr, dishesList, keepBaseId = false) => {
 };
 
 
+const getSuggestionParents = (dishesList) => {
+  const parents = [];
+  dishesList.forEach(d => {
+    // Check root dish
+    if (d.macros?.comboRecommendations?.length > 0) {
+      parents.push({
+        ...d,
+        originalId: d.id,
+        isVariant: false,
+        displayName: d.name,
+        recommendations: d.macros.comboRecommendations
+      });
+    }
+    // Check variants
+    if (d.macros?.variants && d.macros.variants.length > 0) {
+      d.macros.variants.forEach(v => {
+        if (v.comboRecommendations?.length > 0) {
+          parents.push({
+            ...d,
+            id: `${d.id}-${v.name}`,
+            originalId: d.id,
+            isVariant: true,
+            variantName: v.name,
+            displayName: `${d.name} (${v.name})`,
+            price: parseFloat(v.price) || 0,
+            recommendations: v.comboRecommendations
+          });
+        }
+      });
+    }
+  });
+  return parents;
+};
+
+
 const expandDishesWithVariants = (dishesList) => {
   const result = [];
   dishesList.forEach(dish => {
@@ -3025,19 +3060,17 @@ export default function VendorDashboardPage() {
                     <Gift size={13} /> Edit Suggestions
                   </button>
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
-                  {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).length === 0 && (
+                  {getSuggestionParents(vendDishes).length === 0 && (
                     <div className="text-center py-8 text-neutral-400">
                       <Gift size={28} className="mx-auto mb-2 opacity-20" />
                       <p className="text-[11px] font-semibold">No suggestions yet</p>
                       <p className="text-[10px] mt-0.5">Click "Edit Suggestions" to pair dishes</p>
                     </div>
                   )}
-                  {vendDishes.filter(d => d.macros?.comboRecommendations?.length > 0).map(parentDish => {
-                    const recIds = parentDish.macros.comboRecommendations || [];
+                  {getSuggestionParents(vendDishes).map(parentDish => {
+                    const recIds = parentDish.recommendations || [];
                     const recDishes = recIds.map(rid => resolveDishOrVariant(rid, vendDishes)).filter(Boolean);
-                    const parentDisplayName = parentDish.macros?.comboParentVariant
-                      ? `${parentDish.name} (${parentDish.macros.comboParentVariant})`
-                      : parentDish.name;
+                    const parentDisplayName = parentDish.displayName;
                     return (
                       <div key={parentDish.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-100 dark:border-white/5">
                         <div className="flex items-center justify-between mb-2">
@@ -3045,10 +3078,9 @@ export default function VendorDashboardPage() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => {
-                                const parentIdStr = parentDish.macros?.comboParentVariant 
-                                  ? `${parentDish.id}::${parentDish.macros.comboParentVariant}`
-                                  : parentDish.id;
-                                const pDish = resolveDishOrVariant(parentIdStr, vendDishes);
+                                const pDish = parentDish.isVariant
+                                  ? resolveDishOrVariant(`${parentDish.originalId}::${parentDish.variantName}`, vendDishes)
+                                  : resolveDishOrVariant(parentDish.id, vendDishes);
                                 setComboParent(pDish);
                                 setComboRecs(recDishes);
                                 setShowComboDialog(true);
@@ -3060,7 +3092,26 @@ export default function VendorDashboardPage() {
                             </button>
                             <button
                               onClick={async () => {
-                                await updateDish(parentDish.id, { macros: { ...(parentDish.macros || {}), comboRecommendations: undefined } });
+                                if (parentDish.isVariant) {
+                                  const updatedVariants = (parentDish.macros?.variants || []).map(v =>
+                                    v.name === parentDish.variantName
+                                      ? { ...v, comboRecommendations: undefined }
+                                      : v
+                                  );
+                                  await updateDish(parentDish.originalId, {
+                                    macros: {
+                                      ...(parentDish.macros || {}),
+                                      variants: updatedVariants
+                                    }
+                                  });
+                                } else {
+                                  await updateDish(parentDish.id, {
+                                    macros: {
+                                      ...(parentDish.macros || {}),
+                                      comboRecommendations: undefined
+                                    }
+                                  });
+                                }
                                 showNotification('Suggestions deleted.');
                               }}
                               className="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
@@ -3171,22 +3222,38 @@ export default function VendorDashboardPage() {
                          {/* Save Combo Button */}
                          <button
                            disabled={!comboParent || comboRecs.length === 0}
-                           onClick={async () => {
-                             if (!comboParent || comboRecs.length === 0) return;
-                             const parentId = comboParent.originalId || comboParent.id;
-                             const originalParent = vendDishes.find(d => d.id === parentId);
-                             await updateDish(parentId, {
-                               macros: {
-                                 ...(originalParent.macros || {}),
-                                 comboRecommendations: comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id),
-                                 comboParentVariant: comboParent && comboParent.isVariant ? comboParent.variantName : undefined
-                               }
-                             });
-                             showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
-                             setShowComboDialog(false);
-                             setComboParent(null);
-                             setComboRecs([]);
-                           }}
+                            onClick={async () => {
+                              if (!comboParent || comboRecs.length === 0) return;
+                              const parentId = comboParent.originalId || comboParent.id;
+                              const originalParent = vendDishes.find(d => d.id === parentId);
+                              if (!originalParent) return;
+                              const recsList = comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id);
+                              if (comboParent.isVariant) {
+                                const updatedVariants = (originalParent.macros?.variants || []).map(v => 
+                                  v.name === comboParent.variantName 
+                                    ? { ...v, comboRecommendations: recsList }
+                                    : v
+                                );
+                                await updateDish(parentId, {
+                                  macros: {
+                                    ...(originalParent.macros || {}),
+                                    variants: updatedVariants
+                                  }
+                                });
+                              } else {
+                                await updateDish(parentId, {
+                                  macros: {
+                                    ...(originalParent.macros || {}),
+                                    comboRecommendations: recsList,
+                                    comboParentVariant: undefined
+                                  }
+                                });
+                              }
+                              showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
+                              setShowComboDialog(false);
+                              setComboParent(null);
+                              setComboRecs([]);
+                            }}
                            className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                            style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
                          >
@@ -3203,7 +3270,7 @@ export default function VendorDashboardPage() {
                              const isRec = comboRecs.some(r => r.id === d.id);
                              const parentId = d.originalId || d.id;
                              const originalD = vendDishes.find(x => x.id === parentId);
-                             const isAlreadyParentElsewhere = originalD?.macros?.comboRecommendations?.length > 0 && (comboParent?.originalId || comboParent?.id) !== parentId;
+                              const isAlreadyParentElsewhere = getSuggestionParents(vendDishes).some(p => p.id === d.id && (comboParent?.id !== d.id));
                              const isUsed = isParent || isRec;
                              return (
                                <button

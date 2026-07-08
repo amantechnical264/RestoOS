@@ -83,9 +83,13 @@ export default function Dish3DPage() {
 
   const displayImages = dish.images?.length > 0 ? dish.images : (dish.cover ? [dish.cover] : []);
   const sameRestDishes = dishes.filter(d => d.id !== id && (d.restId === activeRestId || d.rest_id === activeRestId));
-  const comboIds = dish.macros?.comboRecommendations || [];
-  const recommendedDishes = comboIds.length > 0
-    ? comboIds.map(cid => resolveDishOrVariant(cid, sameRestDishes, true)).filter(Boolean)
+  const comboIds = [
+    ...(dish.macros?.comboRecommendations || []),
+    ...(dish.macros?.variants || []).flatMap(v => v.comboRecommendations || [])
+  ];
+  const uniqueComboIds = [...new Set(comboIds)];
+  const recommendedDishes = uniqueComboIds.length > 0
+    ? uniqueComboIds.map(cid => resolveDishOrVariant(cid, sameRestDishes, true)).filter(Boolean)
     : [];
 
 
