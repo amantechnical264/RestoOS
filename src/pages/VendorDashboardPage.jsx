@@ -3270,7 +3270,11 @@ export default function VendorDashboardPage() {
                              const isRec = comboRecs.some(r => r.id === d.id);
                              const parentId = d.originalId || d.id;
                              const originalD = vendDishes.find(x => x.id === parentId);
-                              const isAlreadyParentElsewhere = getSuggestionParents(vendDishes).some(p => p.id === d.id && (comboParent?.id !== d.id));
+                             const isAlreadyParent = !!(
+                               originalD?.macros?.comboRecommendations?.length > 0 ||
+                               (d.isVariant && originalD?.macros?.variants?.find(v => v.name === d.variantName)?.comboRecommendations?.length > 0)
+                             );
+                             const isAlreadyParentElsewhere = isAlreadyParent && (comboParent?.id !== d.id);
                              const isUsed = isParent || isRec;
                              return (
                                <button
@@ -3280,8 +3284,8 @@ export default function VendorDashboardPage() {
                                    if (isParent) { setComboParent(null); return; }
                                    if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
                                    if (!comboParent) {
-                                     if (originalD?.macros?.comboRecommendations?.length > 0) {
-                                       showNotification(`${originalD.name} is already a parent of another suggestion.`);
+                                     if (isAlreadyParent) {
+                                       showNotification(`${d.name} is already a parent of another suggestion.`);
                                        return;
                                      }
                                      setComboParent(d);
@@ -3314,13 +3318,16 @@ export default function VendorDashboardPage() {
                                  </div>
                                  {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
                                  {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
-                                 {!isUsed && (
+                                 {isAlreadyParentElsewhere && !comboParent && (
+                                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 shrink-0">
+                                     Already a parent
+                                   </span>
+                                 )}
+                                 {!isUsed && !isAlreadyParentElsewhere && (
                                    <span className="text-[10px] text-neutral-400">
-                                     {isAlreadyParentElsewhere && !comboParent
-                                       ? 'Already Parent'
-                                       : !comboParent
-                                         ? 'Set as parent'
-                                         : '+ Add rec'}
+                                     {!comboParent
+                                       ? 'Set as parent'
+                                       : '+ Add rec'}
                                    </span>
                                  )}
                                </button>
