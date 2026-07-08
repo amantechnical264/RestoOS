@@ -928,6 +928,11 @@ export default function VendorDashboardPage() {
   const [isGenerating3D, setIsGenerating3D] = React.useState(false);
   const [showAIImageGen, setShowAIImageGen] = React.useState(false);
   const [enteredCodes, setEnteredCodes] = React.useState({});
+  // Delivery detail popup
+  const [deliveryDetailOrder, setDeliveryDetailOrder] = React.useState(null);
+  // Reject reason popup
+  const [rejectReasonOrder, setRejectReasonOrder] = React.useState(null);
+  const [rejectReasonText, setRejectReasonText] = React.useState('');
 
   // ── Combo Builder State ────────────────────────────────────────
   const [showComboDialog, setShowComboDialog] = React.useState(false);
@@ -1983,7 +1988,7 @@ export default function VendorDashboardPage() {
                             ✓ Approve
                           </button>
                           <button 
-                            onClick={() => updateOrderStatus(o.id, 'Cancelled')} 
+                            onClick={() => { setRejectReasonOrder(o); setRejectReasonText(''); }} 
                             className="flex-1 py-2.5 rounded-lg text-xs font-black bg-red-500 text-white hover:bg-red-600 transition-colors"
                           >
                             ✕ Reject
@@ -2151,22 +2156,40 @@ export default function VendorDashboardPage() {
 
                         const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
 
+                        const isCancelledOrder = order.status === 'Cancelled';
+
                         return (
                           <div key={order.id} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none" />
                             
+                            {/* Cancelled overlay */}
+                            {isCancelledOrder && (
+                              <div className="absolute inset-0 z-30 flex items-center justify-center rounded-3xl" style={{ backdropFilter: 'blur(3px)', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+                                <div className="rotate-[-20deg] select-none pointer-events-none text-center">
+                                  <p className="text-red-500 font-black text-4xl sm:text-5xl tracking-wider drop-shadow-lg" style={{ textShadow: '0 0 30px rgba(239,68,68,0.6)', WebkitTextStroke: '1px rgba(239,68,68,0.5)' }}>ORDER</p>
+                                  <p className="text-red-500 font-black text-4xl sm:text-5xl tracking-wider drop-shadow-lg" style={{ textShadow: '0 0 30px rgba(239,68,68,0.6)', WebkitTextStroke: '1px rgba(239,68,68,0.5)' }}>CANCELLED</p>
+                                </div>
+                              </div>
+                            )}
+
                             <div className="flex-1 space-y-4 relative z-10">
                               <div className="flex justify-between items-start">
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-md">Delivery Order</span>
+                                    <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md ${isCancelledOrder ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}`}>{isCancelledOrder ? 'Cancelled' : 'Delivery Order'}</span>
                                     <span className="text-xs text-neutral-400 font-bold">{new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                   </div>
                                   <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white">{order.contactName || 'Guest'}</h3>
                                   {order.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-1.5"><Phone size={12}/> {order.contactPhone}</p>}
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex flex-col items-end gap-2">
                                   <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(2)}</p>
+                                  <button
+                                    onClick={() => setDeliveryDetailOrder(order)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black rounded-lg bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors"
+                                  >
+                                    <Eye size={12} /> View Details
+                                  </button>
                                   {order.verificationCode && (
                                     <p className="text-xs font-bold font-mono text-neutral-400 mt-1">Code: {order.verificationCode}</p>
                                   )}
@@ -2263,7 +2286,7 @@ export default function VendorDashboardPage() {
                                     ✓ Accept Order
                                   </button>
                                   <button
-                                    onClick={() => updateOrderStatus(order.id, 'Cancelled')}
+                                    onClick={() => { setRejectReasonOrder(order); setRejectReasonText(''); }}
                                     className="w-full py-3 bg-red-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5"
                                   >
                                     ✕ Reject Order
@@ -5725,6 +5748,129 @@ export default function VendorDashboardPage() {
                   )}
                 </div>
 
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ══ Order Details Popup ══ */}
+        <AnimatePresence>
+          {deliveryDetailOrder && (() => {
+            const od = deliveryDetailOrder;
+            const _locFromItems = od.items?.find(i => i.type === 'location_meta');
+            const _parseGPS = (str) => { if (!str) return null; const m = String(str).match(/[\[\s]GPS:([\d.\-]+),([\d.\-]+)/); return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null; };
+            const _rawAddr = od.metadata?.address || _locFromItems?.address || '';
+            const _loc = od.metadata?.location || _locFromItems || _parseGPS(_rawAddr) || {};
+            const displayAddr = _rawAddr.replace(/\s*\[GPS:[\d.,\-]+\]/, '').trim();
+            const detailMapUrl = _loc.lat && _loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${_loc.lat},${_loc.lng}` : null;
+            const orderNote = getOrderNote(od);
+            const foodItems = (od.items || []).filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location' && i.id !== '__special_instructions');
+            return (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setDeliveryDetailOrder(null)}>
+                <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }} transition={{ type: 'spring', damping: 25 }} onClick={e => e.stopPropagation()}
+                  className="bg-white dark:bg-[#12141D] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
+                  <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center shrink-0">
+                    <div>
+                      <h2 className="font-display font-black text-lg text-neutral-900 dark:text-white">Order Details</h2>
+                      <p className="text-xs text-neutral-500 mt-0.5">{od.contactName || 'Guest'} · ₹{parseFloat(od.total).toFixed(2)}</p>
+                    </div>
+                    <button onClick={() => setDeliveryDetailOrder(null)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 transition-colors"><CloseIcon size={16} /></button>
+                  </div>
+                  <div className="overflow-y-auto flex-1 p-5 space-y-4">
+                    {/* Customer */}
+                    <div className="bg-neutral-50 dark:bg-white/5 rounded-2xl p-4 space-y-2">
+                      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-wider mb-2">Customer Info</p>
+                      <p className="text-sm font-bold text-neutral-800 dark:text-white flex items-center gap-2"><UserCircle size={14} className="text-neutral-400" /> {od.contactName || 'Guest'}</p>
+                      {od.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-2"><Phone size={14} className="text-neutral-400" /> {od.contactPhone}</p>}
+                      <p className="text-xs text-neutral-400 flex items-center gap-2"><Clock size={12} className="text-neutral-400" /> {new Date(od.timestamp).toLocaleString()}</p>
+                    </div>
+                    {/* Location */}
+                    {(displayAddr || detailMapUrl) && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/30">
+                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-2">Delivery Location</p>
+                        {displayAddr && <p className="text-sm font-bold text-neutral-700 dark:text-neutral-200 mb-2">{displayAddr}</p>}
+                        {detailMapUrl && (
+                          <a href={detailMapUrl} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-black rounded-xl hover:bg-blue-700 transition-colors">
+                            <MapPin size={12} /> Navigate in Google Maps
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {/* Note */}
+                    {orderNote && (
+                      <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-100 dark:border-amber-900/30">
+                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle size={10} /> Order Note</p>
+                        <p className="text-sm font-bold text-amber-800 dark:text-amber-300">{orderNote}</p>
+                      </div>
+                    )}
+                    {/* Items */}
+                    <div className="bg-neutral-50 dark:bg-white/5 rounded-2xl p-4">
+                      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-wider mb-3">Items Ordered ({foodItems.length})</p>
+                      <ul className="space-y-2">
+                        {foodItems.map((item, idx) => (
+                          <li key={idx} className="flex justify-between text-sm">
+                            <span className="font-semibold text-neutral-700 dark:text-neutral-300"><span className="text-neutral-400 font-bold mr-1">{item.quantity || 1}x</span>{item.name}{item.selectedVariant ? ` (${item.selectedVariant.name})` : ''}</span>
+                            <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(2)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-white/10 flex justify-between">
+                        <span className="text-sm font-black text-neutral-800 dark:text-white">Total</span>
+                        <span className="text-sm font-black text-[#D4AF37]">₹{parseFloat(od.total).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            );
+          })()}
+        </AnimatePresence>
+
+        {/* ══ Reject Reason Popup ══ */}
+        <AnimatePresence>
+          {rejectReasonOrder && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: 'spring', damping: 20 }}
+                className="bg-white dark:bg-[#12141D] w-full max-w-sm rounded-3xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden">
+                <div className="p-5 border-b border-neutral-200 dark:border-white/10">
+                  <h2 className="font-display font-black text-lg text-neutral-900 dark:text-white">Reject Order?</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Tell the customer why you're rejecting their order. This message will be shown to them.</p>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-xs font-black text-neutral-500 uppercase tracking-wider">Reason (optional)</p>
+                    <textarea
+                      value={rejectReasonText}
+                      onChange={e => setRejectReasonText(e.target.value)}
+                      placeholder="e.g. We are too busy right now, item out of stock..."
+                      rows={3}
+                      className="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-2xl p-3 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-red-400 resize-none transition-all"
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      {['Item not available', 'Too busy right now', 'Closing soon', 'Address out of range'].map(reason => (
+                        <button key={reason} onClick={() => setRejectReasonText(reason)}
+                          className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors">
+                          {reason}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => { setRejectReasonOrder(null); setRejectReasonText(''); }}
+                      className="flex-1 py-3 rounded-2xl border border-neutral-200 dark:border-white/10 text-sm font-black text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={() => {
+                      updateOrderStatus(rejectReasonOrder.id, 'Cancelled', rejectReasonText.trim() || undefined);
+                      setRejectReasonOrder(null);
+                      setRejectReasonText('');
+                    }}
+                      className="flex-1 py-3 rounded-2xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30">
+                      ✕ Reject Order
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             </motion.div>
           )}

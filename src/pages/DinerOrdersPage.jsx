@@ -312,13 +312,17 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
       {/* Cancelled */}
       {order.status === 'Cancelled' && (
         <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-4 mt-4">
-          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <div className="rounded-2xl p-4 flex items-start gap-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
               <XCircle size={20} className="text-red-400" />
             </div>
             <div>
-              <p className="text-sm font-bold text-red-400">Order Rejected</p>
-              <p className="text-xs text-neutral-500">This order was not verified by the restaurant staff.</p>
+              <p className="text-sm font-bold text-red-400">Order Cancelled</p>
+              {order.metadata?.cancelReason ? (
+                <p className="text-xs text-neutral-400 mt-1"><span className="font-bold text-neutral-500">Reason: </span>{order.metadata.cancelReason}</p>
+              ) : (
+                <p className="text-xs text-neutral-500">This order was cancelled by the restaurant.</p>
+              )}
             </div>
           </div>
         </motion.div>

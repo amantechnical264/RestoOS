@@ -1040,11 +1040,15 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const updateOrderStatus = async (orderId, newStatus, cancelReason) => {
     if (!supabase) return;
     
     // Optimistic UI update: instantly move the order to the new lane
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    setOrders(prev => prev.map(o => o.id === orderId ? {
+      ...o,
+      status: newStatus,
+      ...(cancelReason ? { metadata: { ...(o.metadata || {}), cancelReason } } : {}),
+    } : o));
     
     // Broadcast status change immediately to all clients (including diner)
     if (ordersChannelRef.current) {
@@ -1056,7 +1060,14 @@ export const AppProvider = ({ children }) => {
     }
     
     try {
-      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+      // Build DB update payload
+      const dbUpdate = { status: newStatus };
+      if (cancelReason) {
+        // Fetch current metadata first to merge safely
+        const existing = orders.find(o => o.id === orderId);
+        dbUpdate.metadata = { ...(existing?.metadata || {}), cancelReason };
+      }
+      const { error } = await supabase.from('orders').update(dbUpdate).eq('id', orderId);
       if (error) throw error;
       showNotification(`Order moved to: ${newStatus}`);
     } catch (error) { 
