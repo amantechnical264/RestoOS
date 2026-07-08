@@ -224,7 +224,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 relative contribution-grid-container">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-100 dark:border-white/5 pb-3">
         <div className="space-y-0.5">
@@ -286,7 +286,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
                           }}
                           onMouseEnter={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
-                            const container = e.currentTarget.closest('.relative');
+                            const container = e.currentTarget.closest('.contribution-grid-container');
                             const containerRect = container.getBoundingClientRect();
                             setHoveredDay({
                               dateStr: new Date(selectedYear, monthIndex, dayNum).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -311,33 +311,33 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
             );
           })}
         </div>
-
-        {/* Dynamic Tooltip */}
-        {hoveredDay && (
-          <div
-            className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 shadow-2xl pointer-events-none whitespace-nowrap"
-            style={{
-              left: `${hoveredDay.x}px`,
-              top: `${hoveredDay.y - 65}px`,
-              transform: 'translateX(-50%)',
-              backgroundColor: '#0a0a0a',
-              borderColor: '#262626'
-            }}
-          >
-            <div className="flex items-center gap-2 mb-1 pb-1 border-b" style={{ borderColor: '#262626' }}>
-              <span className="text-[12px] font-bold" style={{ color: '#ffffff' }}>
-                {hoveredDay.count} {hoveredDay.count === 1 ? 'order' : 'orders'}
-              </span>
-              {hoveredDay.count > 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border" style={{ color: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', borderColor: 'rgba(52, 211, 153, 0.2)' }}>
-                  ₹{hoveredDay.revenue.toFixed(0)}
-                </span>
-              )}
-            </div>
-            <div className="text-[9px] font-semibold" style={{ color: '#a3a3a3' }}>{hoveredDay.dateStr}</div>
-          </div>
-        )}
       </div>
+
+      {/* Dynamic Tooltip */}
+      {hoveredDay && (
+        <div
+          className="absolute z-20 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 shadow-2xl pointer-events-none whitespace-nowrap"
+          style={{
+            left: `${hoveredDay.x}px`,
+            top: `${hoveredDay.y - 65}px`,
+            transform: 'translateX(-50%)',
+            backgroundColor: '#0a0a0a',
+            borderColor: '#262626'
+          }}
+        >
+          <div className="flex items-center gap-2 mb-1 pb-1 border-b" style={{ borderColor: '#262626' }}>
+            <span className="text-[12px] font-bold" style={{ color: '#ffffff' }}>
+              {hoveredDay.count} {hoveredDay.count === 1 ? 'order' : 'orders'}
+            </span>
+            {hoveredDay.count > 0 && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border" style={{ color: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', borderColor: 'rgba(52, 211, 153, 0.2)' }}>
+                ₹{hoveredDay.revenue.toFixed(0)}
+              </span>
+            )}
+          </div>
+          <div className="text-[9px] font-semibold" style={{ color: '#a3a3a3' }}>{hoveredDay.dateStr}</div>
+        </div>
+      )}
     </div>
   );
 });
