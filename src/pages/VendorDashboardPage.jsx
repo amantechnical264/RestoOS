@@ -2172,6 +2172,16 @@ export default function VendorDashboardPage() {
                               </div>
                             )}
 
+                            {/* View Details button for CANCELLED cards — absolute sibling of overlay so z-40 beats the z-30 overlay */}
+                            {isCancelledOrder && (
+                              <button
+                                onClick={() => setDeliveryDetailOrder(order)}
+                                className="absolute top-4 right-4 z-40 flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black rounded-lg bg-white dark:bg-white/20 text-neutral-700 dark:text-white hover:bg-neutral-100 dark:hover:bg-white/30 transition-colors shadow-lg"
+                              >
+                                <Eye size={12} /> View Details
+                              </button>
+                            )}
+
                             <div className="flex-1 space-y-4 relative z-10">
                               <div className="flex justify-between items-start">
                                 <div>
@@ -2184,12 +2194,14 @@ export default function VendorDashboardPage() {
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
                                   <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(2)}</p>
-                                  <button
-                                    onClick={() => setDeliveryDetailOrder(order)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black rounded-lg bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors relative z-40 shadow-sm"
-                                  >
-                                    <Eye size={12} /> View Details
-                                  </button>
+                                  {!isCancelledOrder && (
+                                    <button
+                                      onClick={() => setDeliveryDetailOrder(order)}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black rounded-lg bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors shadow-sm"
+                                    >
+                                      <Eye size={12} /> View Details
+                                    </button>
+                                  )}
                                   {order.verificationCode && (
                                     <p className="text-xs font-bold font-mono text-neutral-400 mt-1">Code: {order.verificationCode}</p>
                                   )}
