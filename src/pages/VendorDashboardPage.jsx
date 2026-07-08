@@ -1543,29 +1543,53 @@ export default function VendorDashboardPage() {
     deliveryConfig: { convenienceFee: 0, deliveryFee: 0, otherFees: [] }
   });
 
-  const [offersForm, setOffersForm] = React.useState({
-    active: false,
-    minOrderValue: 0,
-    freeDishId: ''
-  });
+  const [offersList, setOffersList] = React.useState([]);
   const [offersInitializedFor, setOffersInitializedFor] = React.useState(null);
+  const [expandedOfferId, setExpandedOfferId] = React.useState(null); // which offer card is expanded (editing)
 
+  // Normalize stored offers to always be an array
   React.useEffect(() => {
     if (currentRestaurant && offersInitializedFor !== currentRestaurant.id) {
-      const off = currentRestaurant.macros?.offers || { active: false, minOrderValue: 0, freeDishId: '' };
-      setOffersForm({
-        active: !!off.active,
-        minOrderValue: off.minOrderValue || 0,
-        freeDishId: off.freeDishId || ''
-      });
+      const raw = currentRestaurant.macros?.offers;
+      let normalized = [];
+      if (Array.isArray(raw)) {
+        normalized = raw;
+      } else if (raw && raw.freeDishId) {
+        // migrate old single-object format to array
+        normalized = [{ ...raw, id: raw.id || 'offer_legacy' }];
+      }
+      setOffersList(normalized);
       setOffersInitializedFor(currentRestaurant.id);
+      setExpandedOfferId(null);
     }
   }, [currentRestaurant, offersInitializedFor]);
 
-  const handleOffersSave = async (e) => {
-    if (e) e.preventDefault();
-    await updateRestaurant(activeRestId, { offers: offersForm });
-    showNotification('Offers configuration saved successfully!');
+  const handleOffersSave = async (offersArray) => {
+    await updateRestaurant(activeRestId, { offers: offersArray });
+    showNotification('Offers saved successfully!');
+  };
+
+  const handleAddOffer = () => {
+    const newId = 'offer_' + Date.now();
+    const newOffer = { id: newId, active: true, minOrderValue: 0, freeDishId: '' };
+    const updated = [...offersList, newOffer];
+    setOffersList(updated);
+    setExpandedOfferId(newId); // auto-expand new offer
+  };
+
+  const handleUpdateOffer = (id, field, value) => {
+    setOffersList(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o));
+  };
+
+  const handleDeleteOffer = (id) => {
+    const updated = offersList.filter(o => o.id !== id);
+    setOffersList(updated);
+    handleOffersSave(updated);
+  };
+
+  const handleSaveOffer = (id) => {
+    handleOffersSave(offersList);
+    setExpandedOfferId(null); // collapse after save
   };
 
 
@@ -5669,88 +5693,182 @@ export default function VendorDashboardPage() {
               className="absolute inset-0 overflow-y-auto p-6 bg-neutral-50 dark:bg-[#050505]"
             >
               <div className="max-w-2xl mx-auto">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-display font-black text-neutral-900 dark:text-white">Free Dish Offers</h2>
-                  <p className="text-sm text-neutral-500 mt-0.5">Configure surprise gifts for your loyal customers when their order value exceeds a limit.</p>
+                {/* Header */}
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-display font-black text-neutral-900 dark:text-white">Free Dish Offers</h2>
+                    <p className="text-sm text-neutral-500 mt-0.5">Surprise customers with a free dish when their order exceeds a set value. Multiple tiers supported — the highest qualifying offer is applied.</p>
+                  </div>
+                  <button
+                    onClick={handleAddOffer}
+                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all"
+                    style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: GOLD }}
+                  >
+                    <Plus size={14} /> Add Offer
+                  </button>
                 </div>
 
-                <form onSubmit={handleOffersSave} className="space-y-4">
-                  <div className="rounded-2xl p-5 space-y-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
-                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Percent size={13}/> Offer Settings
-                    </h3>
-
-                    {/* Toggle: Offer Active */}
-                    <div className="flex items-start justify-between gap-3 pt-2">
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-neutral-900 dark:text-white">Enable Free Dish Offer</p>
-                        <p className="text-xs text-neutral-500 mt-1 max-w-[280px]">
-                          When enabled, customers whose order subtotal exceeds the threshold will receive a free dish.
-                        </p>
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          setOffersForm(prev => ({ ...prev, active: !prev.active }));
-                        }}
-                        className={`w-12 h-6 rounded-full transition-all relative shrink-0 mt-0.5 ${offersForm.active ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
-                        style={offersForm.active ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
-                      >
-                        <span 
-                          className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
-                          style={{ 
-                            left: offersForm.active ? '26px' : '4px',
-                            background: offersForm.active ? '#000' : '#fff'
-                          }}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="border-t border-neutral-100 dark:border-white/5 my-4" />
-
-                    {/* Input: Minimum Order Value */}
-                    <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Minimum Order Value (₹) *</label>
-                      <input 
-                        required 
-                        type="number" 
-                        min="0"
-                        value={offersForm.minOrderValue} 
-                        onChange={e => setOffersForm({ ...offersForm, minOrderValue: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 dark:text-white focus:border-[#D4AF37] focus:outline-none transition-all" 
-                        placeholder="e.g. 500" 
-                      />
-                    </div>
-
-                    {/* Dropdown: Select Free Dish */}
-                    <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Select Free surprise Dish *</label>
-                      <select 
-                        required
-                        value={offersForm.freeDishId} 
-                        onChange={e => setOffersForm({ ...offersForm, freeDishId: e.target.value })}
-                        className="w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 dark:text-white focus:border-[#D4AF37] focus:outline-none transition-all cursor-pointer"
-                      >
-                        <option value="">-- Choose a dish --</option>
-                        {expandDishesWithVariants(vendDishes).map(d => (
-                          <option key={d.id} value={d.isVariant ? `${d.originalId}::${d.variantName}` : d.id}>
-                            {d.name} (Original Price: ₹{Number(d.price).toFixed(0)})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                {/* Empty state */}
+                {offersList.length === 0 && (
+                  <div className="rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 flex flex-col items-center justify-center py-16 text-center">
+                    <Percent size={36} className="text-neutral-300 dark:text-white/20 mb-3" />
+                    <p className="font-bold text-neutral-500 dark:text-neutral-400 text-sm">No offers configured yet</p>
+                    <p className="text-xs text-neutral-400 mt-1 mb-4">Click "Add Offer" above to create your first surprise gift offer</p>
+                    <button
+                      onClick={handleAddOffer}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm"
+                      style={{ background: goldGradient, color: '#000' }}
+                    >
+                      <Plus size={14} /> Create First Offer
+                    </button>
                   </div>
+                )}
 
-                  <button 
-                    type="submit"
-                    className="w-full py-4 rounded-2xl font-display font-black text-base bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg"
-                  >
-                    Save Offers Configuration
-                  </button>
-                </form>
+                {/* Offer Cards */}
+                <div className="space-y-3">
+                  {offersList.map((offer, idx) => {
+                    const isExpanded = expandedOfferId === offer.id;
+                    const dishOptions = expandDishesWithVariants(vendDishes);
+                    const selectedDishDisplay = (() => {
+                      if (!offer.freeDishId) return null;
+                      const [dId, vName] = offer.freeDishId.split('::');
+                      const d = vendDishes.find(x => x.id === dId);
+                      if (!d) return offer.freeDishId;
+                      return vName ? `${d.name} (${vName})` : d.name;
+                    })();
+
+                    return (
+                      <div
+                        key={offer.id}
+                        className="rounded-2xl overflow-hidden border bg-white dark:bg-[#0a0a0a]"
+                        style={{ borderColor: offer.active ? 'rgba(212,175,55,0.35)' : 'rgba(212,212,212,0.4)' }}
+                      >
+                        {/* ── Collapsed summary row ── */}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedOfferId(isExpanded ? null : offer.id)}
+                          className="w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-white/5"
+                        >
+                          {/* Active dot */}
+                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${offer.active ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-neutral-900 dark:text-white truncate">
+                              {offer.minOrderValue > 0 ? `Order ≥ ₹${offer.minOrderValue}` : 'New Offer'}
+                              {selectedDishDisplay && <span className="text-neutral-400 font-normal"> → 🎁 {selectedDishDisplay} free</span>}
+                            </p>
+                            <p className="text-[11px] text-neutral-400 mt-0.5">
+                              {offer.active ? 'Active' : 'Inactive'} · Offer {idx + 1}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {!isExpanded && (
+                              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider px-2 py-1 rounded-lg bg-neutral-100 dark:bg-white/5">
+                                Edit
+                              </span>
+                            )}
+                            <ChevronRight size={16} className={`text-neutral-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                          </div>
+                        </button>
+
+                        {/* ── Expanded edit form ── */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              key="offer-edit"
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-5 pb-5 space-y-4 border-t border-neutral-100 dark:border-white/5 pt-4">
+                                
+                                {/* Toggle Active */}
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-bold text-neutral-900 dark:text-white">Enable this offer</p>
+                                    <p className="text-xs text-neutral-500 mt-0.5">When enabled, qualifying customers will receive this free dish.</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateOffer(offer.id, 'active', !offer.active)}
+                                    className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${offer.active ? '' : 'bg-neutral-300 dark:bg-neutral-700'}`}
+                                    style={offer.active ? { background: goldGradient, boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
+                                  >
+                                    <span
+                                      className="absolute top-1 w-4 h-4 rounded-full shadow-sm transition-all duration-300"
+                                      style={{ left: offer.active ? '26px' : '4px', background: offer.active ? '#000' : '#fff' }}
+                                    />
+                                  </button>
+                                </div>
+
+                                {/* Min Order Value */}
+                                <div>
+                                  <label className="text-xs font-bold text-neutral-400 block mb-1.5 uppercase tracking-widest">Minimum Order Value (₹) *</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={offer.minOrderValue}
+                                    onChange={e => handleUpdateOffer(offer.id, 'minOrderValue', parseFloat(e.target.value) || 0)}
+                                    className="w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 dark:text-white focus:border-[#D4AF37] focus:outline-none transition-all"
+                                    placeholder="e.g. 500"
+                                  />
+                                </div>
+
+                                {/* Free Dish Dropdown */}
+                                <div>
+                                  <label className="text-xs font-bold text-neutral-400 block mb-1.5 uppercase tracking-widest">Free Surprise Dish *</label>
+                                  <select
+                                    value={offer.freeDishId}
+                                    onChange={e => handleUpdateOffer(offer.id, 'freeDishId', e.target.value)}
+                                    className="w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 dark:text-white focus:border-[#D4AF37] focus:outline-none transition-all cursor-pointer"
+                                  >
+                                    <option value="">-- Choose a dish --</option>
+                                    {dishOptions.map(d => (
+                                      <option key={d.id + (d.variantName || '')} value={d.isVariant ? `${d.originalId}::${d.variantName}` : d.id}>
+                                        {d.name} (₹{Number(d.price).toFixed(0)})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-2 pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveOffer(offer.id)}
+                                    className="flex-1 py-3 rounded-xl font-bold text-sm text-black transition-all"
+                                    style={{ background: goldGradient }}
+                                  >
+                                    Save Offer
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOffer(offer.id)}
+                                    className="px-4 py-3 rounded-xl font-bold text-sm text-red-500 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 transition-colors"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Info box */}
+                {offersList.length > 1 && (
+                  <div className="mt-4 p-4 rounded-2xl text-xs font-medium text-amber-700 dark:text-amber-400" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    💡 When a customer qualifies for multiple offers, the one with the <strong>highest minimum order value</strong> is applied automatically.
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
+
 
           {/* ════════════════════ SETTINGS ════════════════════ */}
           {vendorTab === 'settings' && (

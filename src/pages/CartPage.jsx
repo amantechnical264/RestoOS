@@ -179,24 +179,36 @@ export default function CartPage() {
     };
   };
 
-  const offersConfig = currentRestaurant?.macros?.offers;
-  const isOfferActive = offersConfig?.active && Number(offersConfig?.minOrderValue) > 0 && offersConfig?.freeDishId;
-  const showFreeDish = isOfferActive && subtotal >= Number(offersConfig.minOrderValue);
-  const freeDishItem = showFreeDish ? resolveFreeDish(offersConfig.freeDishId, dishes) : null;
+  // ── Multi-offer resolution: pick the highest qualifying threshold offer ──
+  // Supports both old single-object format and new array format
+  const rawOffers = currentRestaurant?.macros?.offers;
+  const allOffers = Array.isArray(rawOffers)
+    ? rawOffers
+    : (rawOffers && rawOffers.freeDishId ? [rawOffers] : []);
+  const activeOffers = allOffers.filter(
+    o => o.active && Number(o.minOrderValue) > 0 && o.freeDishId
+  );
+  // Among qualifying offers (subtotal >= threshold), pick the one with highest threshold
+  const qualifyingOffers = activeOffers.filter(o => subtotal >= Number(o.minOrderValue));
+  const matchedOffer = qualifyingOffers.length > 0
+    ? qualifyingOffers.reduce((best, o) => Number(o.minOrderValue) > Number(best.minOrderValue) ? o : best, qualifyingOffers[0])
+    : null;
+  const freeDishItem = matchedOffer ? resolveFreeDish(matchedOffer.freeDishId, dishes) : null;
 
-  const [hasShownOffersPopup, setHasShownOffersPopup] = useState(false);
+  // Track which offerId was last shown so popup re-fires when a higher tier unlocks
+  const [lastShownOfferId, setLastShownOfferId] = useState(null);
   const [showOffersModal, setShowOffersModal] = useState(false);
 
+  const matchedOfferId = matchedOffer ? (matchedOffer.id || matchedOffer.freeDishId + '_' + matchedOffer.minOrderValue) : null;
+
   useEffect(() => {
-    if (showFreeDish) {
-      if (!hasShownOffersPopup) {
-        setShowOffersModal(true);
-        setHasShownOffersPopup(true);
-      }
-    } else {
-      setHasShownOffersPopup(false);
+    if (matchedOffer && matchedOfferId !== lastShownOfferId) {
+      setShowOffersModal(true);
+      setLastShownOfferId(matchedOfferId);
+    } else if (!matchedOffer) {
+      setLastShownOfferId(null);
     }
-  }, [showFreeDish, hasShownOffersPopup]);
+  }, [matchedOfferId]);
   
   
   const groupedCart = Object.values(cart.reduce((acc, item) => {
@@ -626,7 +638,7 @@ export default function CartPage() {
                       {freeDishItem.variantName && (
                         <p className="text-xs font-bold text-emerald-500 mb-1">{freeDishItem.variantName}</p>
                       )}
-                      <p className="text-[10px] text-neutral-400">Added surprise gift for order value &gt; ₹{offersConfig.minOrderValue}</p>
+                      <p className="text-[10px] text-neutral-400">Added surprise gift for order value &gt; ₹{matchedOffer?.minOrderValue}</p>
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-1.5">
@@ -1006,7 +1018,7 @@ export default function CartPage() {
               <div className="space-y-2">
                 <h3 className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-tight">Surprise Gift Unlocked! 🎉</h3>
                 <p className="text-xs text-neutral-500 max-w-[260px] mx-auto">
-                  Your order exceeds the ₹{offersConfig.minOrderValue} limit! We've added this delicious dish completely free of charge.
+                  Your order exceeds the ₹{matchedOffer?.minOrderValue} limit! We've added this delicious dish completely free of charge.
                 </p>
               </div>
 
