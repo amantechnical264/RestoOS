@@ -1902,7 +1902,7 @@ export default function VendorDashboardPage() {
                           </span>
                         </div>
                         <ul className="text-xs font-semibold space-y-1 mb-2 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
-                          {o.items?.map((item, i) => (
+                          {o.items?.filter(item => item.type !== 'metadata' && item.type !== 'location_meta' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__special_instructions').map((item, i) => (
                             <li key={i}>
                               · {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
                             </li>
@@ -1913,10 +1913,10 @@ export default function VendorDashboardPage() {
                           <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
                           {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                         </div>
-                        {o.metadata?.specialInstructions && (
+                        {((o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)) && (
                           <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
-                            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{o.metadata.specialInstructions}</p>
+                            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{(o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)}</p>
                           </div>
                         )}
                         
@@ -2003,7 +2003,7 @@ export default function VendorDashboardPage() {
                             {o.orderType === 'dine_in' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">DINE-IN</span>}
                           </div>
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
-                            {o.items?.map((item, i) => (
+                            {o.items?.filter(item => item.type !== 'metadata' && item.type !== 'location_meta' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__special_instructions').map((item, i) => (
                               <li key={i} className="flex flex-col">
                                 <span>· {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
                                 {item.specialInstructions && (
@@ -2014,10 +2014,10 @@ export default function VendorDashboardPage() {
                               </li>
                             ))}
                           </ul>
-                          {o.metadata?.specialInstructions && (
+                          {((o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)) && (
                             <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
                               <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
-                              <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{o.metadata.specialInstructions}</p>
+                              <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{(o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)}</p>
                             </div>
                           )}
                           <div className="flex justify-between items-center mb-3">
@@ -2098,7 +2098,8 @@ export default function VendorDashboardPage() {
                           const m = String(str).match(/[\[\s]GPS:([\d.\-]+),([\d.\-]+)/);
                           return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null;
                         };
-                        const _locFromSI = _parseGPS(order.metadata?.specialInstructions);
+                        const _si = order.metadata?.specialInstructions || order.items?.find(i => i.id === '__special_instructions')?.instructions;
+                        const _locFromSI = _parseGPS(_si);
                         const _rawAddr = order.metadata?.address || _locFromItems?.address || '';
                         const _locFromAddr = _parseGPS(_rawAddr);
                         const loc = _locFromMeta || _locFromItems || _locFromSI || _locFromAddr || {};
@@ -2175,10 +2176,10 @@ export default function VendorDashboardPage() {
                                     </li>
                                   ))}
                                 </ul>
-                                {order.metadata?.specialInstructions && (
+                                {((order.metadata?.specialInstructions) || (order.items?.find(item => item.id === '__special_instructions')?.instructions)) && (
                                   <div className="mt-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
                                     <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
-                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{order.metadata.specialInstructions}</p>
+                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{(order.metadata?.specialInstructions) || (order.items?.find(item => item.id === '__special_instructions')?.instructions)}</p>
                                   </div>
                                 )}
                               </div>

@@ -633,7 +633,10 @@ export const AppProvider = ({ children }) => {
     const newOrder = {
       user_id: guestId,
       rest_id: activeRestId,
-      items: cart,
+      items: [
+        ...cart,
+        ...(orderData?.specialInstructions ? [{ id: '__special_instructions', instructions: orderData.specialInstructions, price: 0, quantity: 0, type: 'metadata' }] : [])
+      ],
       total: (cart.reduce((sum, item) => sum + (item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.price || 0)), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
       status: orderData?.status || 'Pending',
       timestamp: new Date().toISOString(),
