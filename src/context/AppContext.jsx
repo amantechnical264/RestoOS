@@ -562,10 +562,17 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
-    const hasPendingOrders = orders.some(o => 
-      o.rest_id === activeRestId && 
-      (o.status === 'Pending' || o.status === 'Pending Verification')
-    );
+    const hasPendingOrders = orders.some(o => {
+      const isMyRest = o.restId === activeRestId || o.rest_id === activeRestId;
+      if (!isMyRest) return false;
+
+      const type = o.orderType || o.order_type;
+      if (type === 'delivery') {
+        return o.status === 'Pending';
+      } else {
+        return o.status === 'Pending Verification';
+      }
+    });
 
     if (hasPendingOrders) {
       if (!notificationAudioRef.current) {

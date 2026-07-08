@@ -2236,12 +2236,20 @@ export default function VendorDashboardPage() {
                               </a>
                               
                               {order.status === 'Pending' && (
-                                <button
-                                  onClick={() => updateOrderStatus(order.id, 'Preparing')}
-                                  className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl font-black text-sm shadow-sm hover:opacity-90 transition-opacity"
-                                >
-                                  ✓ Accept Order
-                                </button>
+                                <div className="flex flex-col gap-2 w-full">
+                                  <button
+                                    onClick={() => updateOrderStatus(order.id, 'Preparing')}
+                                    className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors"
+                                  >
+                                    ✓ Accept Order
+                                  </button>
+                                  <button
+                                    onClick={() => updateOrderStatus(order.id, 'Cancelled')}
+                                    className="w-full py-3 bg-red-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5"
+                                  >
+                                    ✕ Reject Order
+                                  </button>
+                                </div>
                               )}
                               
                               {order.status === 'Preparing' && (
