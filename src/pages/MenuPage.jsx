@@ -938,16 +938,10 @@ export default function MenuPage() {
     : null;
   const freeDishItem = matchedOffer ? resolveFreeDish(matchedOffer.freeDishId, dishes) : null;
 
-  const [lastShownOfferId, setLastShownOfferIdState] = useState(() => {
-    return sessionStorage.getItem('3dish_last_shown_offer_id') || null;
-  });
+  // Per-render session only — no sessionStorage, so popup fires each time the threshold is newly crossed
+  const [lastShownOfferId, setLastShownOfferIdState] = useState(null);
 
   const setLastShownOfferId = (val) => {
-    if (val) {
-      sessionStorage.setItem('3dish_last_shown_offer_id', val);
-    } else {
-      sessionStorage.removeItem('3dish_last_shown_offer_id');
-    }
     setLastShownOfferIdState(val);
   };
 
@@ -972,10 +966,43 @@ export default function MenuPage() {
 
       {/* ── HERO ── */}
       <div className="relative h-[52vw] max-h-80 min-h-52 flex-shrink-0" style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)' }}>
-        <motion.div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${restaurant?.cover})`, y: heroParallax, opacity: heroOpacity }}
-        />
+        {/* Auto-sliding banner: restaurant cover + active offer images */}
+        <motion.div className="absolute inset-0 overflow-hidden" style={{ y: heroParallax, opacity: heroOpacity }}>
+          <AnimatePresence mode="sync">
+            {bannerImages.length > 0 ? (
+              <motion.div
+                key={bannerIdx}
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${bannerImages[bannerIdx]})` }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.9, ease: 'easeInOut' }}
+              />
+            ) : (
+              <motion.div
+                key="fallback"
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${restaurant?.cover})` }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.9, ease: 'easeInOut' }}
+              />
+            )}
+          </AnimatePresence>
+          {/* Slide dots indicator (only when multiple images) */}
+          {bannerImages.length > 1 && (
+            <div className="absolute bottom-16 right-4 flex gap-1 z-20">
+              {bannerImages.map((_, i) => (
+                <div
+                  key={i}
+                  className={`rounded-full transition-all duration-300 ${i === bannerIdx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`}
+                />
+              ))}
+            </div>
+          )}
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-[#0d0d10] via-white/30 dark:via-[#0d0d10]/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 
