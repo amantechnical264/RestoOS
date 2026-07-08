@@ -452,6 +452,9 @@ export default function CartPage() {
           </div>
           
           {groupedCart.map((item) => {
+            const customizationTotal = (item.selectedCustomizations || []).reduce((sum, c) => sum + (Number(c.price) || 0), 0);
+            const itemBasePrice = item.basePrice !== undefined ? item.basePrice : (Number(item.price) - customizationTotal);
+
             // ── Combo image slideshow ──
             const comboDishIds = item.macros?.comboDishes || [];
             const comboImages = comboDishIds.length > 0
@@ -513,13 +516,21 @@ export default function CartPage() {
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-1.5">
-                    <div className="flex flex-col items-end">
+                    <div className="flex flex-col items-end text-right">
                       {item.originalPrice && item.originalPrice > item.price && (
                         <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
-                          ₹{(Number(item.originalPrice) * item.quantity).toFixed(2)}
+                          ₹{(Number(item.originalPrice) * item.quantity).toFixed(0)}
                         </span>
                       )}
-                      <span className="font-black text-lg text-[#D4AF37] leading-none mt-0.5">₹{(Number(item.price) * item.quantity).toFixed(2)}</span>
+                      <span className="text-xs text-neutral-500 font-medium leading-none mb-1">
+                        ₹{(itemBasePrice * item.quantity).toFixed(0)}
+                      </span>
+                      {customizationTotal > 0 && (
+                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-semibold mb-1">
+                          + ₹{(customizationTotal * item.quantity).toFixed(0)}
+                        </span>
+                      )}
+                      <span className="font-black text-lg text-[#D4AF37] leading-none mt-0.5">₹{(Number(item.price) * item.quantity).toFixed(0)}</span>
                     </div>
                     {/* Stepper */}
                     <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg overflow-hidden">
@@ -564,29 +575,29 @@ export default function CartPage() {
 
           {/* Receipt Summary */}
           <div className="mt-4 bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2rem] p-6 backdrop-blur-md">
-            <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-            <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>₹{taxAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Subtotal</span><span>₹{subtotal.toFixed(0)}</span></div>
+            <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3"><span>Tax ({Math.round(taxRate * 100)}%)</span><span>₹{taxAmount.toFixed(0)}</span></div>
             {isDelivery && baseDeliveryFee > 0 && (
               <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3">
                 <span className="flex items-center gap-1.5"><Truck size={13}/>Delivery Fee</span>
-                <span>₹{baseDeliveryFee.toFixed(2)}</span>
+                <span>₹{baseDeliveryFee.toFixed(0)}</span>
               </div>
             )}
             {isDelivery && convenienceFee > 0 && (
               <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3">
                 <span>Convenience Fee</span>
-                <span>₹{convenienceFee.toFixed(2)}</span>
+                <span>₹{convenienceFee.toFixed(0)}</span>
               </div>
             )}
             {isDelivery && otherFees.map((f, i) => f.amount > 0 && (
               <div key={i} className="flex justify-between text-neutral-500 dark:text-neutral-400 text-sm mb-3">
                 <span>{f.label || 'Other Fee'}</span>
-                <span>₹{Number(f.amount).toFixed(2)}</span>
+                <span>₹{Number(f.amount).toFixed(0)}</span>
               </div>
             ))}
             <div className="border-t border-neutral-200 dark:border-white/10 pt-4 mt-2 text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
               <span>Total</span>
-              <span className="text-[#D4AF37] text-3xl">₹{total.toFixed(2)}</span>
+              <span className="text-[#D4AF37] text-3xl">₹{total.toFixed(0)}</span>
             </div>
             {/* Loyalty Points display */}
             <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between">
