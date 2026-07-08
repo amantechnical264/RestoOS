@@ -433,37 +433,6 @@ export default function CartPage() {
 
       <div className="flex-1 overflow-y-auto px-6 pt-6 pb-36 z-10 no-scrollbar">
         <motion.div key="cart" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-4">
-          {/* Order Type Toggle (Dine-In vs Delivery/Takeaway) */}
-          <div className="flex bg-neutral-100 dark:bg-white/5 p-1 rounded-2xl border border-neutral-200 dark:border-white/5 mb-4">
-            <button
-              type="button"
-              onClick={() => {
-                setOrderType('dine_in');
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
-                !isDelivery
-                  ? 'bg-[#D4AF37] text-black shadow-md'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Store size={14} />
-              Dine-In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setOrderType('delivery');
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
-                isDelivery
-                  ? 'bg-[#D4AF37] text-black shadow-md'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Truck size={14} />
-              Delivery / Takeaway
-            </button>
-          </div>
 
           {/* Manual Table Number input for Dine-in when no table number scanned */}
           {!isDelivery && (tableNumber === 'delivery' || !tableNumber) && (
