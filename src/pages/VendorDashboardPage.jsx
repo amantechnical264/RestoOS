@@ -1543,6 +1543,31 @@ export default function VendorDashboardPage() {
     deliveryConfig: { convenienceFee: 0, deliveryFee: 0, otherFees: [] }
   });
 
+  const [offersForm, setOffersForm] = React.useState({
+    active: false,
+    minOrderValue: 0,
+    freeDishId: ''
+  });
+  const [offersInitializedFor, setOffersInitializedFor] = React.useState(null);
+
+  React.useEffect(() => {
+    if (currentRestaurant && offersInitializedFor !== currentRestaurant.id) {
+      const off = currentRestaurant.macros?.offers || { active: false, minOrderValue: 0, freeDishId: '' };
+      setOffersForm({
+        active: !!off.active,
+        minOrderValue: off.minOrderValue || 0,
+        freeDishId: off.freeDishId || ''
+      });
+      setOffersInitializedFor(currentRestaurant.id);
+    }
+  }, [currentRestaurant, offersInitializedFor]);
+
+  const handleOffersSave = async (e) => {
+    if (e) e.preventDefault();
+    await updateRestaurant(activeRestId, { offers: offersForm });
+    showNotification('Offers configuration saved successfully!');
+  };
+
 
   const [isEditingDelivery, setIsEditingDelivery] = React.useState(false);
   const [formInitializedFor, setFormInitializedFor] = React.useState(null);
@@ -2196,6 +2221,7 @@ export default function VendorDashboardPage() {
     { key: 'customers', icon: Users,        label: 'Customers' },
     { key: 'events',    icon: Calendar,     label: 'Events' },
     { key: 'combos',    icon: Gift,         label: 'Combos' },
+    { key: 'offers',    icon: Percent,      label: 'Offers' },
     { key: 'qr',        icon: QrIcon,       label: 'Tables' },
     { key: 'settings',  icon: Settings,     label: 'Settings' },
   ];
@@ -5633,6 +5659,95 @@ export default function VendorDashboardPage() {
                   className="w-full py-4 rounded-2xl font-display font-black flex items-center justify-center gap-2 bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg">
                   <Printer size={18} /> Print All {tableCount} QR Codes
                 </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ════════════════════ OFFERS ════════════════════ */}
+          {vendorTab === 'offers' && (
+            <motion.div key="offers" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 overflow-y-auto p-6 bg-neutral-50 dark:bg-[#050505]"
+            >
+              <div className="max-w-2xl mx-auto">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-display font-black text-neutral-900 dark:text-white">Free Dish Offers</h2>
+                  <p className="text-sm text-neutral-500 mt-0.5">Configure surprise gifts for your loyal customers when their order value exceeds a limit.</p>
+                </div>
+
+                <form onSubmit={handleOffersSave} className="space-y-4">
+                  <div className="rounded-2xl p-5 space-y-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
+                      <Percent size={13}/> Offer Settings
+                    </h3>
+
+                    {/* Toggle: Offer Active */}
+                    <div className="flex items-start justify-between gap-3 pt-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-neutral-900 dark:text-white">Enable Free Dish Offer</p>
+                        <p className="text-xs text-neutral-500 mt-1 max-w-[280px]">
+                          When enabled, customers whose order subtotal exceeds the threshold will receive a free dish.
+                        </p>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setOffersForm(prev => ({ ...prev, active: !prev.active }));
+                        }}
+                        className={`w-12 h-6 rounded-full transition-all relative shrink-0 mt-0.5 ${offersForm.active ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
+                        style={offersForm.active ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
+                      >
+                        <span 
+                          className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
+                          style={{ 
+                            left: offersForm.active ? '26px' : '4px',
+                            background: offersForm.active ? '#000' : '#fff'
+                          }}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="border-t border-neutral-100 dark:border-white/5 my-4" />
+
+                    {/* Input: Minimum Order Value */}
+                    <div>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Minimum Order Value (₹) *</label>
+                      <input 
+                        required 
+                        type="number" 
+                        min="0"
+                        value={offersForm.minOrderValue} 
+                        onChange={e => setOffersForm({ ...offersForm, minOrderValue: parseFloat(e.target.value) || 0 })}
+                        className="w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 dark:text-white focus:border-[#D4AF37] focus:outline-none transition-all" 
+                        placeholder="e.g. 500" 
+                      />
+                    </div>
+
+                    {/* Dropdown: Select Free Dish */}
+                    <div>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Select Free surprise Dish *</label>
+                      <select 
+                        required
+                        value={offersForm.freeDishId} 
+                        onChange={e => setOffersForm({ ...offersForm, freeDishId: e.target.value })}
+                        className="w-full rounded-xl p-3 text-sm bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 dark:text-white focus:border-[#D4AF37] focus:outline-none transition-all cursor-pointer"
+                      >
+                        <option value="">-- Choose a dish --</option>
+                        {expandDishesWithVariants(vendDishes).map(d => (
+                          <option key={d.id} value={d.isVariant ? `${d.originalId}::${d.variantName}` : d.id}>
+                            {d.name} (Original Price: ₹{Number(d.price).toFixed(0)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    className="w-full py-4 rounded-2xl font-display font-black text-base bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg"
+                  >
+                    Save Offers Configuration
+                  </button>
+                </form>
               </div>
             </motion.div>
           )}

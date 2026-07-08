@@ -688,11 +688,44 @@ export const AppProvider = ({ children }) => {
     const dinerProfile = JSON.parse(localStorage.getItem('3dish_diner_profile') || '{}');
     const guestId = user?.uid || user?.id || user?.guestId || dinerProfile.guestId || user?.phone || dinerProfile.phone || 'anonymous';
 
+    // Check if free dish offer is met
+    const offersConfig = rest?.macros?.offers;
+    const isOfferActive = offersConfig?.active && Number(offersConfig?.minOrderValue) > 0 && offersConfig?.freeDishId;
+    const regularSubtotal = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const hasFreeDish = isOfferActive && regularSubtotal >= Number(offersConfig.minOrderValue);
+    
+    let orderItems = [...cart];
+    if (hasFreeDish) {
+      const [dishId, variantName] = offersConfig.freeDishId.split('::');
+      const d = dishes.find(x => x.id === dishId);
+      if (d) {
+        let name = d.name;
+        let selectedVariant = null;
+        if (d.variants && d.variants.length > 0) {
+          const v = variantName ? d.variants.find(varItem => varItem.name === variantName) : d.variants[0];
+          if (v) {
+            name = `${d.name} (${v.name})`;
+            selectedVariant = v;
+          }
+        }
+        orderItems.push({
+          id: d.id,
+          name: `${name} [FREE]`,
+          price: 0,
+          quantity: 1,
+          isFree: true,
+          cover: d.cover || d.images?.[0],
+          selectedVariant: selectedVariant,
+          type: 'free_dish'
+        });
+      }
+    }
+
     const newOrder = {
       user_id: guestId,
       rest_id: activeRestId,
       items: [
-        ...cart,
+        ...orderItems,
         ...(orderData?.specialInstructions ? [{ id: '__special_instructions', instructions: orderData.specialInstructions, price: 0, quantity: 0, type: 'metadata' }] : [])
       ],
       total: (cart.reduce((sum, item) => sum + Number(item.price || 0), 0) * (1 + taxRate)) + convenienceFee + baseDeliveryFee + otherFeesTotal,
@@ -853,7 +886,7 @@ export const AppProvider = ({ children }) => {
         requireVerificationCode: updateData.requireVerificationCode !== undefined
           ? updateData.requireVerificationCode
           : r.requireVerificationCode,
-        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined)
+        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined)
           ? {
               ...(r.macros || {}),
               ...(updateData.deliveryConfig          !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
@@ -862,6 +895,7 @@ export const AppProvider = ({ children }) => {
               ...(updateData.phoneVerified           !== undefined ? { phoneVerified: updateData.phoneVerified } : {}),
               ...(updateData.socials                 !== undefined ? { socials: updateData.socials } : {}),
               ...(updateData.customizations          !== undefined ? { customizations: updateData.customizations } : {}),
+              ...(updateData.offers                  !== undefined ? { offers: updateData.offers } : {}),
             }
           : r.macros,
       } : r);
@@ -888,7 +922,7 @@ export const AppProvider = ({ children }) => {
       // requireVerificationCode and deliveryConfig live here. If the column is missing,
       // the value is already saved in local state + localStorage above, so the toggle
       // still works correctly for the session and across page reloads.
-      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined) {
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined) {
         const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
         const newMacros = { ...currentMacros };
         if (updateData.deliveryConfig          !== undefined) newMacros.deliveryConfig          = updateData.deliveryConfig;
@@ -897,6 +931,7 @@ export const AppProvider = ({ children }) => {
         if (updateData.phoneVerified           !== undefined) newMacros.phoneVerified           = updateData.phoneVerified;
         if (updateData.socials                 !== undefined) newMacros.socials                 = updateData.socials;
         if (updateData.customizations          !== undefined) newMacros.customizations          = updateData.customizations;
+        if (updateData.offers                  !== undefined) newMacros.offers                  = updateData.offers;
 
         const { error: macrosError } = await supabase.from('restaurants')
           .update({ macros: newMacros })

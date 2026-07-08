@@ -149,6 +149,56 @@ export default function CartPage() {
   const taxAmount = subtotal * taxRate;
   const total = subtotal + taxAmount + convenienceFee + baseDeliveryFee + otherFeesTotal;
   
+  const resolveFreeDish = (dishIdOrStr, dishesList) => {
+    if (!dishIdOrStr) return null;
+    const [dishId, variantName] = dishIdOrStr.split('::');
+    const d = dishesList.find(x => x.id === dishId);
+    if (!d) return null;
+    
+    if (d.variants && d.variants.length > 0) {
+      const v = variantName 
+        ? d.variants.find(varItem => varItem.name === variantName)
+        : d.variants[0];
+      return {
+        ...d,
+        id: d.id,
+        name: v ? `${d.name} (${v.name})` : d.name,
+        price: 0,
+        quantity: 1,
+        isFree: true,
+        cover: d.cover || d.images?.[0],
+        variantName: v?.name || ''
+      };
+    }
+    return {
+      ...d,
+      price: 0,
+      quantity: 1,
+      isFree: true,
+      cover: d.cover || d.images?.[0]
+    };
+  };
+
+  const offersConfig = currentRestaurant?.macros?.offers;
+  const isOfferActive = offersConfig?.active && Number(offersConfig?.minOrderValue) > 0 && offersConfig?.freeDishId;
+  const showFreeDish = isOfferActive && subtotal >= Number(offersConfig.minOrderValue);
+  const freeDishItem = showFreeDish ? resolveFreeDish(offersConfig.freeDishId, dishes) : null;
+
+  const [hasShownOffersPopup, setHasShownOffersPopup] = useState(false);
+  const [showOffersModal, setShowOffersModal] = useState(false);
+
+  useEffect(() => {
+    if (showFreeDish) {
+      if (!hasShownOffersPopup) {
+        setShowOffersModal(true);
+        setHasShownOffersPopup(true);
+      }
+    } else {
+      setHasShownOffersPopup(false);
+    }
+  }, [showFreeDish, hasShownOffersPopup]);
+  
+  
   const groupedCart = Object.values(cart.reduce((acc, item) => {
     const groupId = item.id + (item.selectedVariant ? '-' + item.selectedVariant.name : '') + (item.customizationId ? '-' + item.customizationId : '');
     if (!acc[groupId]) {
@@ -551,6 +601,54 @@ export default function CartPage() {
             );
           })}
 
+          {freeDishItem && (
+            <motion.div layout key="free-dish-gift"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative flex items-center bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-500/35 rounded-3xl p-4 shadow-md group">
+              <div className="relative z-10 flex-1 flex flex-col w-full rounded-3xl gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-4">
+                    {freeDishItem.cover ? (
+                      <img src={freeDishItem.cover} className="w-14 h-14 rounded-2xl object-cover border border-emerald-500/20 shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                        <Gift size={20} className="text-emerald-500"/>
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-neutral-900 dark:text-white font-sans max-w-[150px] leading-tight mb-0.5">{freeDishItem.name}</h3>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold text-[9px] uppercase tracking-wider flex items-center gap-0.5">
+                          🎁 Free Gift
+                        </span>
+                      </div>
+                      {freeDishItem.variantName && (
+                        <p className="text-xs font-bold text-emerald-500 mb-1">{freeDishItem.variantName}</p>
+                      )}
+                      <p className="text-[10px] text-neutral-400">Added surprise gift for order value &gt; ₹{offersConfig.minOrderValue}</p>
+                    </div>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1.5">
+                    <div className="flex flex-col items-end text-right">
+                      {(() => {
+                        const originalPrice = freeDishItem.variantName
+                          ? (freeDishItem.variants?.find(v => v.name === freeDishItem.variantName)?.price || freeDishItem.price)
+                          : freeDishItem.price;
+                        return originalPrice > 0 && (
+                          <span className="text-neutral-400 dark:text-neutral-500 line-through text-xs font-medium">
+                            ₹{Number(originalPrice).toFixed(0)}
+                          </span>
+                        );
+                      })()}
+                      <span className="font-black text-lg text-emerald-500 leading-none mt-0.5">FREE</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <p className="text-center text-xs text-neutral-500 py-2">Swipe items left to remove</p>
 
           <div className="mt-6 mb-6 pt-6 border-t border-neutral-200 dark:border-white/5">
@@ -595,6 +693,12 @@ export default function CartPage() {
                 <span>₹{Number(f.amount).toFixed(0)}</span>
               </div>
             ))}
+            {freeDishItem && (
+              <div className="flex justify-between text-emerald-500 font-bold text-sm mb-3">
+                <span className="flex items-center gap-1.5">🎁 Free {freeDishItem.name}</span>
+                <span>₹0</span>
+              </div>
+            )}
             <div className="border-t border-neutral-200 dark:border-white/10 pt-4 mt-2 text-2xl font-black flex justify-between text-neutral-900 dark:text-white font-display items-center">
               <span>Total</span>
               <span className="text-[#D4AF37] text-3xl">₹{total.toFixed(0)}</span>
@@ -868,6 +972,77 @@ export default function CartPage() {
              className="mt-6 w-full max-w-md py-4 rounded-2xl font-black bg-white text-black shadow-lg">
                Launch AR Mode
              </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showOffersModal && freeDishItem && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/80 flex flex-col items-center justify-center p-6 backdrop-blur-md">
+            
+            <motion.div 
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              className="relative w-full max-w-sm rounded-[2.5rem] overflow-hidden border border-emerald-500/35 bg-white dark:bg-[#0d0d0f] shadow-2xl p-6 text-center space-y-6"
+            >
+              {/* Confetti decoration */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+                <div className="absolute top-4 left-6 w-3 h-3 rounded-full bg-yellow-400 animate-ping" />
+                <div className="absolute top-10 right-12 w-4 h-4 rounded-full bg-emerald-400 animate-ping" style={{ animationDelay: '0.5s' }} />
+                <div className="absolute bottom-16 left-12 w-2.5 h-2.5 rounded-full bg-pink-400 animate-ping" style={{ animationDelay: '1s' }} />
+              </div>
+
+              {/* Gift icon floating */}
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20"
+              >
+                <Gift size={38} className="text-white" />
+              </motion.div>
+
+              <div className="space-y-2">
+                <h3 className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-tight">Surprise Gift Unlocked! 🎉</h3>
+                <p className="text-xs text-neutral-500 max-w-[260px] mx-auto">
+                  Your order exceeds the ₹{offersConfig.minOrderValue} limit! We've added this delicious dish completely free of charge.
+                </p>
+              </div>
+
+              {/* Dish item display card */}
+              <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-3xl p-4 flex items-center gap-4 text-left">
+                {freeDishItem.cover ? (
+                  <img src={freeDishItem.cover} className="w-16 h-16 rounded-2xl object-cover border border-neutral-200 dark:border-white/10 shrink-0" />
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <Gift size={24} className="text-emerald-500" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest block mb-0.5">Free Surprise Dish</span>
+                  <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{freeDishItem.name}</h4>
+                  {freeDishItem.variantName && (
+                    <p className="text-xs font-bold text-emerald-500 mt-0.5">{freeDishItem.variantName}</p>
+                  )}
+                  {(() => {
+                    const price = freeDishItem.variantName
+                      ? (freeDishItem.variants?.find(v => v.name === freeDishItem.variantName)?.price || freeDishItem.price)
+                      : freeDishItem.price;
+                    return price > 0 && (
+                      <p className="text-xs text-neutral-400 line-through mt-0.5">Worth: ₹{Number(price).toFixed(0)}</p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowOffersModal(false)}
+                className="w-full py-4 rounded-2xl font-display font-black text-base bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:opacity-90 transition-opacity"
+              >
+                Awesome, Thank You! ✨
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
