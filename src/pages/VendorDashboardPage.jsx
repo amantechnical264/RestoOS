@@ -23,6 +23,25 @@ import StaffDashboard from '../components/StaffDashboard';
 import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
 import { extractMenuFromImage, enrichDishWithAI } from '../services/geminiService';
 import { generateMeshyModel } from '../services/meshyService';
+
+const getOrderNote = (o) => {
+  if (!o) return null;
+  const rawNote = o.metadata?.specialInstructions || 
+                  o.metadata?.special_instructions || 
+                  o.specialInstructions || 
+                  o.special_instructions || 
+                  o.note || 
+                  o.notes || 
+                  o.items?.find(item => item.id === '__special_instructions')?.instructions || 
+                  o.items?.find(item => item.id === '__special_instructions')?.specialInstructions;
+  if (!rawNote) return null;
+  const noteStr = String(rawNote).trim();
+  if (noteStr.startsWith('GPS:')) return null;
+  if (noteStr.includes(' | GPS:')) {
+    return noteStr.split(' | GPS:')[0];
+  }
+  return noteStr;
+};
 // Helper for Dietary Icons
 const DietIcon = ({ type }) => {
   if (!type || type === 'None') return null;
@@ -1916,10 +1935,10 @@ export default function VendorDashboardPage() {
                           <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
                           {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                         </div>
-                        {((o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)) && (
+                        {getOrderNote(o) && (
                           <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
-                            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{(o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)}</p>
+                            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{getOrderNote(o)}</p>
                           </div>
                         )}
                         
@@ -2017,10 +2036,10 @@ export default function VendorDashboardPage() {
                               </li>
                             ))}
                           </ul>
-                          {((o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)) && (
+                          {getOrderNote(o) && (
                             <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
                               <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
-                              <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{(o.metadata?.specialInstructions) || (o.items?.find(item => item.id === '__special_instructions')?.instructions)}</p>
+                              <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{getOrderNote(o)}</p>
                             </div>
                           )}
                           <div className="flex justify-between items-center mb-3">
@@ -2179,10 +2198,10 @@ export default function VendorDashboardPage() {
                                     </li>
                                   ))}
                                 </ul>
-                                {((order.metadata?.specialInstructions) || (order.items?.find(item => item.id === '__special_instructions')?.instructions)) && (
+                                {getOrderNote(order) && (
                                   <div className="mt-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
                                     <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
-                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{(order.metadata?.specialInstructions) || (order.items?.find(item => item.id === '__special_instructions')?.instructions)}</p>
+                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{getOrderNote(order)}</p>
                                   </div>
                                 )}
                               </div>
@@ -5669,6 +5688,12 @@ export default function VendorDashboardPage() {
                                 <Clock size={11} className="text-neutral-400 shrink-0" />
                                 Ordered at {orderTime}
                               </p>
+                              {getOrderNote(o) && (
+                                <div className="mt-2 p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
+                                  <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1"><AlertTriangle size={9}/> Order Note</p>
+                                  <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">{getOrderNote(o)}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
 
