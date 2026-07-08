@@ -139,19 +139,19 @@ const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80, onBarCl
             transform: 'translateX(-50%)'
           }}>
           <div className="flex items-center gap-1.5 mb-1.5 border-b border-white/10 pb-1.5">
-            <span className="text-[14px]">₹{Number(data[hovered].value).toFixed(2)}</span>
+            <span className="text-[14px]">₹{Number(data[hovered].value).toFixed(0)}</span>
             <span className="text-[9px] font-medium opacity-70 bg-white/10 px-1.5 py-0.5 rounded-md">{data[hovered].orders || 0} orders</span>
           </div>
           {data[hovered].dineInValue > 0 && (
             <div className="flex justify-between items-center gap-4 text-[10px] font-medium opacity-90 mb-0.5">
               <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Dine-In:</span>
-              <span>₹{Number(data[hovered].dineInValue).toFixed(2)}</span>
+              <span>₹{Number(data[hovered].dineInValue).toFixed(0)}</span>
             </div>
           )}
           {data[hovered].deliveryValue > 0 && (
             <div className="flex justify-between items-center gap-4 text-[10px] font-medium opacity-90 mb-0.5">
               <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Delivery:</span>
-              <span>₹{Number(data[hovered].deliveryValue).toFixed(2)}</span>
+              <span>₹{Number(data[hovered].deliveryValue).toFixed(0)}</span>
             </div>
           )}
           {data[hovered].fullDate && <div className="text-[9px] opacity-50 mt-1.5 pt-1.5 border-t border-white/5">{data[hovered].fullDate}</div>}
@@ -276,15 +276,15 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
             <div>
               <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Combo Price</p>
               <div className="flex items-end gap-2">
-                <span className="font-black text-xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(combo.price).toFixed(2)}</span>
+                <span className="font-black text-xl text-emerald-600 dark:text-emerald-400 leading-none">₹{Number(combo.price).toFixed(0)}</span>
                 {originalTotal > Number(combo.price) && (
-                  <span className="text-xs font-bold text-neutral-400 line-through mb-0.5">₹{originalTotal.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-neutral-400 line-through mb-0.5">₹{originalTotal.toFixed(0)}</span>
                 )}
               </div>
             </div>
             {originalTotal > Number(combo.price) && (
               <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 px-2 py-1 rounded-lg">
-                <span className="text-[10px] font-black uppercase tracking-wider">Save ₹{(originalTotal - Number(combo.price)).toFixed(2)}</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">Save ₹{(originalTotal - Number(combo.price)).toFixed(0)}</span>
               </div>
             )}
           </div>
@@ -468,7 +468,7 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
         >
           <span className="font-semibold truncate pr-2 flex-1">{dish.name}</span>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-neutral-500 font-sans mr-2">₹{Number(dish.price).toFixed(2)}</span>
+            <span className="text-neutral-500 font-sans mr-2">₹{Number(dish.price).toFixed(0)}</span>
             <div className="p-1 text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 transition-colors">
                <GripVertical size={16} />
             </div>
@@ -506,7 +506,7 @@ const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNot
                 : { background: 'transparent', border: `1px solid ${GOLD}`, color: GOLD }
               }
             >
-              {p === 'Pro' ? 'Upgrade to Pro — $49/mo' : 'Upgrade to Enterprise — $99/mo'}
+              {p === 'Pro' ? 'Upgrade to Pro — ₹49/mo' : 'Upgrade to Enterprise — ₹99/mo'}
             </button>
           ))}
         </div>
@@ -1961,7 +1961,7 @@ export default function VendorDashboardPage() {
         <div style="margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; font-size: 12px;">
             <span style="flex: 1; font-weight: bold;">${item.quantity || 1} x ${item.name}</span>
-            <span>${(Number(item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+            <span>₹{(Number(item.price || 0) * (item.quantity || 1)).toFixed(0)}</span>
           </div>
           ${variantText}
           ${customizationsText}
@@ -1972,7 +1972,7 @@ export default function VendorDashboardPage() {
     const subtotal = foodItems.reduce((acc, item) => acc + (Number(item.price || 0) * (item.quantity || 1)), 0);
     const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
     const taxAmount = subtotal * taxRate;
-    const totalAmount = (order.total || (subtotal + taxAmount)).toFixed(2);
+    const totalAmount = (order.total || (subtotal + taxAmount)).toFixed(0);
 
     const orderNumber = getOrderNumber(order);
     const serverName = user?.email?.split('@')[0] || 'Staff';
@@ -2061,19 +2061,19 @@ export default function VendorDashboardPage() {
           </div>
           <div class="tax-row">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>₹{subtotal.toFixed(0)}</span>
           </div>
           <div class="tax-row">
             <span>Tax (${Math.round(taxRate * 100)}%)</span>
-            <span>${taxAmount.toFixed(2)}</span>
+            <span>₹{taxAmount.toFixed(0)}</span>
           </div>
           <div class="totals">
             <span>Total</span>
-            <span>${totalAmount}</span>
+            <span>₹{totalAmount}</span>
           </div>
           <div class="due">
             <span>Cash</span>
-            <span>${totalAmount}</span>
+            <span>₹{totalAmount}</span>
           </div>
           <div class="due">
             <span>Due</span>
@@ -2267,7 +2267,7 @@ export default function VendorDashboardPage() {
                         </ul>
                         
                         <div className="flex justify-between items-center mb-3 px-1">
-                          <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
+                          <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(0)}</span>
                           {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                         </div>
                         {getOrderNote(o) && (
@@ -2378,7 +2378,7 @@ export default function VendorDashboardPage() {
                             </div>
                           )}
                           <div className="flex justify-between items-center mb-3">
-                            <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(2)}</span>
+                            <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(0)}</span>
                             {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                           </div>
                           <button onClick={() => updateOrderStatus(o.id, lane.action)}
@@ -2397,13 +2397,13 @@ export default function VendorDashboardPage() {
               <div className="w-56 shrink-0 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 p-4 flex flex-col gap-3">
                 <p className="font-display font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><CheckCircle size={14} /> Completed Today</p>
                 <p className="font-display font-black text-4xl text-emerald-600 dark:text-emerald-400">{completed.length}</p>
-                <p className="text-xs font-bold text-emerald-700/60 dark:text-emerald-500">Revenue: <span className="text-emerald-600 dark:text-emerald-400">₹{todayRevenue.toFixed(2)}</span></p>
+                <p className="text-xs font-bold text-emerald-700/60 dark:text-emerald-500">Revenue: <span className="text-emerald-600 dark:text-emerald-400">₹{todayRevenue.toFixed(0)}</span></p>
                 <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 space-y-2 max-h-48 overflow-y-auto pr-1">
                   {completed.slice(-10).reverse().map(o => (
                     <div key={o.id} className="flex flex-col gap-1 text-xs text-emerald-700/70 dark:text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/20 p-2 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="font-bold">{getOrderNumber(o)}</span>
-                        <span className="font-black text-emerald-600 dark:text-emerald-400">₹{(o.total||0).toFixed(2)}</span>
+                        <span className="font-black text-emerald-600 dark:text-emerald-400">₹{(o.total||0).toFixed(0)}</span>
                       </div>
                       <button 
                         onClick={() => handlePrintBill(o)}
@@ -2482,7 +2482,7 @@ export default function VendorDashboardPage() {
                           `🍽️ *Items:*`,
                           itemsList,
                           ``,
-                          `💰 *Total:* ₹${parseFloat(order.total).toFixed(2)}`,
+                          `💰 *Total:* ₹${parseFloat(order.total).toFixed(0)}`,
                           savedAddress ? `📍 *Address:* ${savedAddress}` : null,
                           ``,
                           mapUrl ? `🗺️ *Navigate to Customer:*\n${mapUrl}` : `⚠️ No GPS location provided. Call customer for address.`,
@@ -2527,7 +2527,7 @@ export default function VendorDashboardPage() {
                                   {order.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-1.5"><Phone size={12}/> {order.contactPhone}</p>}
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
-                                  <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(2)}</p>
+                                  <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(0)}</p>
                                   {!isCancelledOrder && (
                                     <button
                                       onClick={() => setDeliveryDetailOrder(order)}
@@ -2786,7 +2786,7 @@ export default function VendorDashboardPage() {
                       </span>
                     </div>
                     <MiniBarChart data={weekData} color="#3B82F6" height={100} onBarClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })} />
-                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(2)}</div>
+                    <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(0)}</div>
                   </div>
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <h3 className="font-display font-black text-base mb-6">Order Types</h3>
@@ -3168,12 +3168,12 @@ export default function VendorDashboardPage() {
                                 {dish.variants.map((v, idx) => (
                                   <div key={idx} className="flex items-center gap-1.5 shrink-0">
                                     <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{v.name}</span>
-                                    <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(v.price || 0).toFixed(2)}</span>
+                                    <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(v.price || 0).toFixed(0)}</span>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <span className="font-display font-black text-base text-[#D4AF37] shrink-0">₹{Number(dish.price).toFixed(2)}</span>
+                              <span className="font-display font-black text-base text-[#D4AF37] shrink-0">₹{Number(dish.price).toFixed(0)}</span>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-4">
@@ -3359,7 +3359,7 @@ export default function VendorDashboardPage() {
                                 {(dish.modelUrl || dish.model_url) && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-500">3D</span>}
                               </div>
                               <div className="flex items-center gap-3 mt-0.5">
-                                <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(dish.price).toFixed(2)}</span>
+                                <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(dish.price).toFixed(0)}</span>
                                 {dish.chef && <span className="text-[11px] text-neutral-400">{dish.chef}</span>}
                               </div>
                               {/* Category tags on this dish */}
@@ -3511,7 +3511,7 @@ export default function VendorDashboardPage() {
                         <div className="flex flex-wrap gap-1">
                           {recDishes.map(r => (
                             <span key={r.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30">
-                              {r.name} - ₹{Number(r.price).toFixed(2)}
+                              {r.name} - ₹{Number(r.price).toFixed(0)}
                             </span>
                           ))}
                         </div>
@@ -3570,7 +3570,7 @@ export default function VendorDashboardPage() {
                                   </div>
                                   <div>
                                     <p className="font-bold text-sm">{comboParent.name}</p>
-                                    <p className="text-xs text-neutral-500">₹{Number(comboParent.price).toFixed(2)}</p>
+                                    <p className="text-xs text-neutral-500">₹{Number(comboParent.price).toFixed(0)}</p>
                                   </div>
                                 </div>
                                 <button onClick={() => setComboParent(null)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"><CloseIcon size={14} /></button>
@@ -3596,7 +3596,7 @@ export default function VendorDashboardPage() {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <span className="font-bold text-xs truncate block">{rec.name}</span>
-                                      <span className="text-[10px] text-neutral-500 block">₹{Number(rec.price || 0).toFixed(2)}</span>
+                                      <span className="text-[10px] text-neutral-500 block">₹{Number(rec.price || 0).toFixed(0)}</span>
                                     </div>
                                   </div>
                                   <button onClick={() => setComboRecs(prev => prev.filter(r => r.id !== rec.id))} className="p-1 rounded text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 shrink-0"><CloseIcon size={12} /></button>
@@ -3701,7 +3701,7 @@ export default function VendorDashboardPage() {
                                  </div>
                                  <div className="flex-1 min-w-0">
                                    <p className="font-bold text-xs truncate">{d.name}</p>
-                                   <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(2)}</p>
+                                   <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(0)}</p>
                                  </div>
                                  {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
                                  {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
@@ -3834,7 +3834,7 @@ export default function VendorDashboardPage() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className="font-bold text-xs truncate">{d.name} <span className="text-neutral-500 font-normal">({v.name})</span></p>
-                                    <p className="text-[10px] text-neutral-500">₹{Number(v.price || 0).toFixed(2)}</p>
+                                    <p className="text-[10px] text-neutral-500">₹{Number(v.price || 0).toFixed(0)}</p>
                                   </div>
                                   {isSelected && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600">ADDED</span>}
                                 </button>
@@ -3862,7 +3862,7 @@ export default function VendorDashboardPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-xs truncate">{d.name}</p>
-                                <p className="text-[10px] text-neutral-500">₹{Number(d.price || 0).toFixed(2)}</p>
+                                <p className="text-[10px] text-neutral-500">₹{Number(d.price || 0).toFixed(0)}</p>
                               </div>
                               {isSelected && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600">ADDED</span>}
                             </button>
@@ -3942,13 +3942,13 @@ export default function VendorDashboardPage() {
                     >
                       <div className="flex justify-between items-start mb-3">
                         <h3 className="font-bold text-neutral-900 dark:text-white text-lg">{cat.name}</h3>
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-neutral-100 dark:bg-white/5 text-neutral-500">{cat.type} selection</span>
+                        <span className="text-[10px] font-bold text-neutral-400">{cat.options?.length || 0} options</span>
                       </div>
                       <div className="space-y-2">
                         {cat.options.map((opt, i) => (
                           <div key={i} className="flex justify-between text-sm">
                             <span className="text-neutral-600 dark:text-neutral-400">{opt.name}</span>
-                            <span className="font-bold text-emerald-600">+{opt.price > 0 ? `$${Number(opt.price).toFixed(2)}` : 'Free'}</span>
+                            <span className="font-bold text-emerald-600">+{opt.price > 0 ? `₹${Number(opt.price).toFixed(0)}` : 'Free'}</span>
                           </div>
                         ))}
                       </div>
@@ -4365,7 +4365,7 @@ export default function VendorDashboardPage() {
                                   <div className="flex justify-between items-start">
                                     <h3 className="font-bold text-lg truncate pr-2">{event.name}</h3>
                                     {event.price > 0 ? (
-                                      <span className="text-emerald-500 font-black text-sm font-sans">₹{Number(event.price).toFixed(2)}</span>
+                                      <span className="text-emerald-500 font-black text-sm font-sans">₹{Number(event.price).toFixed(0)}</span>
                                     ) : (
                                       <span className="text-indigo-500 font-bold text-xs font-sans">Free</span>
                                     )}
@@ -5189,7 +5189,7 @@ export default function VendorDashboardPage() {
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-black text-sm text-emerald-600">₹{Number(c.totalSpend).toFixed(2)}</p>
+                          <p className="font-black text-sm text-emerald-600">₹{Number(c.totalSpend).toFixed(0)}</p>
                           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{c.orderType === 'dine_in' ? 'Dine-In' : 'Pre-Order'}</p>
                         </div>
                       </div>
@@ -5730,8 +5730,8 @@ export default function VendorDashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {[
                         { plan: 'Starter',    desc: 'Basic QR Menu & Orders',      price: 'Free' },
-                        { plan: 'Pro',         desc: 'AR + Analytics + CRM',         price: '$49/mo' },
-                        { plan: 'Enterprise',  desc: 'AI Waiter + 3D + White Label', price: '$99/mo' },
+                        { plan: 'Pro',         desc: 'AR + Analytics + CRM',         price: '₹49/mo' },
+                        { plan: 'Enterprise',  desc: 'AI Waiter + 3D + White Label', price: '₹99/mo' },
                       ].map(({ plan, desc, price }) => {
                         const isActive = currentPlan === plan;
                         return (
@@ -6360,7 +6360,7 @@ export default function VendorDashboardPage() {
                                     <span className="text-neutral-400 font-bold mr-1.5">{item.quantity || 1}x</span>
                                     {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
                                   </span>
-                                  <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(2)}</span>
+                                  <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(0)}</span>
                                 </li>
                               ))}
                             </ul>
@@ -6369,7 +6369,7 @@ export default function VendorDashboardPage() {
                           {/* Right Column: Order Value */}
                           <div className="shrink-0 text-left md:text-right flex md:flex-col justify-between md:justify-start items-center md:items-end gap-1">
                             <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">Value</span>
-                            <span className="font-black text-[#D4AF37] text-lg">₹{(o.total || 0).toFixed(2)}</span>
+                            <span className="font-black text-[#D4AF37] text-lg">₹{(o.total || 0).toFixed(0)}</span>
                           </div>
 
                         </div>
@@ -6402,7 +6402,7 @@ export default function VendorDashboardPage() {
                   <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center shrink-0">
                     <div>
                       <h2 className="font-display font-black text-lg text-neutral-900 dark:text-white">Order Details</h2>
-                      <p className="text-xs text-neutral-500 mt-0.5">{od.contactName || 'Guest'} · ₹{parseFloat(od.total).toFixed(2)}</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">{od.contactName || 'Guest'} · ₹{parseFloat(od.total).toFixed(0)}</p>
                     </div>
                     <button onClick={() => setDeliveryDetailOrder(null)} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center hover:bg-neutral-200 transition-colors"><CloseIcon size={16} /></button>
                   </div>
@@ -6462,13 +6462,13 @@ export default function VendorDashboardPage() {
                                 </span>
                               )}
                             </span>
-                            <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(2)}</span>
+                            <span className="font-bold text-neutral-500">₹{parseFloat(item.price || 0).toFixed(0)}</span>
                           </li>
                         ))}
                       </ul>
                       <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-white/10 flex justify-between">
                         <span className="text-sm font-black text-neutral-800 dark:text-white">Total</span>
-                        <span className="text-sm font-black text-[#D4AF37]">₹{parseFloat(od.total).toFixed(2)}</span>
+                        <span className="text-sm font-black text-[#D4AF37]">₹{parseFloat(od.total).toFixed(0)}</span>
                       </div>
                     </div>
                   </div>
@@ -6568,7 +6568,7 @@ export default function VendorDashboardPage() {
                           <p className="text-xs text-neutral-500 font-mono truncate">{c.phone}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-black text-[#D4AF37] text-sm">₹{c.totalSpend.toFixed(2)}</p>
+                          <p className="font-black text-[#D4AF37] text-sm">₹{c.totalSpend.toFixed(0)}</p>
                           <p className="text-[10px] text-neutral-500 font-bold">{c.orderCount} visits</p>
                         </div>
                       </div>
