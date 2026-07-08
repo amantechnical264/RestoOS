@@ -5832,6 +5832,37 @@ export default function VendorDashboardPage() {
                                   </select>
                                 </div>
 
+                                 {/* Offer Banner Image */}
+                                 <div>
+                                   <label className="text-xs font-bold text-neutral-400 block mb-1.5 uppercase tracking-widest">
+                                     Offer Banner Image <span className="font-normal normal-case tracking-normal">(optional — shown on menu page)</span>
+                                   </label>
+                                   {offer.offerImage ? (
+                                     <div className="relative group h-28 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-[#1A1A1A]">
+                                       <img src={offer.offerImage} className="w-full h-full object-cover" alt="Offer banner" />
+                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                         <label className="cursor-pointer bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
+                                           <Upload size={13} /> Change
+                                           <input type="file" accept="image/*" className="hidden" onChange={e => {
+                                             const file = e.target.files[0];
+                                             if (file) { const r = new FileReader(); r.onload = ev => handleUpdateOffer(offer.id, 'offerImage', ev.target.result); r.readAsDataURL(file); }
+                                           }} />
+                                         </label>
+                                         <button type="button" onClick={() => handleUpdateOffer(offer.id, 'offerImage', '')} className="bg-red-500/80 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs">Remove</button>
+                                       </div>
+                                     </div>
+                                   ) : (
+                                     <label className="cursor-pointer h-24 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-xl flex flex-col items-center justify-center text-neutral-400 hover:border-neutral-400 transition-colors">
+                                       <Upload size={20} className="mb-1.5 opacity-50" />
+                                       <span className="text-xs font-bold">Upload Offer Banner</span>
+                                       <input type="file" accept="image/*" className="hidden" onChange={e => {
+                                         const file = e.target.files[0];
+                                         if (file) { const r = new FileReader(); r.onload = ev => handleUpdateOffer(offer.id, 'offerImage', ev.target.result); r.readAsDataURL(file); }
+                                       }} />
+                                     </label>
+                                   )}
+                                 </div>
+
                                 {/* Actions */}
                                 <div className="flex gap-2 pt-1">
                                   <button

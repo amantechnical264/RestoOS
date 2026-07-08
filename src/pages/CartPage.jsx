@@ -196,7 +196,18 @@ export default function CartPage() {
   const freeDishItem = matchedOffer ? resolveFreeDish(matchedOffer.freeDishId, dishes) : null;
 
   // Track which offerId was last shown so popup re-fires when a higher tier unlocks
-  const [lastShownOfferId, setLastShownOfferId] = useState(null);
+  const [lastShownOfferId, setLastShownOfferIdState] = useState(() => {
+    return sessionStorage.getItem('3dish_last_shown_offer_id') || null;
+  });
+
+  const setLastShownOfferId = (val) => {
+    if (val) {
+      sessionStorage.setItem('3dish_last_shown_offer_id', val);
+    } else {
+      sessionStorage.removeItem('3dish_last_shown_offer_id');
+    }
+    setLastShownOfferIdState(val);
+  };
   const [showOffersModal, setShowOffersModal] = useState(false);
 
   const matchedOfferId = matchedOffer ? (matchedOffer.id || matchedOffer.freeDishId + '_' + matchedOffer.minOrderValue) : null;

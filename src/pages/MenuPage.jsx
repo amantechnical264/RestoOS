@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen, Minus, Plus, ChevronRight, Clock, Filter } from 'lucide-react';
+import { Heart, Search, Flame, Activity, QrCode, ShoppingCart, Star, ChevronDown, Maximize2, ChefHat, Leaf, Zap, BellRing, Droplets, Receipt, X, Users, Calendar as CalendarIcon, BookOpen, Minus, Plus, ChevronRight, Clock, Filter, Gift } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
@@ -860,6 +860,109 @@ export default function MenuPage() {
   }, [allDishes, activeCategory, search, activeDietaryFilters, customCategories, categoriesToRender, metadataRecord]);
 
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
+
+  const bannerImages = useMemo(() => {
+    const imgs = [];
+    const rest = restaurants.find(r => r.id === activeRestId);
+    if (rest?.cover) imgs.push(rest.cover);
+    
+    const rawOffers = rest?.macros?.offers;
+    const allOffers = Array.isArray(rawOffers)
+      ? rawOffers
+      : (rawOffers && rawOffers.freeDishId ? [rawOffers] : []);
+    const activeOffers = allOffers.filter(o => o.active && o.offerImage);
+    activeOffers.forEach(o => {
+      imgs.push(o.offerImage);
+    });
+    return imgs;
+  }, [restaurants, activeRestId]);
+
+  const [bannerIdx, setBannerIdx] = useState(0);
+
+  useEffect(() => {
+    if (bannerImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setBannerIdx(prev => (prev + 1) % bannerImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [bannerImages.length]);
+
+  const resolveFreeDish = (dishIdOrStr, dishesList) => {
+    if (!dishIdOrStr) return null;
+    const [dishId, variantName] = dishIdOrStr.split('::');
+    const d = dishesList.find(x => x.id === dishId);
+    if (!d) return null;
+    
+    if (d.variants && d.variants.length > 0) {
+      const v = variantName 
+        ? d.variants.find(varItem => varItem.name === variantName)
+        : d.variants[0];
+      return {
+        ...d,
+        id: d.id,
+        name: v ? `${d.name} (${v.name})` : d.name,
+        price: 0,
+        quantity: 1,
+        isFree: true,
+        cover: d.cover || d.images?.[0],
+        variantName: v?.name || ''
+      };
+    }
+    return {
+      ...d,
+      price: 0,
+      quantity: 1,
+      isFree: true,
+      cover: d.cover || d.images?.[0]
+    };
+  };
+
+  const subtotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + Number(item.price), 0);
+  }, [cart]);
+
+  const currentRestaurant = useMemo(() => {
+    return restaurants.find(r => r.id === activeRestId);
+  }, [restaurants, activeRestId]);
+
+  const rawOffers = currentRestaurant?.macros?.offers;
+  const allOffers = Array.isArray(rawOffers)
+    ? rawOffers
+    : (rawOffers && rawOffers.freeDishId ? [rawOffers] : []);
+  const activeOffers = allOffers.filter(
+    o => o.active && Number(o.minOrderValue) > 0 && o.freeDishId
+  );
+  const qualifyingOffers = activeOffers.filter(o => subtotal >= Number(o.minOrderValue));
+  const matchedOffer = qualifyingOffers.length > 0
+    ? qualifyingOffers.reduce((best, o) => Number(o.minOrderValue) > Number(best.minOrderValue) ? o : best, qualifyingOffers[0])
+    : null;
+  const freeDishItem = matchedOffer ? resolveFreeDish(matchedOffer.freeDishId, dishes) : null;
+
+  const [lastShownOfferId, setLastShownOfferIdState] = useState(() => {
+    return sessionStorage.getItem('3dish_last_shown_offer_id') || null;
+  });
+
+  const setLastShownOfferId = (val) => {
+    if (val) {
+      sessionStorage.setItem('3dish_last_shown_offer_id', val);
+    } else {
+      sessionStorage.removeItem('3dish_last_shown_offer_id');
+    }
+    setLastShownOfferIdState(val);
+  };
+
+  const matchedOfferId = matchedOffer ? (matchedOffer.id || matchedOffer.freeDishId + '_' + matchedOffer.minOrderValue) : null;
+  const [showOffersModal, setShowOffersModal] = useState(false);
+
+  useEffect(() => {
+    if (matchedOffer && matchedOfferId !== lastShownOfferId) {
+      setShowOffersModal(true);
+      setLastShownOfferId(matchedOfferId);
+    } else if (!matchedOffer) {
+      setLastShownOfferId(null);
+    }
+  }, [matchedOfferId]);
+
   const cartCount = cart.length;
 
   if (!isDataLoaded || !activeRestId) return <MenuPageSkeleton />;
@@ -1722,6 +1825,79 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
+
+      
+      {/* ── Surprise Gift Modal ── */}
+      <AnimatePresence>
+        {showOffersModal && freeDishItem && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/80 flex flex-col items-center justify-center p-6 backdrop-blur-md">
+            
+            <motion.div 
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              className="relative w-full max-w-sm rounded-[2.5rem] overflow-hidden border border-emerald-500/35 bg-white dark:bg-[#0d0d0f] shadow-2xl p-6 text-center space-y-6"
+            >
+              {/* Confetti decoration */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+                <div className="absolute top-4 left-6 w-3 h-3 rounded-full bg-yellow-400 animate-ping" />
+                <div className="absolute top-10 right-12 w-4 h-4 rounded-full bg-emerald-400 animate-ping" style={{ animationDelay: '0.5s' }} />
+                <div className="absolute bottom-16 left-12 w-2.5 h-2.5 rounded-full bg-pink-400 animate-ping" style={{ animationDelay: '1s' }} />
+              </div>
+
+              {/* Gift icon floating */}
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20"
+              >
+                <Gift size={38} className="text-white" />
+              </motion.div>
+
+              <div className="space-y-2">
+                <h3 className="font-display font-black text-2xl text-neutral-900 dark:text-white leading-tight">Surprise Gift Unlocked! 🎉</h3>
+                <p className="text-xs text-neutral-500 max-w-[260px] mx-auto">
+                  Your order exceeds the ₹{matchedOffer?.minOrderValue} limit! We've added this delicious dish completely free of charge.
+                </p>
+              </div>
+
+              {/* Dish item display card */}
+              <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-3xl p-4 flex items-center gap-4 text-left">
+                {freeDishItem.cover ? (
+                  <img src={freeDishItem.cover} className="w-16 h-16 rounded-2xl object-cover border border-neutral-200 dark:border-white/10 shrink-0" />
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <Gift size={24} className="text-emerald-500" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest block mb-0.5">Free Surprise Dish</span>
+                  <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{freeDishItem.name}</h4>
+                  {freeDishItem.variantName && (
+                    <p className="text-xs font-bold text-emerald-500 mt-0.5">{freeDishItem.variantName}</p>
+                  )}
+                  {(() => {
+                    const price = freeDishItem.variantName
+                      ? (freeDishItem.variants?.find(v => v.name === freeDishItem.variantName)?.price || freeDishItem.price)
+                      : freeDishItem.price;
+                    return price > 0 && (
+                      <p className="text-xs text-neutral-400 line-through mt-0.5">Worth: ₹{Number(price).toFixed(0)}</p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowOffersModal(false)}
+                className="w-full py-4 rounded-2xl font-display font-black text-base bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:opacity-90 transition-opacity"
+              >
+                Awesome, Thank You! ✨
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>
