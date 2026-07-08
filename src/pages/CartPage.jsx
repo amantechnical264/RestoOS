@@ -119,6 +119,19 @@ export default function CartPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (isDelivery && !window.recaptchaVerifier) {
+      try {
+        const container = document.getElementById('recaptcha-container');
+        if (container) container.innerHTML = '';
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible'
+        });
+        window.recaptchaVerifier.render().catch(() => {});
+      } catch (e) {}
+    }
+  }, [isDelivery]);
+
   const startResendCountdown = () => {
     setOtpResendCountdown(30);
     if (otpResendTimer.current) clearInterval(otpResendTimer.current);
@@ -307,18 +320,7 @@ export default function CartPage() {
     );
   };
 
-  useEffect(() => {
-    if (isDelivery && !window.recaptchaVerifier) {
-      try {
-        const container = document.getElementById('recaptcha-container');
-        if (container) container.innerHTML = '';
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible'
-        });
-        window.recaptchaVerifier.render().catch(() => {});
-      } catch (e) {}
-    }
-  }, [isDelivery]);
+
 
   const sendOtp = async (isResend = false) => {
     const missingDeliveryInfo = isDelivery && !locationCoords && !tempAddress;

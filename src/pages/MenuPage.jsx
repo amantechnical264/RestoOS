@@ -514,6 +514,14 @@ const ZomatoDishRow = React.memo(({ dish, isFav, onToggleFav, onAddToCart, onDis
       </div>
     </div>
   );
+}, (prev, next) => {
+  return prev.dish.id === next.dish.id &&
+         prev.dish.price === next.dish.price &&
+         prev.dish.originalPrice === next.dish.originalPrice &&
+         prev.dish.tags?.join(',') === next.dish.tags?.join(',') &&
+         prev.isFav === next.isFav &&
+         prev.qty === next.qty &&
+         prev.allDishes === next.allDishes;
 });
 
 export default function MenuPage() {
@@ -534,15 +542,25 @@ export default function MenuPage() {
   const [variantModalDish, setVariantModalDish] = useState(null);
   const [selectedComboDish, setSelectedComboDish] = useState(null);
 
-  const handleDishClick = (dish) => {
+  const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
+
+  const cartQuantities = useMemo(() => {
+    const map = {};
+    cart.forEach(item => {
+      map[item.id] = (map[item.id] || 0) + 1;
+    });
+    return map;
+  }, [cart]);
+
+  const handleDishClick = useCallback((dish) => {
     if (dish.macros?.isCombo) {
       setSelectedComboDish(dish);
     } else {
       navigate(`/dish/${dish.id}`);
     }
-  };
+  }, [navigate]);
 
-  const handleAddToCart = (dish) => {
+  const handleAddToCart = useCallback((dish) => {
     if (dish.variants && dish.variants.length > 1) {
       setVariantModalDish(dish);
     } else if (dish.variants && dish.variants.length === 1) {
@@ -550,7 +568,7 @@ export default function MenuPage() {
     } else {
       addToCart(dish);
     }
-  };
+  }, [addToCart]);
 
   // Initialize DishRatingStore from orders data (aggregates ratings per dish from completed reviews)
   const { orders } = useAppContext();
@@ -1002,12 +1020,12 @@ export default function MenuPage() {
                 {/* Vertical Dishes List */}
                 <div className="divide-y divide-neutral-100 dark:divide-white/5 px-5">
                   {catGroup.dishes.map((dish, i) => {
-                    const dishQty = cart.filter(c => c.id === dish.id).length;
+                    const dishQty = cartQuantities[dish.id] || 0;
                     return (
                       <div key={dish.id} data-dish-id={dish.id} className="dish-card-analytics py-5 first:pt-4 last:pb-4">
                         <ZomatoDishRow 
                           dish={dish} 
-                          isFav={favorites.includes(dish.id)}
+                          isFav={favoritesSet.has(dish.id)}
                           onToggleFav={() => toggleFavorite(dish.id)}
                           onAddToCart={() => handleAddToCart(dish)}
                           onDishClick={() => handleDishClick(dish)}
