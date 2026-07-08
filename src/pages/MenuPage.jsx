@@ -42,6 +42,40 @@ const DietIcon = ({ type }) => {
   );
 };
 
+// Custom Social Media SVG Icons
+const InstagramIcon = ({ size = 20, className = "" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+  </svg>
+);
+
+const FacebookIcon = ({ size = 20, className = "" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+  </svg>
+);
+
+const YoutubeIcon = ({ size = 20, className = "" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+  </svg>
+);
+
+const RedditIcon = ({ size = 20, className = "" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="10"></circle>
+    <path d="M17 11.5a1.5 1.5 0 0 1-2.5 1.1 4.9 4.9 0 0 0-5 0A1.5 1.5 0 1 1 7 11.5a1.47 1.47 0 0 1 .3-1 4.75 4.75 0 0 1 8.4 0 1.47 1.47 0 0 1 .3 1z"></path>
+    <circle cx="10" cy="11.5" r=".5" fill="currentColor"></circle>
+    <circle cx="14" cy="11.5" r=".5" fill="currentColor"></circle>
+    <path d="M9.5 15.5c.7.7 2.2.9 2.5.9.3 0 1.8-.2 2.5-.9"></path>
+    <path d="M12 7.5v-3.8l2.5.5"></path>
+    <circle cx="14.5" cy="4.2" r=".7"></circle>
+  </svg>
+);
+
 // ─── Optimized Image with shimmer → fade-in ──────────────────────────────────
 const OptimizedImage = ({ src, alt, className = '', eager = false, sizes }) => {
   const [loaded, setLoaded] = useState(false);
@@ -952,6 +986,48 @@ export default function MenuPage() {
           </div>
         </div>
       )}
+
+      {/* ── SOCIALS BAR ── */}
+      {(() => {
+        const socials = restaurant?.macros?.socials || {};
+        const platforms = [
+          { key: 'instagram', label: 'Instagram', icon: InstagramIcon, color: 'text-pink-500 hover:text-pink-600 bg-pink-500/10 hover:bg-pink-500/20' },
+          { key: 'facebook', label: 'Facebook', icon: FacebookIcon, color: 'text-blue-600 hover:text-blue-700 bg-blue-500/10 hover:bg-blue-500/20' },
+          { key: 'youtube', label: 'YouTube', icon: YoutubeIcon, color: 'text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20' },
+          { key: 'reddit', label: 'Reddit', icon: RedditIcon, color: 'text-orange-500 hover:text-orange-600 bg-orange-500/10 hover:bg-orange-500/20' }
+        ];
+        const activeSocials = platforms.filter(p => socials[p.key] && socials[p.key].trim() !== '');
+        if (activeSocials.length === 0) return null;
+        
+        return (
+          <div className="px-4 mt-3 flex-shrink-0">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200/50 dark:border-white/5 shadow-sm">
+              <span className="text-[11px] font-black uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Follow us on :</span>
+              <div className="flex items-center gap-2">
+                {activeSocials.map(p => {
+                  const Icon = p.icon;
+                  let href = socials[p.key].trim();
+                  if (!/^https?:\/\//i.test(href)) {
+                    href = 'https://' + href;
+                  }
+                  return (
+                    <a
+                      key={p.key}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all hover:scale-105 active:scale-95 ${p.color}`}
+                      title={`Follow us on ${p.label}`}
+                    >
+                      <Icon size={16} />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
         <div className="flex gap-2 px-5 mt-6 mb-2 overflow-x-auto no-scrollbar snap-x pb-4">
           {dynamicCategoryTabs.map((cat) => (
