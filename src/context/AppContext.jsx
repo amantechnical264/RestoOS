@@ -551,15 +551,51 @@ export const AppProvider = ({ children }) => {
     }
   }, [restaurants, supabaseUser, activeRestId]);
 
-  // Audio Notification for Vendors
-  const [prevOrdersCount, setPrevOrdersCount] = useState(0);
+  // Resilient Continuous Looping Audio Notification for Pending/Awaiting Verification Orders
+  const notificationAudioRef = useRef(null);
   useEffect(() => {
-    if (orders.length > prevOrdersCount && prevOrdersCount > 0 && user?.role === 'vendor') {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.play().catch(e => console.log("Audio play blocked by browser:", e));
+    if (!supabaseUser || user?.role !== 'vendor') {
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.pause();
+        notificationAudioRef.current = null;
+      }
+      return;
     }
-    setPrevOrdersCount(orders.length);
-  }, [orders.length, user, prevOrdersCount]);
+
+    const hasPendingOrders = orders.some(o => 
+      o.rest_id === activeRestId && 
+      (o.status === 'Pending' || o.status === 'Pending Verification')
+    );
+
+    if (hasPendingOrders) {
+      if (!notificationAudioRef.current) {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.loop = true;
+        notificationAudioRef.current = audio;
+        audio.play().catch(e => {
+          console.log("Audio play blocked by browser. User interaction needed:", e);
+          const playOnGesture = () => {
+            audio.play().catch(err => console.log("Audio retry failed:", err));
+            document.removeEventListener('click', playOnGesture);
+          };
+          document.addEventListener('click', playOnGesture);
+        });
+      } else {
+        notificationAudioRef.current.play().catch(e => {});
+      }
+    } else {
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.pause();
+        notificationAudioRef.current = null;
+      }
+    }
+
+    return () => {
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.pause();
+      }
+    };
+  }, [orders, activeRestId, user, supabaseUser]);
 
   const addToCart = (dish) => {
     // Stamp the effective price at add-time so every consumer (subtotal, placeOrder, etc.) reads it correctly
