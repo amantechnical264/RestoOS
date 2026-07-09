@@ -998,15 +998,7 @@ export const AppProvider = ({ children }) => {
       const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
       
-      setDishes(prev => [...prev, {
-        ...data[0],
-        cover: data[0].macros?.cover || '',
-        images: data[0].macros?.images || [],
-        variants: data[0].macros?.variants || [],
-        customizationCategories: data[0].macros?.customizationCategories || [],
-        modelUrl: data[0].model_url || data[0].modelUrl,
-        restId: data[0].rest_id || data[0].restId
-      }]);
+      setDishes(prev => [...prev, mapDish(data[0])]);
       showNotification('Dish saved successfully!');
       return data[0].id;
     } catch (error) {

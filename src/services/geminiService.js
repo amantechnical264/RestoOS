@@ -248,7 +248,13 @@ Do not use markdown formatting. Return ONLY the plain text description itself, w
     return text.replace(/["']/g, '').trim(); // Remove any extra quotes
   } catch (err) {
     console.error('Gemini Description Generation Error:', err);
-    if (err.message.includes('429')) throw new Error('Rate limit exceeded. Please wait a moment.');
+    const isRateLimit =
+      err.message?.includes('429') ||
+      err.message?.toLowerCase().includes('rate limit') ||
+      err.message?.toLowerCase().includes('resource_exhausted') ||
+      err.status === 429 ||
+      err.code === 429;
+    if (isRateLimit) throw new Error('⏳ Rate limit reached. Please wait 30 seconds and try again.');
     throw new Error(err.message || 'Failed to generate description.');
   }
 }
