@@ -236,6 +236,27 @@ export const AppProvider = ({ children }) => {
     const rest = restaurants.find(r => r.id === restId);
     return rest?.macros?.plan || 'Starter';
   }, [restaurants]);
+
+  // Backward compatibility object so context doesn't break
+  const plans = {};
+
+  // Upgrade (or downgrade) a restaurant's plan from the vendor dashboard
+  const upgradePlan = async (restId, newPlan) => {
+    const rest = restaurants.find(r => r.id === restId);
+    if (!rest) return;
+    const currentMacros = rest.macros || {};
+    const newMacros = { ...currentMacros, plan: newPlan };
+    
+    // Optimistic UI update
+    setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
+    
+    try {
+      const { error } = await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Failed to upgrade plan", err);
+    }
+  };
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('3dish_favorites') || '[]'); } catch { return []; }
   });
