@@ -1514,6 +1514,8 @@ export default function VendorDashboardPage() {
   const [selectedDateOrders, setSelectedDateOrders] = React.useState(null);
   const [customerModalSort, setCustomerModalSort] = React.useState('most-came'); // 'most-came', 'most-spend'
   const [selectedCustomerIds, setSelectedCustomerIds] = React.useState([]);
+  const [customerModalCategory, setCustomerModalCategory] = React.useState('all'); // 'all', 'dine_in', 'delivery'
+  const [selectedCustomerHistory, setSelectedCustomerHistory] = React.useState(null);
 
 
 
@@ -2050,7 +2052,8 @@ export default function VendorDashboardPage() {
           lastOrder: o.timestamp,
           latestBill: Number(o.total || 0),
           latestDishes: (o.items || []).map(i => i.name).join(', '),
-          orderType: oType || 'dine_in'
+          orderType: oType || 'dine_in',
+          orders: []
         };
       } else {
         // If we found a real name/phone in this order, upgrade the anonymous profile
@@ -2064,6 +2067,7 @@ export default function VendorDashboardPage() {
       
       map[key].totalSpend += Number(o.total || 0);
       map[key].orderCount += 1;
+      map[key].orders.push(o);
       
       // Update latest order details if this order is newer than the stored one
       if (orderDate > new Date(map[key].lastOrder)) {
@@ -2076,6 +2080,79 @@ export default function VendorDashboardPage() {
 
     return Object.values(map).sort((a, b) => b.totalSpend - a.totalSpend);
   }, [restOrders]);
+
+  // Dynamic customer list filtered by category (dine-in / delivery) and sorting for the Customer Database Modal
+  const filteredCustomerList = React.useMemo(() => {
+    const map = {};
+    const filteredOrders = restOrders.filter(o => {
+      const oType = o.orderType || o.order_type;
+      if (customerModalCategory === 'dine_in') {
+        return oType !== 'delivery';
+      }
+      if (customerModalCategory === 'delivery') {
+        return oType === 'delivery';
+      }
+      return true; // 'all'
+    });
+
+    filteredOrders.forEach(o => {
+      const cName = o.contactName || o.contact_name;
+      const cPhone = o.contactPhone || o.contact_phone;
+      const oType = o.orderType || o.order_type;
+
+      const key = (o.user_id && o.user_id !== 'anonymous' ? o.user_id : null) || cPhone || cName || 'anonymous_' + o.id;
+      const orderDate = new Date(o.timestamp);
+
+      if (!map[key]) {
+        let displayName = 'Guest Diner';
+        if (cName) {
+          displayName = cName;
+        } else if (cPhone) {
+          displayName = `Guest (${cPhone})`;
+        } else if (o.user_id && o.user_id !== 'anonymous') {
+          if (o.user_id.startsWith('guest_')) {
+             displayName = 'Guest Diner';
+          } else {
+             displayName = `Member (${o.user_id.substring(0, 8)})`;
+          }
+        }
+
+        map[key] = {
+          id: key,
+          name: displayName,
+          phone: cPhone || 'Dine-In Guest',
+          userId: o.user_id || 'anonymous',
+          totalSpend: 0,
+          orderCount: 0,
+          lastOrder: o.timestamp,
+          latestBill: Number(o.total || 0),
+          latestDishes: (o.items || []).map(i => i.name).join(', '),
+          orderType: oType || 'dine_in',
+          orders: []
+        };
+      } else {
+        if (cName && (map[key].name === 'Guest Diner' || map[key].name.startsWith('Member (') || map[key].name.startsWith('Guest ('))) {
+          map[key].name = cName;
+        }
+        if (cPhone && map[key].phone === 'Dine-In Guest') {
+          map[key].phone = cPhone;
+        }
+      }
+      
+      map[key].totalSpend += Number(o.total || 0);
+      map[key].orderCount += 1;
+      map[key].orders.push(o);
+      
+      if (orderDate > new Date(map[key].lastOrder)) {
+        map[key].lastOrder = o.timestamp;
+        map[key].latestBill = Number(o.total || 0);
+        map[key].latestDishes = (o.items || []).map(i => i.name).join(', ');
+        map[key].orderType = oType || 'dine_in';
+      }
+    });
+
+    return Object.values(map);
+  }, [restOrders, customerModalCategory]);
 
   const handleExportVCF = React.useCallback(() => {
     // If none selected, export all
@@ -7239,17 +7316,24 @@ export default function VendorDashboardPage() {
                 <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-black shrink-0 relative z-10">
                   <div>
                     <h2 className="font-display font-black text-xl text-neutral-900 dark:text-white">Customer Database</h2>
-                    <p className="text-xs text-neutral-500 mt-1">{customerList.length} total customers</p>
+                    <p className="text-xs text-neutral-500 mt-1">{filteredCustomerList.length} customers in this view</p>
                   </div>
                   <button onClick={() => setShowAllCustomersModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-200/50 dark:bg-white/10 text-neutral-600 dark:text-white hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors">
                     <CloseIcon size={18} />
                   </button>
                 </div>
+
+                {/* Category Navigation tabs */}
+                <div className="px-5 pt-3 flex gap-2 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/50 dark:bg-black shrink-0">
+                  <button onClick={() => setCustomerModalCategory('all')} className={`pb-3 px-4 text-xs font-black border-b-2 transition-colors ${customerModalCategory === 'all' ? 'border-[#D4AF37] text-neutral-900 dark:text-white' : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}>All Customers</button>
+                  <button onClick={() => setCustomerModalCategory('dine_in')} className={`pb-3 px-4 text-xs font-black border-b-2 transition-colors ${customerModalCategory === 'dine_in' ? 'border-[#D4AF37] text-neutral-900 dark:text-white' : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}>Dine-In</button>
+                  <button onClick={() => setCustomerModalCategory('delivery')} className={`pb-3 px-4 text-xs font-black border-b-2 transition-colors ${customerModalCategory === 'delivery' ? 'border-[#D4AF37] text-neutral-900 dark:text-white' : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}>Delivery</button>
+                </div>
                 
                 <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-[#12141D] shrink-0 flex flex-wrap gap-4 justify-between items-center">
                   <div className="flex gap-2 bg-neutral-100 dark:bg-black p-1 rounded-xl">
-                    <button onClick={() => setCustomerModalSort('most-came')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-came' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Came</button>
-                    <button onClick={() => setCustomerModalSort('most-spend')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-spend' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Spend</button>
+                    <button onClick={() => setCustomerModalSort('most-came')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-came' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Visits</button>
+                    <button onClick={() => setCustomerModalSort('most-spend')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-spend' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Spent</button>
                   </div>
                   
                   <button onClick={handleExportVCF} className="px-4 py-2 bg-[#D4AF37] text-black font-bold text-xs rounded-xl hover:bg-amber-400 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(212,175,55,0.2)]">
@@ -7259,10 +7343,22 @@ export default function VendorDashboardPage() {
 
                 <div className="flex-1 overflow-y-auto p-2">
                   <div className="space-y-1">
-                    {[...customerList].sort((a, b) => customerModalSort === 'most-came' ? b.orderCount - a.orderCount : b.totalSpend - a.totalSpend).map(c => (
-                      <div key={c.id} className="flex items-center gap-3 p-3 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => setSelectedCustomerIds(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id])}>
-                        <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${selectedCustomerIds.includes(c.id) ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                          {selectedCustomerIds.includes(c.id) && <CheckCircle size={14} className="text-black" />}
+                    {[...filteredCustomerList].sort((a, b) => customerModalSort === 'most-came' ? b.orderCount - a.orderCount : b.totalSpend - a.totalSpend).map(c => (
+                      <div 
+                        key={c.id} 
+                        className="flex items-center gap-3 p-3 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer" 
+                        onClick={() => setSelectedCustomerHistory(c)}
+                      >
+                        <div 
+                          className="w-8 h-8 rounded-full hover:bg-neutral-200/50 dark:hover:bg-white/10 flex items-center justify-center shrink-0 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCustomerIds(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]);
+                          }}
+                        >
+                          <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedCustomerIds.includes(c.id) ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                            {selectedCustomerIds.includes(c.id) && <CheckCircle size={14} className="text-black" />}
+                          </div>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
                           <UserCircle size={18} className="text-neutral-400" />
@@ -7283,6 +7379,101 @@ export default function VendorDashboardPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Customer Visit & Order History Modal */}
+        <AnimatePresence>
+          {selectedCustomerHistory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                className="bg-white dark:bg-[#12141D] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] border border-neutral-200 dark:border-white/10"
+              >
+                {/* Header */}
+                <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-black shrink-0">
+                  <div>
+                    <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white">Visit History</h3>
+                    <p className="text-xs text-neutral-500 mt-1">{selectedCustomerHistory.name}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomerHistory(null)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-200/50 dark:bg-white/10 text-neutral-600 dark:text-white hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
+                  >
+                    <CloseIcon size={18} />
+                  </button>
+                </div>
+
+                {/* Stats Summary */}
+                <div className="p-4 bg-neutral-50/50 dark:bg-black/20 border-b border-neutral-100 dark:border-white/5 grid grid-cols-2 gap-4 text-center shrink-0">
+                  <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
+                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Total Spent</p>
+                    <p className="text-xl font-black text-[#D4AF37] mt-1">₹{selectedCustomerHistory.totalSpend.toFixed(2)}</p>
+                  </div>
+                  <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
+                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Visits / Orders</p>
+                    <p className="text-xl font-black text-neutral-900 dark:text-white mt-1">{selectedCustomerHistory.orderCount}</p>
+                  </div>
+                </div>
+
+                {/* Order List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {selectedCustomerHistory.orders && selectedCustomerHistory.orders.length > 0 ? (
+                    [...selectedCustomerHistory.orders]
+                      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                      .map((order, idx) => {
+                        const oType = order.orderType || order.order_type;
+                        const isDelivery = oType === 'delivery';
+                        return (
+                          <div key={order.id || idx} className="p-4 bg-neutral-50 dark:bg-white/5 border border-neutral-200/60 dark:border-white/5 rounded-2xl space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                  {new Date(order.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
+                                <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{new Date(order.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</p>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isDelivery ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'}`}>
+                                {isDelivery ? 'Delivery' : oType === 'prepaid' ? 'Pre-Order' : 'Dine-In'}
+                              </span>
+                            </div>
+
+                            {/* Status and Price */}
+                            <div className="flex justify-between items-center py-1 border-y border-neutral-200/50 dark:border-white/5">
+                              <span className={`text-xs font-bold ${order.status === 'Completed' ? 'text-emerald-500' : order.status === 'Cancelled' ? 'text-red-500' : 'text-[#D4AF37]'}`}>
+                                {order.status}
+                              </span>
+                              <span className="font-black text-neutral-900 dark:text-white">
+                                ₹{Number(order.total || 0).toFixed(2)}
+                              </span>
+                            </div>
+
+                            {/* Items */}
+                            <div className="space-y-1 pt-1">
+                              {(order.items || []).map((item, itemIdx) => (
+                                <div key={itemIdx} className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400">
+                                  <span className="truncate pr-4">{item.quantity || item.qty || 1}x {item.name}</span>
+                                  <span className="font-semibold shrink-0">₹{Number(item.price || 0).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <p className="text-center text-xs text-neutral-500 py-8">No order details found.</p>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
 
       </div>
     </div>
