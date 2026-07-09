@@ -3787,7 +3787,7 @@ export default function VendorDashboardPage() {
               className="absolute inset-0 flex overflow-hidden">
 
               {/* ── LEFT: Category Sidebar ── */}
-              <div className="w-52 shrink-0 border-r border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
+              <div className="w-64 shrink-0 border-r border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
                 <div className="p-4 border-b border-neutral-100 dark:border-white/5">
                   <h2 className="font-display font-black text-base">Edit Menu</h2>
                   <p className="text-[11px] text-neutral-500 mt-0.5">{vendDishes.length} dishes</p>
@@ -3823,56 +3823,63 @@ export default function VendorDashboardPage() {
                     }`}>{vendDishes.length}</span>
                   </button>
 
-                  {/* Custom Categories with Position Sliders */}
+                  {/* Custom Categories with Up/Down reorder buttons */}
                   {customCategories.map((cat, idx) => {
                     const count = vendDishes.filter(d => d.tags?.includes(cat)).length;
                     const isActive = selectedEditCategory === cat;
+                    const moveCategory = async (fromIdx, toIdx) => {
+                      if (toIdx < 0 || toIdx >= customCategories.length) return;
+                      const updated = [...customCategories];
+                      updated.splice(fromIdx, 1);
+                      updated.splice(toIdx, 0, cat);
+                      setCustomCategories(updated);
+                      await handleSaveCategoriesOrder(updated);
+                    };
                     return (
                       <div
                         key={cat}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                        className={`w-full flex items-center gap-1 px-2 py-1.5 rounded-xl text-sm font-semibold transition-all ${
                           isActive
                             ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
                             : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
                         }`}
                       >
-                        {/* Position Slider */}
-                        <div className="flex flex-col items-center mr-2 shrink-0 select-none" onClick={e => e.stopPropagation()}>
-                          <input
-                            type="range"
-                            min="1"
-                            max={customCategories.length}
-                            value={idx + 1}
-                            title="Drag to change category display order"
-                            onChange={(e) => {
-                              const newPos = parseInt(e.target.value, 10);
-                              if (newPos === idx + 1) return;
-                              
-                              const updated = [...customCategories];
-                              const currentIdx = updated.indexOf(cat);
-                              if (currentIdx !== -1) {
-                                updated.splice(currentIdx, 1);
-                                updated.splice(newPos - 1, 0, cat);
-                                setCustomCategories(updated);
-                              }
-                            }}
-                            onMouseUp={() => handleSaveCategoriesOrder(customCategories)}
-                            onTouchEnd={() => handleSaveCategoriesOrder(customCategories)}
-                            className="w-12 h-1 bg-neutral-300 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-amber-500 dark:accent-amber-400"
-                            style={{
-                              WebkitAppearance: 'none',
-                              outline: 'none'
-                            }}
-                          />
-                          <span className="text-[9px] font-mono opacity-70 mt-0.5" style={{ fontSize: '8px' }}>
-                            Pos {idx + 1}
-                          </span>
+                        {/* Up / Down buttons */}
+                        <div className="flex flex-col gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+                          <button
+                            disabled={idx === 0}
+                            onClick={() => moveCategory(idx, idx - 1)}
+                            title="Move up"
+                            className={`flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-black transition-colors ${
+                              idx === 0
+                                ? 'opacity-25 cursor-not-allowed'
+                                : isActive
+                                  ? 'bg-white/20 hover:bg-white/30 text-white dark:bg-black/20 dark:hover:bg-black/30 dark:text-black'
+                                  : 'bg-neutral-200 dark:bg-white/10 hover:bg-amber-400 hover:text-white dark:hover:bg-amber-500 text-neutral-600 dark:text-neutral-300'
+                            }`}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            disabled={idx === customCategories.length - 1}
+                            onClick={() => moveCategory(idx, idx + 1)}
+                            title="Move down"
+                            className={`flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-black transition-colors ${
+                              idx === customCategories.length - 1
+                                ? 'opacity-25 cursor-not-allowed'
+                                : isActive
+                                  ? 'bg-white/20 hover:bg-white/30 text-white dark:bg-black/20 dark:hover:bg-black/30 dark:text-black'
+                                  : 'bg-neutral-200 dark:bg-white/10 hover:bg-amber-400 hover:text-white dark:hover:bg-amber-500 text-neutral-600 dark:text-neutral-300'
+                            }`}
+                          >
+                            ▼
+                          </button>
                         </div>
 
                         {/* Label (Click to select) */}
                         <div
                           onClick={() => setSelectedEditCategory(cat)}
-                          className="flex-1 cursor-pointer truncate font-semibold text-left select-none mr-1"
+                          className="flex-1 cursor-pointer truncate font-semibold text-left select-none"
                         >
                           {cat}
                         </div>
@@ -4047,7 +4054,7 @@ export default function VendorDashboardPage() {
               </div>
 
               {/* ── RIGHT: Combo Panel ── */}
-              <div className="w-56 shrink-0 border-l border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
+              <div className="w-64 shrink-0 border-l border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
                 <div className="p-4 border-b border-neutral-100 dark:border-white/5">
                   <h2 className="font-display font-black text-sm">Edit Suggestions</h2>
                   <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
