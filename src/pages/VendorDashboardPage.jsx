@@ -3549,7 +3549,10 @@ export default function VendorDashboardPage() {
                         className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-black hover:bg-[#D4AF37]/20 transition-colors shadow-[0_0_15px_rgba(212,175,55,0.15)]">
                         <Sparkles size={16} /> Import Menu (AI)
                       </button>
-                      <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', customizationCategories: [], images: [], tags: [], variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
+                      <button onClick={() => {
+                        const defaultTags = (selectedEditCategory && selectedEditCategory !== 'All' && selectedEditCategory !== '__uncategorised__') ? [selectedEditCategory] : [];
+                        setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', customizationCategories: [], images: [], tags: defaultTags, variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] });
+                      }}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
                         <Plus size={16} /> Add Dish
                       </button>
@@ -3713,9 +3716,10 @@ export default function VendorDashboardPage() {
                             <button onClick={async () => {
                               if(window.confirm('Are you sure you want to delete this dish?')) {
                                 await deleteDish(dish.id);
-                                const thisDishKeys = [dish.id, ...(dish.variants || []).map(v => `${dish.id}::${v.name}`)];
+                                const stringDishId = String(dish.id);
+                                const thisDishKeys = [stringDishId, ...(dish.variants || []).map(v => `${stringDishId}::${v.name}`)];
                                 const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(c => {
-                                  const nextLinkedDishes = (c.linkedDishes || []).filter(k => !thisDishKeys.includes(k));
+                                  const nextLinkedDishes = (c.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
                                   return { ...c, linkedDishes: nextLinkedDishes };
                                 });
                                 await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
@@ -3758,7 +3762,11 @@ export default function VendorDashboardPage() {
 
                 {/* Add Dish shortcut */}
                 <button
-                  onClick={() => { setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', customizationCategories: [], images: [], tags: [], variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] }); setVendorTab('menu'); }}
+                  onClick={() => {
+                    const defaultTags = (selectedEditCategory && selectedEditCategory !== 'All' && selectedEditCategory !== '__uncategorised__') ? [selectedEditCategory] : [];
+                    setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', customizationCategories: [], images: [], tags: defaultTags, variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] });
+                    setVendorTab('menu');
+                  }}
                   className="mx-3 mt-3 mb-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-xs font-bold hover:opacity-90 transition-opacity"
                 >
                   <Plus size={13} /> Add Dish
@@ -4484,7 +4492,7 @@ export default function VendorDashboardPage() {
                           if (dish.variants && dish.variants.length > 0) {
                             const linkedVariants = dish.variants.filter(v => {
                               const key = `${dish.id}::${v.name}`;
-                              return linkedKeys.includes(key) || isDirectlyLinked;
+                              return linkedKeys.map(String).includes(String(key)) || isDirectlyLinked;
                             });
                             if (linkedVariants.length === dish.variants.length) {
                               linkedNames.push(dish.name);
@@ -4494,7 +4502,7 @@ export default function VendorDashboardPage() {
                               });
                             }
                           } else {
-                            if (isDirectlyLinked || linkedKeys.includes(dish.id)) {
+                            if (isDirectlyLinked || linkedKeys.map(String).includes(String(dish.id))) {
                               linkedNames.push(dish.name);
                             }
                           }
@@ -4637,7 +4645,7 @@ export default function VendorDashboardPage() {
                                 if (hasVariants) {
                                   return dish.variants.map(v => {
                                     const key = `${dish.id}::${v.name}`;
-                                    const isLinked = (editingCustomization.linkedDishes || []).includes(key);
+                                    const isLinked = (editingCustomization.linkedDishes || []).map(String).includes(key);
                                     return {
                                       key,
                                       isLinked,
@@ -4650,8 +4658,8 @@ export default function VendorDashboardPage() {
                                     };
                                   });
                                 } else {
-                                  const key = dish.id;
-                                  const isLinked = (editingCustomization.linkedDishes || []).includes(key)
+                                  const key = String(dish.id);
+                                  const isLinked = (editingCustomization.linkedDishes || []).map(String).includes(key)
                                     || (dish.customizationCategories || []).includes(editingCustomization.id);
                                   return [{
                                     key,
@@ -4698,7 +4706,9 @@ export default function VendorDashboardPage() {
                                       checked={isLinked}
                                       onChange={() => {
                                         const prev = editingCustomization.linkedDishes || [];
-                                        const next = isLinked ? prev.filter(k => k !== key) : [...prev, key];
+                                        const next = isLinked 
+                                          ? prev.map(String).filter(k => k !== String(key)) 
+                                          : [...prev.map(String), String(key)];
                                         setEditingCustomization(p => ({ ...p, linkedDishes: next }));
                                       }}
                                       className="rounded border-neutral-300 dark:border-neutral-700 accent-emerald-500 w-4 h-4 shrink-0"
@@ -4737,14 +4747,17 @@ export default function VendorDashboardPage() {
 
                           // Derive the set of base dish IDs that are linked (strip ::variantName suffix)
                           const linkedBaseDishIds = new Set(
-                            (cleaned.linkedDishes || []).map(k => k.includes('::') ? k.split('::')[0] : k)
+                            (cleaned.linkedDishes || []).map(k => {
+                              const s = String(k);
+                              return s.includes('::') ? s.split('::')[0] : s;
+                            })
                           );
 
                           // Update customizationCategories on each dish accordingly
                           const allDishes = vendDishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent);
                           for (const dish of allDishes) {
                             const prevCats = dish.customizationCategories || [];
-                            const shouldLink = linkedBaseDishIds.has(dish.id);
+                            const shouldLink = linkedBaseDishIds.has(String(dish.id));
                             const isCurrentlyLinked = prevCats.includes(cleaned.id);
                             if (shouldLink && !isCurrentlyLinked) {
                               await updateDish(dish.id, { customizationCategories: [...prevCats, cleaned.id] });
@@ -5104,18 +5117,19 @@ export default function VendorDashboardPage() {
                   }
                   if (success && savedDishId) {
                     // Sync customizations in the restaurant's metadata
-                    const thisDishKeys = [savedDishId, ...(editingDish.variants || []).map(v => `${savedDishId}::${v.name}`)];
+                    const stringSavedDishId = String(savedDishId);
+                    const thisDishKeys = [stringSavedDishId, ...(editingDish.variants || []).map(v => `${stringSavedDishId}::${v.name}`)];
                     const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(cat => {
                       const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
-                      // Start with a clean list of keys from other dishes
-                      let nextLinkedDishes = (cat.linkedDishes || []).filter(k => !thisDishKeys.includes(k));
+                      // Start with a clean list of keys from other dishes (coerced to String)
+                      let nextLinkedDishes = (cat.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
                       if (isChecked) {
                         if (editingDish.variants && editingDish.variants.length > 0) {
                           editingDish.variants.forEach(v => {
-                            nextLinkedDishes.push(`${savedDishId}::${v.name}`);
+                            nextLinkedDishes.push(`${stringSavedDishId}::${v.name}`);
                           });
                         } else {
-                          nextLinkedDishes.push(savedDishId);
+                          nextLinkedDishes.push(stringSavedDishId);
                         }
                       }
                       return { ...cat, linkedDishes: nextLinkedDishes };
