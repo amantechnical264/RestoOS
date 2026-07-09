@@ -2266,8 +2266,41 @@ export default function VendorDashboardPage() {
   const vendEvents = dishes.filter(d => (d.restId === activeRestId || d.rest_id === activeRestId) && d.tags?.includes('event'));
 
   const metadataRecord = dishes.find(d => d.tags?.includes('_categories_metadata') && (d.restId === activeRestId || d.rest_id === activeRestId));
-  const customCategories = metadataRecord?.macros?.categories || ['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan'];
+  const [customCategories, setCustomCategories] = React.useState(['Starters', 'Mains', 'Desserts', 'Drinks', 'Vegan']);
 
+  React.useEffect(() => {
+    if (metadataRecord?.macros?.categories) {
+      setCustomCategories(metadataRecord.macros.categories);
+    }
+  }, [metadataRecord]);
+
+  const handleSaveCategoriesOrder = async (updatedCategories) => {
+    const payload = {
+      name: "_categories_metadata",
+      price: 0,
+      description: "Metadata for custom categories",
+      tags: ["_categories_metadata"],
+      macros: {
+        categories: updatedCategories,
+        categoryOrders: metadataRecord?.macros?.categoryOrders || {}
+      }
+    };
+
+    let success = false;
+    if (metadataRecord?.id) {
+      const res = await updateDish(metadataRecord.id, payload);
+      success = res !== null;
+    } else {
+      const res = await addDish({ ...payload, restId: activeRestId });
+      success = res !== null;
+    }
+
+    if (success) {
+      showNotification("Category position updated successfully!");
+    } else {
+      showNotification("Failed to update category position.");
+    }
+  };
   const handleEditCategory = async (oldCat) => {
     const newName = window.prompt(`Enter new name for category "${oldCat}":`, oldCat);
     if (!newName) return;
@@ -3774,24 +3807,85 @@ export default function VendorDashboardPage() {
 
                 <nav className="flex flex-col gap-0.5 p-2 flex-1">
                   {/* All category */}
-                  {[{ key: 'All', label: 'All', count: vendDishes.length }, ...customCategories.map(cat => ({ key: cat, label: cat, count: vendDishes.filter(d => d.tags?.includes(cat)).length }))].map(cat => (
-                    <button
-                      key={cat.key}
-                      onClick={() => setSelectedEditCategory(cat.key)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
-                        selectedEditCategory === cat.key
-                          ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="truncate">{cat.label}</span>
-                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
-                        selectedEditCategory === cat.key
-                          ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
-                          : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
-                      }`}>{cat.count}</span>
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => setSelectedEditCategory('All')}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
+                      selectedEditCategory === 'All'
+                        ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="truncate">All</span>
+                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
+                      selectedEditCategory === 'All'
+                        ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+                        : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
+                    }`}>{vendDishes.length}</span>
+                  </button>
+
+                  {/* Custom Categories with Position Sliders */}
+                  {customCategories.map((cat, idx) => {
+                    const count = vendDishes.filter(d => d.tags?.includes(cat)).length;
+                    const isActive = selectedEditCategory === cat;
+                    return (
+                      <div
+                        key={cat}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                          isActive
+                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        {/* Position Slider */}
+                        <div className="flex flex-col items-center mr-2 shrink-0 select-none" onClick={e => e.stopPropagation()}>
+                          <input
+                            type="range"
+                            min="1"
+                            max={customCategories.length}
+                            value={idx + 1}
+                            title="Drag to change category display order"
+                            onChange={(e) => {
+                              const newPos = parseInt(e.target.value, 10);
+                              if (newPos === idx + 1) return;
+                              
+                              const updated = [...customCategories];
+                              const currentIdx = updated.indexOf(cat);
+                              if (currentIdx !== -1) {
+                                updated.splice(currentIdx, 1);
+                                updated.splice(newPos - 1, 0, cat);
+                                setCustomCategories(updated);
+                              }
+                            }}
+                            onMouseUp={() => handleSaveCategoriesOrder(customCategories)}
+                            onTouchEnd={() => handleSaveCategoriesOrder(customCategories)}
+                            className="w-12 h-1 bg-neutral-300 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-amber-500 dark:accent-amber-400"
+                            style={{
+                              WebkitAppearance: 'none',
+                              outline: 'none'
+                            }}
+                          />
+                          <span className="text-[9px] font-mono opacity-70 mt-0.5" style={{ fontSize: '8px' }}>
+                            Pos {idx + 1}
+                          </span>
+                        </div>
+
+                        {/* Label (Click to select) */}
+                        <div
+                          onClick={() => setSelectedEditCategory(cat)}
+                          className="flex-1 cursor-pointer truncate font-semibold text-left select-none mr-1"
+                        >
+                          {cat}
+                        </div>
+
+                        {/* Count Badge */}
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
+                          isActive
+                            ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+                            : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
+                        }`}>{count}</span>
+                      </div>
+                    );
+                  })}
 
                   {/* Uncategorised bucket */}
                   {(() => {
