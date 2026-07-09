@@ -1520,10 +1520,16 @@ export default function VendorDashboardPage() {
   // Calendar range filter states
   const [dineInStartDate, setDineInStartDate] = React.useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA'));
   const [dineInEndDate, setDineInEndDate] = React.useState(() => new Date().toLocaleDateString('en-CA'));
+  const [tempDineInStartDate, setTempDineInStartDate] = React.useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA'));
+  const [tempDineInEndDate, setTempDineInEndDate] = React.useState(() => new Date().toLocaleDateString('en-CA'));
+  const [dineInAnalysisShown, setDineInAnalysisShown] = React.useState(false);
   const [showDineInHistoryModal, setShowDineInHistoryModal] = React.useState(false);
 
   const [deliveryStartDate, setDeliveryStartDate] = React.useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA'));
   const [deliveryEndDate, setDeliveryEndDate] = React.useState(() => new Date().toLocaleDateString('en-CA'));
+  const [tempDeliveryStartDate, setTempDeliveryStartDate] = React.useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA'));
+  const [tempDeliveryEndDate, setTempDeliveryEndDate] = React.useState(() => new Date().toLocaleDateString('en-CA'));
+  const [deliveryAnalysisShown, setDeliveryAnalysisShown] = React.useState(false);
   const [showDeliveryHistoryModal, setShowDeliveryHistoryModal] = React.useState(false);
 
 
@@ -2833,7 +2839,12 @@ export default function VendorDashboardPage() {
                   <p className="font-display font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><CheckCircle size={14} /> Completed Today</p>
                   <button 
                     title="View Dine-In History"
-                    onClick={() => setShowDineInHistoryModal(true)} 
+                    onClick={() => {
+                      setTempDineInStartDate(dineInStartDate);
+                      setTempDineInEndDate(dineInEndDate);
+                      setDineInAnalysisShown(false);
+                      setShowDineInHistoryModal(true);
+                    }} 
                     className="p-1.5 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 transition-colors"
                   >
                     <Calendar size={14} />
@@ -2888,7 +2899,12 @@ export default function VendorDashboardPage() {
                     </div>
                     {/* Calendar Range Button */}
                     <button 
-                      onClick={() => setShowDeliveryHistoryModal(true)} 
+                      onClick={() => {
+                        setTempDeliveryStartDate(deliveryStartDate);
+                        setTempDeliveryEndDate(deliveryEndDate);
+                        setDeliveryAnalysisShown(false);
+                        setShowDeliveryHistoryModal(true);
+                      }} 
                       className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-sm"
                     >
                       <Calendar size={14} />
@@ -7581,75 +7597,116 @@ export default function VendorDashboardPage() {
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">Start Date</label>
                       <input 
                         type="date"
-                        value={dineInStartDate}
-                        onChange={(e) => setDineInStartDate(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37]"
+                        value={tempDineInStartDate}
+                        max={tempDineInEndDate}
+                        onKeyDown={(e) => e.preventDefault()}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTempDineInStartDate(val);
+                          if (val > tempDineInEndDate) {
+                            setTempDineInEndDate(val);
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37] cursor-pointer"
                       />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">End Date</label>
                       <input 
                         type="date"
-                        value={dineInEndDate}
-                        onChange={(e) => setDineInEndDate(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37]"
+                        value={tempDineInEndDate}
+                        min={tempDineInStartDate}
+                        onKeyDown={(e) => e.preventDefault()}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTempDineInEndDate(val);
+                          if (val < tempDineInStartDate) {
+                            setTempDineInStartDate(val);
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37] cursor-pointer"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
-                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Dine-In Revenue</p>
-                      <p className="text-xl font-black text-[#D4AF37] mt-1">
-                        ₹{rangedDineInOrders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + Number(o.total || 0), 0).toFixed(2)}
-                      </p>
+                  {/* Red Show Analysis Button */}
+                  <button
+                    onClick={() => {
+                      setDineInStartDate(tempDineInStartDate);
+                      setDineInEndDate(tempDineInEndDate);
+                      setDineInAnalysisShown(true);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <TrendingUp size={14} />
+                    Show Analysis
+                  </button>
+
+                  {dineInAnalysisShown && (
+                    <div className="grid grid-cols-2 gap-4 text-center pt-2 animate-fadeIn">
+                      <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Dine-In Revenue</p>
+                        <p className="text-xl font-black text-[#D4AF37] mt-1">
+                          ₹{rangedDineInOrders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + Number(o.total || 0), 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Dine-In Orders</p>
+                        <p className="text-xl font-black text-neutral-900 dark:text-white mt-1">{rangedDineInOrders.length}</p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
-                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Dine-In Orders</p>
-                      <p className="text-xl font-black text-neutral-900 dark:text-white mt-1">{rangedDineInOrders.length}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Orders List */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                  {rangedDineInOrders.length > 0 ? (
-                    [...rangedDineInOrders]
-                      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                      .map((order, idx) => (
-                        <div key={order.id || idx} className="p-4 bg-neutral-50 dark:bg-white/5 border border-neutral-200/60 dark:border-white/5 rounded-2xl space-y-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                {getOrderNumber(order)} ({new Date(order.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })})
-                              </p>
-                              <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
-                                {new Date(order.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                                {order.tableNumber || order.table_number ? ` • Table ${order.tableNumber || order.table_number}` : ''}
-                              </p>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${order.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : order.status === 'Cancelled' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'}`}>
-                              {order.status}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center py-1 border-y border-neutral-200/50 dark:border-white/5">
-                            <span className="text-xs font-bold text-neutral-500">Customer: {order.contactName || 'Guest'}</span>
-                            <span className="font-black text-neutral-900 dark:text-white">₹{Number(order.total || 0).toFixed(2)}</span>
-                          </div>
-
-                          <div className="space-y-1 pt-1">
-                            {(order.items || []).map((item, itemIdx) => (
-                              <div key={itemIdx} className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400">
-                                <span className="truncate pr-4">{item.quantity || item.qty || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
-                                <span className="font-semibold shrink-0">₹{Number(item.price || 0).toFixed(2)}</span>
+                  {dineInAnalysisShown ? (
+                    rangedDineInOrders.length > 0 ? (
+                      [...rangedDineInOrders]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .map((order, idx) => (
+                          <div key={order.id || idx} className="p-4 bg-neutral-50 dark:bg-white/5 border border-neutral-200/60 dark:border-white/5 rounded-2xl space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                  {getOrderNumber(order)} ({new Date(order.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })})
+                                </p>
+                                <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                                  {new Date(order.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                  {order.tableNumber || order.table_number ? ` • Table ${order.tableNumber || order.table_number}` : ''}
+                                </p>
                               </div>
-                            ))}
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${order.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : order.status === 'Cancelled' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'}`}>
+                                {order.status}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-1 border-y border-neutral-200/50 dark:border-white/5">
+                              <span className="text-xs font-bold text-neutral-500">Customer: {order.contactName || 'Guest'}</span>
+                              <span className="font-black text-neutral-900 dark:text-white">₹{Number(order.total || 0).toFixed(2)}</span>
+                            </div>
+
+                            <div className="space-y-1 pt-1">
+                              {(order.items || []).map((item, itemIdx) => (
+                                <div key={itemIdx} className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400">
+                                  <span className="truncate pr-4">{item.quantity || item.qty || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                  <span className="font-semibold shrink-0">₹{Number(item.price || 0).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ))
+                    ) : (
+                      <p className="text-center text-xs text-neutral-500 py-12">No Dine-In orders found in this range.</p>
+                    )
                   ) : (
-                    <p className="text-center text-xs text-neutral-500 py-12">No Dine-In orders found in this range.</p>
+                    <div className="h-full flex flex-col items-center justify-center p-8 text-center text-neutral-400 dark:text-neutral-500">
+                      <Calendar size={48} className="text-neutral-300 dark:text-neutral-700 mb-3 animate-pulse" />
+                      <p className="font-display font-black text-sm text-neutral-600 dark:text-neutral-400">Analysis Pending</p>
+                      <p className="text-xs text-neutral-500 max-w-xs mt-1">Select your preferred date range above and click the red "Show Analysis" button to view reports.</p>
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -7696,77 +7753,118 @@ export default function VendorDashboardPage() {
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">Start Date</label>
                       <input 
                         type="date"
-                        value={deliveryStartDate}
-                        onChange={(e) => setDeliveryStartDate(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37]"
+                        value={tempDeliveryStartDate}
+                        max={tempDeliveryEndDate}
+                        onKeyDown={(e) => e.preventDefault()}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTempDeliveryStartDate(val);
+                          if (val > tempDeliveryEndDate) {
+                            setTempDeliveryEndDate(val);
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37] cursor-pointer"
                       />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">End Date</label>
                       <input 
                         type="date"
-                        value={deliveryEndDate}
-                        onChange={(e) => setDeliveryEndDate(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37]"
+                        value={tempDeliveryEndDate}
+                        min={tempDeliveryStartDate}
+                        onKeyDown={(e) => e.preventDefault()}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTempDeliveryEndDate(val);
+                          if (val < tempDeliveryStartDate) {
+                            setTempDeliveryStartDate(val);
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#1e1e24] border border-neutral-200 dark:border-white/5 text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37] cursor-pointer"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
-                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Delivery Revenue</p>
-                      <p className="text-xl font-black text-[#D4AF37] mt-1">
-                        ₹{rangedDeliveryOrders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + Number(o.total || 0), 0).toFixed(2)}
-                      </p>
+                  {/* Red Show Analysis Button */}
+                  <button
+                    onClick={() => {
+                      setDeliveryStartDate(tempDeliveryStartDate);
+                      setDeliveryEndDate(tempDeliveryEndDate);
+                      setDeliveryAnalysisShown(true);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <TrendingUp size={14} />
+                    Show Analysis
+                  </button>
+
+                  {deliveryAnalysisShown && (
+                    <div className="grid grid-cols-2 gap-4 text-center pt-2 animate-fadeIn">
+                      <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Delivery Revenue</p>
+                        <p className="text-xl font-black text-[#D4AF37] mt-1">
+                          ₹{rangedDeliveryOrders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + Number(o.total || 0), 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Delivery Orders</p>
+                        <p className="text-xl font-black text-neutral-900 dark:text-white mt-1">{rangedDeliveryOrders.length}</p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-white dark:bg-[#1e1e24] rounded-2xl border border-neutral-200/60 dark:border-white/5">
-                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider">Range Delivery Orders</p>
-                      <p className="text-xl font-black text-neutral-900 dark:text-white mt-1">{rangedDeliveryOrders.length}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Orders List */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                  {rangedDeliveryOrders.length > 0 ? (
-                    [...rangedDeliveryOrders]
-                      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                      .map((order, idx) => (
-                        <div key={order.id || idx} className="p-4 bg-neutral-50 dark:bg-white/5 border border-neutral-200/60 dark:border-white/5 rounded-2xl space-y-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                {getOrderNumber(order)} ({new Date(order.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })})
-                              </p>
-                              <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
-                                {new Date(order.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${order.status === 'Delivered' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : order.status === 'Cancelled' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'}`}>
-                              {order.status}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center py-1 border-y border-neutral-200/50 dark:border-white/5">
-                            <div className="text-xs text-neutral-505">
-                              <p className="font-bold">Customer: {order.contactName || 'Guest'}</p>
-                              {order.metadata?.address && <p className="mt-0.5 line-clamp-1">Addr: {order.metadata.address}</p>}
-                            </div>
-                            <span className="font-black text-neutral-900 dark:text-white shrink-0">₹{Number(order.total || 0).toFixed(2)}</span>
-                          </div>
-
-                          <div className="space-y-1 pt-1">
-                            {(order.items || []).map((item, itemIdx) => (
-                              <div key={itemIdx} className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400">
-                                <span className="truncate pr-4">{item.quantity || item.qty || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
-                                <span className="font-semibold shrink-0">₹{Number(item.price || 0).toFixed(2)}</span>
+                  {deliveryAnalysisShown ? (
+                    rangedDeliveryOrders.length > 0 ? (
+                      [...rangedDeliveryOrders]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .map((order, idx) => (
+                          <div key={order.id || idx} className="p-4 bg-neutral-50 dark:bg-white/5 border border-neutral-200/60 dark:border-white/5 rounded-2xl space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                  {getOrderNumber(order)} ({new Date(order.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })})
+                                </p>
+                                <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                                  {new Date(order.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                </p>
                               </div>
-                            ))}
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${order.status === 'Delivered' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : order.status === 'Cancelled' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'}`}>
+                                {order.status}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-1 border-y border-neutral-200/50 dark:border-white/5">
+                              <div className="text-xs text-neutral-505">
+                                <p className="font-bold">Customer: {order.contactName || 'Guest'}</p>
+                                {order.metadata?.address && <p className="mt-0.5 line-clamp-1">Addr: {order.metadata.address}</p>}
+                              </div>
+                              <span className="font-black text-neutral-900 dark:text-white shrink-0">₹{Number(order.total || 0).toFixed(2)}</span>
+                            </div>
+
+                            <div className="space-y-1 pt-1">
+                              {(order.items || []).map((item, itemIdx) => (
+                                <div key={itemIdx} className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400">
+                                  <span className="truncate pr-4">{item.quantity || item.qty || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                                  <span className="font-semibold shrink-0">₹{Number(item.price || 0).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ))
+                    ) : (
+                      <p className="text-center text-xs text-neutral-500 py-12">No Delivery orders found in this range.</p>
+                    )
                   ) : (
-                    <p className="text-center text-xs text-neutral-500 py-12">No Delivery orders found in this range.</p>
+                    <div className="h-full flex flex-col items-center justify-center p-8 text-center text-neutral-400 dark:text-neutral-500">
+                      <Calendar size={48} className="text-neutral-300 dark:text-neutral-700 mb-3 animate-pulse" />
+                      <p className="font-display font-black text-sm text-neutral-600 dark:text-neutral-400">Analysis Pending</p>
+                      <p className="text-xs text-neutral-500 max-w-xs mt-1">Select your preferred date range above and click the red "Show Analysis" button to view reports.</p>
+                    </div>
                   )}
                 </div>
               </motion.div>
