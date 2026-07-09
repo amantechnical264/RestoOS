@@ -5664,7 +5664,7 @@ export default function VendorDashboardPage() {
                     <>
                       <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" onClick={() => setCustomerFilter(f => f === 'all' ? 'top' : 'all')} />
                       <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" onClick={() => setCustomerFilter(f => f === 'repeat' ? 'top' : 'repeat')} />
-                      <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`₹${avgLifetimeValue.toFixed(0)}`} color="bg-emerald-500" />
+                      <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`₹${avgLifetimeValue.toFixed(0)}`} sub="Avg. spend per customer" color="bg-emerald-500" />
                       <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
                     </>
                   )}
