@@ -231,3 +231,25 @@ function getFallbackResponse(userMessage, dishes) {
 
   return "That's a great question! Let me fetch that for you — in the meantime, feel free to browse the menu or ask your waiter for assistance.";
 }
+
+// ── 4. Generate an immersive, 15-20 word culinary description based on the dish name ──
+export async function generateAIDescription(dishName) {
+  if (!genAI) throw new Error('GEMINI_API_KEY_MISSING');
+
+  const prompt = `You are a world-class culinary copywriter.
+Generate a highly sensory, immersive, and mouth-watering description for this dish: "${dishName}".
+The description MUST be exactly 15 to 20 words long. Focus on flavours, textures, and visual appeal, as if painting a vivid picture of the dish for the guest.
+Do not use markdown formatting. Return ONLY the plain text description itself, with no extra explanation.`;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: TEXT_MODEL });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return text.replace(/["']/g, '').trim(); // Remove any extra quotes
+  } catch (err) {
+    console.error('Gemini Description Generation Error:', err);
+    if (err.message.includes('429')) throw new Error('Rate limit exceeded. Please wait a moment.');
+    throw new Error(err.message || 'Failed to generate description.');
+  }
+}
+

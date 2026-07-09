@@ -58,7 +58,7 @@ import ModelViewer from '../components/ModelViewer';
 import AIImageGenerator from '../components/AIImageGenerator';
 import StaffDashboard from '../components/StaffDashboard';
 import { KpiCardSkeleton, OrderLaneSkeleton, CustomerRowSkeleton } from '../components/Skeleton';
-import { extractMenuFromImage, enrichDishWithAI } from '../services/geminiService';
+import { extractMenuFromImage, enrichDishWithAI, generateAIDescription } from '../services/geminiService';
 import { generateMeshyModel } from '../services/meshyService';
 
 const getOrderNote = (o) => {
@@ -1359,6 +1359,7 @@ export default function VendorDashboardPage() {
   const [showVendorSidebar, setShowVendorSidebar] = React.useState(false);
   const [vendorActiveCategory, setVendorActiveCategory] = React.useState('All');
   const [scanState, setScanState]     = React.useState('idle');
+  const [isGeneratingDesc, setIsGeneratingDesc] = React.useState(false);
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]       = React.useState(0);
   const glbInputRef = React.useRef(null);
@@ -3712,6 +3713,12 @@ export default function VendorDashboardPage() {
                             <button onClick={async () => {
                               if(window.confirm('Are you sure you want to delete this dish?')) {
                                 await deleteDish(dish.id);
+                                const thisDishKeys = [dish.id, ...(dish.variants || []).map(v => `${dish.id}::${v.name}`)];
+                                const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(c => {
+                                  const nextLinkedDishes = (c.linkedDishes || []).filter(k => !thisDishKeys.includes(k));
+                                  return { ...c, linkedDishes: nextLinkedDishes };
+                                });
+                                await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
                               }
                             }}
                               className="py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 hover:opacity-80">
@@ -4467,6 +4474,46 @@ export default function VendorDashboardPage() {
                           </div>
                         ))}
                       </div>
+                      {(() => {
+                        const linkedNames = [];
+                        const linkedKeys = cat.linkedDishes || [];
+                        const vendDishes = dishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent && d.restId === activeRestId);
+                        
+                        vendDishes.forEach(dish => {
+                          const isDirectlyLinked = (dish.customizationCategories || []).includes(cat.id);
+                          if (dish.variants && dish.variants.length > 0) {
+                            const linkedVariants = dish.variants.filter(v => {
+                              const key = `${dish.id}::${v.name}`;
+                              return linkedKeys.includes(key) || isDirectlyLinked;
+                            });
+                            if (linkedVariants.length === dish.variants.length) {
+                              linkedNames.push(dish.name);
+                            } else if (linkedVariants.length > 0) {
+                              linkedVariants.forEach(v => {
+                                linkedNames.push(`${dish.name} (${v.name})`);
+                              });
+                            }
+                          } else {
+                            if (isDirectlyLinked || linkedKeys.includes(dish.id)) {
+                              linkedNames.push(dish.name);
+                            }
+                          }
+                        });
+                        
+                        if (linkedNames.length > 0) {
+                          return (
+                            <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-3 pt-3 border-t border-neutral-100 dark:border-white/5 line-clamp-2">
+                              Applied to: <span className="font-bold text-neutral-600 dark:text-neutral-300">{linkedNames.join(', ')}</span>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-3 pt-3 border-t border-neutral-100 dark:border-white/5 italic">
+                              Not applied to any dishes yet
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
                   ))}
                   {(currentRestaurant?.macros?.customizations || []).length === 0 && (
@@ -5047,9 +5094,40 @@ export default function VendorDashboardPage() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   let success;
-                  if (editingDish.id) success = await updateDish(editingDish.id, editingDish) !== null;
-                  else success = await addDish({ ...editingDish, restId: activeRestId }) !== null;
-                  if (success) { setEditingDish(null); setScanState('idle'); setProgress(0); showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!'); }
+                  let savedDishId = editingDish.id;
+                  if (editingDish.id) {
+                    success = await updateDish(editingDish.id, editingDish) !== null;
+                  } else {
+                    const resId = await addDish({ ...editingDish, restId: activeRestId });
+                    success = resId !== null;
+                    savedDishId = resId;
+                  }
+                  if (success && savedDishId) {
+                    // Sync customizations in the restaurant's metadata
+                    const thisDishKeys = [savedDishId, ...(editingDish.variants || []).map(v => `${savedDishId}::${v.name}`)];
+                    const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(cat => {
+                      const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
+                      // Start with a clean list of keys from other dishes
+                      let nextLinkedDishes = (cat.linkedDishes || []).filter(k => !thisDishKeys.includes(k));
+                      if (isChecked) {
+                        if (editingDish.variants && editingDish.variants.length > 0) {
+                          editingDish.variants.forEach(v => {
+                            nextLinkedDishes.push(`${savedDishId}::${v.name}`);
+                          });
+                        } else {
+                          nextLinkedDishes.push(savedDishId);
+                        }
+                      }
+                      return { ...cat, linkedDishes: nextLinkedDishes };
+                    });
+                    
+                    await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
+                    
+                    setEditingDish(null); 
+                    setScanState('idle'); 
+                    setProgress(0); 
+                    showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!'); 
+                  }
                 }} className="space-y-5">
 
                   <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
@@ -5100,11 +5178,38 @@ export default function VendorDashboardPage() {
                         <p className="text-[10px] text-neutral-500 mt-1">When variants are added, customers must choose one. The base price will be ignored.</p>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Description *</label>
-                      <textarea required value={editingDish.description || ''} onChange={e => setEditingDish({...editingDish, description: e.target.value})}
-                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none dark:text-white" />
-                    </div>
+                     <div>
+                       <div className="flex justify-between items-center mb-1.5">
+                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400">Description *</label>
+                         <button
+                           type="button"
+                           disabled={isGeneratingDesc}
+                           onClick={async () => {
+                             if (!editingDish.name || !editingDish.name.trim()) {
+                               showNotification('Please enter the dish name first!');
+                               return;
+                             }
+                             setIsGeneratingDesc(true);
+                             try {
+                               const desc = await generateAIDescription(editingDish.name);
+                               setEditingDish(prev => ({ ...prev, description: desc }));
+                               showNotification('AI Description generated!');
+                             } catch (err) {
+                               console.error(err);
+                               showNotification(err.message || 'Failed to generate description');
+                             } finally {
+                               setIsGeneratingDesc(false);
+                             }
+                           }}
+                           className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30 disabled:opacity-50"
+                         >
+                           <Sparkles size={12} className={isGeneratingDesc ? 'animate-spin' : ''} />
+                           {isGeneratingDesc ? 'Generating...' : 'AI Description'}
+                         </button>
+                       </div>
+                       <textarea required value={editingDish.description || ''} onChange={e => setEditingDish({...editingDish, description: e.target.value})}
+                         className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none dark:text-white" />
+                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Origin / Provenance</label>
