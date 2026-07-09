@@ -4103,27 +4103,22 @@ export default function VendorDashboardPage() {
                       <p className="text-xs mt-1">Add a dish or assign one to this category</p>
                     </div>
                   ) : (
-                    <Reorder.Group axis="y" values={localDisplayDishes} onReorder={handleReorderDishes}>
+                    <div className="flex flex-col divide-y divide-neutral-100 dark:divide-white/5">
                       {localDisplayDishes.map(dish => {
                         const originalDish = vendDishes.find(d => d.id === (dish.originalId || dish.id)) || dish;
                         const isSoldOut = originalDish.tags?.includes('sold_out');
                         const isHidden  = originalDish.tags?.includes('hidden');
                         return (
-                          <Reorder.Item
+                          <motion.div
                             key={dish.id}
-                            value={dish}
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`flex items-center gap-4 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors group cursor-grab active:cursor-grabbing ${
+                            className={`flex items-center gap-4 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors group ${
                               isHidden ? 'opacity-50' : ''
                             }`}
                           >
-                            <div className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white shrink-0">
-                              <GripVertical size={18} />
-                            </div>
-
                             {/* Thumbnail */}
-                            <div className="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-white/5 shrink-0 border border-neutral-200 dark:border-white/5 pointer-events-none">
+                            <div className="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-white/5 shrink-0 border border-neutral-200 dark:border-white/5">
                               {(dish.cover || dish.images?.[0])
                                 ? <img src={dish.cover || dish.images[0]} className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center"><ChefHat size={20} className="text-neutral-300" /></div>
@@ -4131,7 +4126,7 @@ export default function VendorDashboardPage() {
                             </div>
 
                             {/* Info */}
-                            <div className="flex-1 min-w-0 pointer-events-none">
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-sm text-neutral-900 dark:text-white truncate">{dish.name}</span>
                                 {isSoldOut && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600">SOLD OUT</span>}
@@ -4205,10 +4200,10 @@ export default function VendorDashboardPage() {
                                 <Trash2 size={13} />
                               </button>
                             </div>
-                          </Reorder.Item>
+                          </motion.div>
                         );
                       })}
-                    </Reorder.Group>
+                    </div>
                   )}
                 </div>
               </div>
