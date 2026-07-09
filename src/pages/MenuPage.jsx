@@ -859,6 +859,63 @@ export default function MenuPage() {
     return result;
   }, [allDishes, activeCategory, search, activeDietaryFilters, customCategories, categoriesToRender, metadataRecord]);
 
+  const categoriesForMenuPopup = useMemo(() => {
+    const vegOnly = activeDietaryFilters.includes('Veg');
+    const result = customCategories.map(cat => {
+      const catDishes = allDishes.filter(d => {
+        const matchSearch = !search
+          || d.name.toLowerCase().includes(search.toLowerCase())
+          || d.description?.toLowerCase().includes(search.toLowerCase());
+        
+        const matchCat = cat === 'Vegan'
+          ? d.tags?.includes('Vegan') || d.dietaryPreference === 'Vegan'
+          : d.category === cat || d.tags?.includes(cat);
+          
+        const isVeg = d.dietaryPreference === 'Vegetarian' 
+          || d.dietaryPreference === 'Vegan' 
+          || d.tags?.includes('Vegetarian') 
+          || d.tags?.includes('Vegan') 
+          || d.tags?.includes('vegan')
+          || d.tags?.includes('vegetarian');
+          
+        const matchVeg = vegOnly ? isVeg : true;
+        return matchSearch && matchCat && matchVeg;
+      });
+
+      return {
+        category: cat,
+        dishes: catDishes
+      };
+    }).filter(c => c.dishes.length > 0);
+
+    const uncategorizedDishes = allDishes.filter(d => {
+      const hasCategory = customCategories.some(cat => d.category === cat || d.tags?.includes(cat));
+      if (hasCategory) return false;
+      
+      const matchSearch = !search
+        || d.name.toLowerCase().includes(search.toLowerCase())
+        || d.description?.toLowerCase().includes(search.toLowerCase());
+      
+      const isVeg = d.dietaryPreference === 'Vegetarian' 
+        || d.dietaryPreference === 'Vegan' 
+        || d.tags?.includes('Vegetarian') 
+        || d.tags?.includes('Vegan') 
+        || d.tags?.includes('vegan')
+        || d.tags?.includes('vegetarian');
+        
+      const matchVeg = vegOnly ? isVeg : true;
+      return matchSearch && matchVeg;
+    });
+
+    if (uncategorizedDishes.length > 0) {
+      result.push({
+        category: 'Others',
+        dishes: uncategorizedDishes
+      });
+    }
+    return result;
+  }, [allDishes, search, activeDietaryFilters, customCategories]);
+
   const totalItemsCount = categoriesWithDishes.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
 
   const bannerImages = useMemo(() => {
@@ -1496,7 +1553,33 @@ export default function MenuPage() {
               
               {/* Categories list */}
               <div className="overflow-y-auto pr-1 flex-1 py-2 space-y-4">
-                {categoriesWithDishes.map((catGroup) => {
+                {(() => {
+                  const totalAllDishesCount = categoriesForMenuPopup.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
+                  const isAllActive = activeCategory === 'All';
+                  return (
+                    <button
+                      onClick={() => {
+                        setActiveCategory('All');
+                        setMenuOpen(false);
+                        window.scrollTo({ top: 380, behavior: 'smooth' });
+                      }}
+                      className="w-full flex justify-between items-center text-left py-1"
+                    >
+                      <span className={`text-base font-bold transition-colors ${
+                        isAllActive ? 'text-green-600 dark:text-green-400 font-extrabold' : 'text-neutral-700 dark:text-neutral-300'
+                      }`}>
+                        All
+                      </span>
+                      <span className={`text-sm font-semibold transition-colors ${
+                        isAllActive ? 'text-green-600 dark:text-green-400 font-extrabold' : 'text-neutral-400 dark:text-neutral-500'
+                      }`}>
+                        {totalAllDishesCount}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {categoriesForMenuPopup.map((catGroup) => {
                   const isActive = activeCategory === catGroup.category;
                   return (
                     <button
