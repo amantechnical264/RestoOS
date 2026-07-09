@@ -8,6 +8,7 @@ import BottomNav from '../components/BottomNav';
 import { supabase } from '../services/supabase';
 import { auth } from '../services/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import LocationPicker from '../components/LocationPicker';
 
 // ── Combo Image Cycler ─────────────────────────────────────────────────
 function ComboImageCycler({ images }) {
@@ -64,6 +65,7 @@ export default function CartPage() {
   const [tempAddress, setTempAddress] = useState('');
   const [locationCoords, setLocationCoords] = useState(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showOtpPrompt, setShowOtpPrompt] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -795,23 +797,34 @@ export default function CartPage() {
                         {isDelivery && (
                           <div className="pt-2 border-t border-neutral-200 dark:border-white/10">
                             <label className="block text-xs font-bold text-neutral-500 mb-1.5 uppercase tracking-wider">Delivery Location <span className="text-red-500">*</span></label>
-                            <div className="flex gap-2 mb-2">
-                              <button 
-                                onClick={handleFetchLocation}
-                                disabled={isFetchingLocation || locationCoords}
-                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${locationCoords ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'}`}
-                              >
-                                <MapPin size={14} />
-                                {isFetchingLocation ? 'Detecting...' : locationCoords ? 'Location Detected' : 'Use GPS Location'}
-                              </button>
-                            </div>
-                            <p className="text-[10px] text-neutral-400 text-center mb-2">OR</p>
-                            <textarea 
-                              value={tempAddress} onChange={e => setTempAddress(e.target.value)} 
-                              placeholder="e.g. 123 Main St, Apt 4B, City"
-                              className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white resize-none" 
-                              rows={2}
-                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowLocationPicker(true)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                                tempAddress
+                                  ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                                  : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#0a0a0a] hover:border-[#D4AF37]/50'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                                tempAddress ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-neutral-200 dark:bg-white/10'
+                              }`}>
+                                <MapPin size={15} className={tempAddress ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-500'} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                {tempAddress
+                                  ? <>
+                                      <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Location Selected ✓</p>
+                                      <p className="text-xs font-bold text-neutral-800 dark:text-white truncate">{tempAddress}</p>
+                                    </>
+                                  : <>
+                                      <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Select delivery location</p>
+                                      <p className="text-[10px] text-neutral-400 mt-0.5">Search, use GPS or pin on map</p>
+                                    </>
+                                }
+                              </div>
+                              <ChevronRight size={14} className="text-neutral-400 shrink-0" />
+                            </button>
                           </div>
                         )}
                         <button 
@@ -1097,6 +1110,15 @@ export default function CartPage() {
 
       <div id="recaptcha-container"></div>
       <BottomNav />
+
+      <LocationPicker
+        isOpen={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        onLocationConfirmed={({ address, coords }) => {
+          setTempAddress(address);
+          setLocationCoords(coords);
+        }}
+      />
     </motion.div>
   );
 }
