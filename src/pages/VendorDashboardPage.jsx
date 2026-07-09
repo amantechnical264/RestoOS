@@ -3805,8 +3805,8 @@ export default function VendorDashboardPage() {
                   <Plus size={13} /> Add Dish
                 </button>
 
-                <nav className="flex flex-col gap-0.5 p-2 flex-1">
-                  {/* All category */}
+                <nav className="flex flex-col gap-0.5 p-2 flex-1 overflow-y-auto no-scrollbar">
+                  {/* All category – fixed, not reorderable */}
                   <button
                     onClick={() => setSelectedEditCategory('All')}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
@@ -3823,78 +3823,59 @@ export default function VendorDashboardPage() {
                     }`}>{vendDishes.length}</span>
                   </button>
 
-                  {/* Custom Categories with Up/Down reorder buttons */}
-                  {customCategories.map((cat, idx) => {
-                    const count = vendDishes.filter(d => d.tags?.includes(cat)).length;
-                    const isActive = selectedEditCategory === cat;
-                    const moveCategory = async (fromIdx, toIdx) => {
-                      if (toIdx < 0 || toIdx >= customCategories.length) return;
-                      const updated = [...customCategories];
-                      updated.splice(fromIdx, 1);
-                      updated.splice(toIdx, 0, cat);
-                      setCustomCategories(updated);
-                      await handleSaveCategoriesOrder(updated);
-                    };
-                    return (
-                      <div
-                        key={cat}
-                        className={`w-full flex items-center gap-1 px-2 py-1.5 rounded-xl text-sm font-semibold transition-all ${
-                          isActive
-                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
-                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        {/* Up / Down buttons */}
-                        <div className="flex flex-col gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
-                          <button
-                            disabled={idx === 0}
-                            onClick={() => moveCategory(idx, idx - 1)}
-                            title="Move up"
-                            className={`flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-black transition-colors ${
-                              idx === 0
-                                ? 'opacity-25 cursor-not-allowed'
-                                : isActive
-                                  ? 'bg-white/20 hover:bg-white/30 text-white dark:bg-black/20 dark:hover:bg-black/30 dark:text-black'
-                                  : 'bg-neutral-200 dark:bg-white/10 hover:bg-amber-400 hover:text-white dark:hover:bg-amber-500 text-neutral-600 dark:text-neutral-300'
-                            }`}
-                          >
-                            ▲
-                          </button>
-                          <button
-                            disabled={idx === customCategories.length - 1}
-                            onClick={() => moveCategory(idx, idx + 1)}
-                            title="Move down"
-                            className={`flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-black transition-colors ${
-                              idx === customCategories.length - 1
-                                ? 'opacity-25 cursor-not-allowed'
-                                : isActive
-                                  ? 'bg-white/20 hover:bg-white/30 text-white dark:bg-black/20 dark:hover:bg-black/30 dark:text-black'
-                                  : 'bg-neutral-200 dark:bg-white/10 hover:bg-amber-400 hover:text-white dark:hover:bg-amber-500 text-neutral-600 dark:text-neutral-300'
-                            }`}
-                          >
-                            ▼
-                          </button>
-                        </div>
-
-                        {/* Label (Click to select) */}
-                        <div
-                          onClick={() => setSelectedEditCategory(cat)}
-                          className="flex-1 cursor-pointer truncate font-semibold text-left select-none"
+                  {/* Drag-and-drop reorderable custom categories */}
+                  <Reorder.Group
+                    axis="y"
+                    values={customCategories}
+                    onReorder={(newOrder) => {
+                      setCustomCategories(newOrder);
+                      handleSaveCategoriesOrder(newOrder);
+                    }}
+                    className="flex flex-col gap-0.5"
+                  >
+                    {customCategories.map((cat) => {
+                      const count = vendDishes.filter(d => d.tags?.includes(cat)).length;
+                      const isActive = selectedEditCategory === cat;
+                      return (
+                        <Reorder.Item
+                          key={cat}
+                          value={cat}
+                          className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-sm font-semibold transition-colors cursor-grab active:cursor-grabbing ${
+                            isActive
+                              ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+                              : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
+                          }`}
                         >
-                          {cat}
-                        </div>
+                          {/* Drag handle */}
+                          <GripVertical
+                            size={14}
+                            className={`shrink-0 ${
+                              isActive
+                                ? 'text-white/50 dark:text-black/40'
+                                : 'text-neutral-400 dark:text-neutral-600'
+                            }`}
+                          />
 
-                        {/* Count Badge */}
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
-                          isActive
-                            ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
-                            : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
-                        }`}>{count}</span>
-                      </div>
-                    );
-                  })}
+                          {/* Label – click to select/filter */}
+                          <div
+                            onClick={() => setSelectedEditCategory(cat)}
+                            className="flex-1 truncate text-left select-none"
+                          >
+                            {cat}
+                          </div>
 
-                  {/* Uncategorised bucket */}
+                          {/* Count badge */}
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
+                            isActive
+                              ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+                              : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
+                          }`}>{count}</span>
+                        </Reorder.Item>
+                      );
+                    })}
+                  </Reorder.Group>
+
+                  {/* Uncategorised bucket – fixed, not reorderable */}
                   {(() => {
                     const uncatCount = vendDishes.filter(d => !customCategories.some(cat => d.tags?.includes(cat))).length;
                     return uncatCount > 0 ? (
