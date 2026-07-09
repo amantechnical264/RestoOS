@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles, Truck, Gift } from 'lucide-react';
+import { CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell, Crown, Store, Star, Sparkles, Truck, Gift, X, Receipt } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -71,7 +71,7 @@ function OrderTimeline({ currentStatus, orderType }) {
 /**
  * Zomato-style Historical Order Card with per-dish AI review support
  */
-function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview, dishes, user }) {
+function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime, onViewMenu, onSubmitReview, dishes, user, onShowBreakdown }) {
   const isCancelled = order.status === 'Cancelled';
   // Resolve cancel reason from metadata OR items array fallback
   const cancelReason = order.metadata?.cancelReason ||
@@ -226,9 +226,12 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
             <span className={`text-[14px] font-semibold ${isCancelled ? 'text-red-500' : 'text-neutral-700 dark:text-neutral-300'}`}>
               {isCancelled ? 'Cancelled' : 'Delivered'}
             </span>
-            <span className="text-[14px] font-bold text-neutral-900 dark:text-white">
+            <button
+              onClick={() => onShowBreakdown && onShowBreakdown(order)}
+              className="text-[14px] font-bold text-neutral-900 dark:text-white flex items-center gap-0.5 hover:text-[#E23744] focus:outline-none transition-colors"
+            >
               ₹{Number(order.total).toFixed(2)} &rsaquo;
-            </span>
+            </button>
           </div>
           {isCancelled && cancelReason && (
             <div className="mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
@@ -282,7 +285,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
   );
 }
 // Active Order Card (Legacy UI)
-function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate, formattedTime, tableNumber, cardStyleClass, t }) {
+function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate, formattedTime, tableNumber, cardStyleClass, t, onShowBreakdown }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -450,9 +453,12 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
 
       {/* Total */}
       <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}>
-        <span className="text-lg font-black text-neutral-900 dark:text-white">
-          Total: <span style={{ color: GOLD }}>₹{Number(order.total).toFixed(2)}</span>
-        </span>
+        <button
+          onClick={() => onShowBreakdown && onShowBreakdown(order)}
+          className="text-lg font-black text-neutral-900 dark:text-white flex items-center gap-1 hover:text-[#D4AF37] focus:outline-none transition-colors"
+        >
+          Total: <span style={{ color: GOLD }}>₹{Number(order.total).toFixed(2)}</span> &rsaquo;
+        </button>
         <span className={`px-3 py-1 rounded-lg text-xs font-bold`}
           style={order.paymentStatus === 'Paid'
             ? { background: 'rgba(16,185,129,0.1)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }
@@ -469,6 +475,7 @@ export default function DinerOrdersPage() {
   const { orders, user, restaurants, dishes, tableNumber, setActiveRestId, isDataLoaded } = useAppContext();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [breakdownOrder, setBreakdownOrder] = useState(null);
 
   // Seed per-dish rating store from all orders with reviews
   React.useEffect(() => {
@@ -594,6 +601,7 @@ export default function DinerOrdersPage() {
                     onSubmitReview={handleSubmitReview}
                     dishes={dishes}
                     user={user}
+                    onShowBreakdown={setBreakdownOrder}
                   />
                 </div>
               );
@@ -610,6 +618,7 @@ export default function DinerOrdersPage() {
                   tableNumber={tableNumber}
                   cardStyleClass={cardStyleClass}
                   t={t}
+                  onShowBreakdown={setBreakdownOrder}
                 />
               </div>
             );
@@ -617,7 +626,247 @@ export default function DinerOrdersPage() {
         </AnimatePresence>
       </div>
 
+      <AnimatePresence>
+        {breakdownOrder && (() => {
+          const rest = restaurants.find(r => r.id === (breakdownOrder.restId || breakdownOrder.rest_id) || r.id === breakdownOrder.rest_id);
+          return (
+            <OrderBreakdownModal
+              order={breakdownOrder}
+              restaurant={rest}
+              dishes={dishes}
+              onClose={() => setBreakdownOrder(null)}
+            />
+          );
+        })()}
+      </AnimatePresence>
+
       <BottomNav />
     </motion.div>
+  );
+}
+
+/**
+ * OrderBreakdownModal
+ * Displays detailed cost breakdown for an order: items, subtotals, convenience/delivery fees, taxes.
+ */
+function OrderBreakdownModal({ order, restaurant, dishes, onClose }) {
+  const isDelivery = order.orderType === 'delivery';
+  
+  // Get food items
+  const foodItems = useMemo(() => {
+    return (order.items || []).filter(item => 
+      item.type !== 'location_meta' && 
+      item.type !== 'metadata' && 
+      item.id !== '__contact_info' && 
+      item.id !== '__location' && 
+      item.id !== '__cancel_reason' && 
+      item.id !== '__special_instructions'
+    );
+  }, [order.items]);
+
+  // Group items by unique group ID (id + variantName + customizations)
+  const groupedItems = useMemo(() => {
+    return Object.values(foodItems.reduce((acc, item) => {
+      const variantName = item.variantName || item.selectedVariant?.name || '';
+      const custId = item.customizationId || (item.selectedCustomizations ? JSON.stringify(item.selectedCustomizations.map(c => c.id).sort()) : '');
+      const groupId = item.id + (variantName ? '-' + variantName : '') + (custId ? '-' + custId : '');
+      
+      if (!acc[groupId]) {
+        acc[groupId] = { 
+          ...item, 
+          quantity: 0, 
+          variantName: variantName,
+          price: Number(item.price || 0) 
+        };
+      }
+      acc[groupId].quantity += (Number(item.quantity) || Number(item.qty) || 1);
+      return acc;
+    }, {}));
+  }, [foodItems]);
+
+  // Compute Subtotal
+  const subtotal = useMemo(() => {
+    return foodItems.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity) || Number(item.qty) || 1)), 0);
+  }, [foodItems]);
+
+  // Compute Tax Rate & Tax Amount
+  const taxRate = useMemo(() => {
+    const rate = restaurant?.taxRate !== undefined 
+      ? restaurant.taxRate 
+      : (restaurant?.tax_rate !== undefined ? restaurant.tax_rate : 8); // default 8%
+    return rate / 100;
+  }, [restaurant]);
+
+  const taxAmount = subtotal * taxRate;
+
+  // Compute Delivery Fees
+  const deliveryConfig = restaurant?.macros?.deliveryConfig || {};
+  
+  const deliveryFee = isDelivery
+    ? (order.metadata?.deliveryFee !== undefined ? Number(order.metadata.deliveryFee) : (Number(deliveryConfig.deliveryFee) || 0))
+    : 0;
+    
+  const convenienceFee = isDelivery
+    ? (order.metadata?.convenienceFee !== undefined ? Number(order.metadata.convenienceFee) : (Number(deliveryConfig.convenienceFee) || 0))
+    : 0;
+    
+  const otherFees = useMemo(() => {
+    return isDelivery
+      ? (order.metadata?.otherFees || deliveryConfig.otherFees || [])
+      : [];
+  }, [isDelivery, order.metadata?.otherFees, deliveryConfig.otherFees]);
+
+
+  const total = Number(order.total || 0);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 80, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 80, scale: 0.96 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+        className="bg-white dark:bg-[#0f0f14] w-full sm:max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[85vh]"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="relative px-6 pt-6 pb-4 border-b border-neutral-100 dark:border-white/5 shrink-0">
+          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)' }} />
+          
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-[#D4AF37]/10 border border-[#D4AF37]/25">
+                  <Receipt size={12} className="text-[#D4AF37]" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Payment Summary</span>
+              </div>
+              <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white leading-tight truncate">
+                {restaurant?.name || 'Restaurant'}
+              </h3>
+              <p className="text-xs text-neutral-500 mt-0.5">Order Total Breakdown</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="shrink-0 w-8 h-8 rounded-full bg-neutral-100 dark:bg-white/8 flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors"
+            >
+              <X size={15} className="text-neutral-600 dark:text-neutral-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content Body */}
+        <div className="px-6 py-4 overflow-y-auto flex-1 space-y-4 no-scrollbar">
+          {/* Grouped Dishes */}
+          <div className="space-y-3">
+            <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Items Ordered</p>
+            <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-2xl p-4 divide-y divide-neutral-100 dark:divide-white/5">
+              {groupedItems.map((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                const isFree = item.isFree || item.type === 'free_dish';
+                return (
+                  <div key={index} className={`flex justify-between items-start py-2.5 ${index === 0 ? 'pt-0' : ''} ${index === groupedItems.length - 1 ? 'pb-0' : ''}`}>
+                    <div className="flex-1 min-w-0 pr-4">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-sm text-neutral-900 dark:text-white">
+                          {item.quantity}x {item.name}
+                        </span>
+                        {isFree && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <Gift size={8} /> free
+                          </span>
+                        )}
+                      </div>
+                      {item.variantName && (
+                        <p className="text-xs font-bold text-[#D4AF37] mt-0.5">{item.variantName}</p>
+                      )}
+                      {item.selectedCustomizations && item.selectedCustomizations.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.selectedCustomizations.map((c, ci) => (
+                            <span key={ci} className="px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-[#D4AF37]/5 text-[#D4AF37] border border-[#D4AF37]/15">
+                              {c.name}{Number(c.price) > 0 ? ` +₹${Number(c.price).toFixed(2)}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      {isFree ? (
+                        <span className="font-black text-sm text-emerald-500">FREE</span>
+                      ) : (
+                        <>
+                          <p className="font-bold text-sm text-neutral-900 dark:text-white">₹{itemTotal.toFixed(2)}</p>
+                          {item.quantity > 1 && (
+                            <p className="text-[10px] text-neutral-400 mt-0.5">₹{item.price.toFixed(2)} each</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Pricing Breakdown Rows */}
+          <div className="space-y-2.5 pt-2">
+            <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Charges Summary</p>
+            <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-2xl p-4 space-y-3 text-sm">
+              <div className="flex justify-between text-neutral-600 dark:text-neutral-400 font-medium">
+                <span>Subtotal</span>
+                <span className="font-bold text-neutral-900 dark:text-white">₹{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-neutral-600 dark:text-neutral-400 font-medium">
+                <span>Tax ({Math.round(taxRate * 100)}%)</span>
+                <span className="font-bold text-neutral-900 dark:text-white">₹{taxAmount.toFixed(2)}</span>
+              </div>
+              
+              {isDelivery && (
+                <>
+                  {deliveryFee > 0 && (
+                    <div className="flex justify-between text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span className="flex items-center gap-1"><Truck size={13}/>Delivery Fee</span>
+                      <span className="font-bold text-neutral-900 dark:text-white">₹{deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {convenienceFee > 0 && (
+                    <div className="flex justify-between text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span>Convenience Fee</span>
+                      <span className="font-bold text-neutral-900 dark:text-white">₹{convenienceFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {otherFees.map((f, fi) => Number(f.amount) > 0 && (
+                    <div key={fi} className="flex justify-between text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span>{f.label || 'Other Fee'}</span>
+                      <span className="font-bold text-neutral-900 dark:text-white">₹{Number(f.amount).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <div className="border-t border-neutral-200 dark:border-white/10 pt-3 flex justify-between items-center text-base font-black text-neutral-900 dark:text-white font-display">
+                <span>Total Amount Paid</span>
+                <span className="text-[#D4AF37] text-lg">₹{total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Close Button */}
+        <div className="p-6 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-black/20 shrink-0">
+          <button 
+            onClick={onClose}
+            className="w-full py-4 rounded-2xl font-display font-black text-base text-black transition-opacity hover:opacity-90 shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 100%)', boxShadow: '0 8px 24px rgba(212, 175, 87, 0.2)' }}
+          >
+            Close Breakdown
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
