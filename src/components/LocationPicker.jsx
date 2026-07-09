@@ -31,42 +31,74 @@ const saveRecent = (entry) => {
 };
 
 // Nominatim search (free, no API key)
-const nominatimSearch = async (query) => {
+const nominatimSearch = async (query, gpsCoords = null) => {
   if (!query || query.length < 3) return [];
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1`,
-      { headers: { 'Accept-Language': 'en', 'User-Agent': '3Dish-App/1.0' } }
-    );
+    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1`;
+    if (gpsCoords && gpsCoords.lat && gpsCoords.lng) {
+      // 1-degree box is roughly 100km, which biases strongly to their city/region
+      const left = gpsCoords.lng - 1.0;
+      const right = gpsCoords.lng + 1.0;
+      const top = gpsCoords.lat + 1.0;
+      const bottom = gpsCoords.lat - 1.0;
+      url += `&viewbox=${left},${top},${right},${bottom}`;
+    } else {
+      // Default bias to India bounding box to prevent random global results
+      url += `&viewbox=68.1,35.5,97.4,6.8`;
+    }
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': '3Dish-App/1.0' } });
     return await res.json();
   } catch { return []; }
 };
 
-// Nominatim reverse geocode
+// Nominatim reverse geocode — returns full object for rich parsing
 const reverseGeocode = async (lat, lng) => {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
       { headers: { 'Accept-Language': 'en', 'User-Agent': '3Dish-App/1.0' } }
     );
-    const data = await res.json();
-    return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    return await res.json();
   } catch {
-    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    return null;
   }
 };
 
-// Format a Nominatim result into a short display name
+// Format a Nominatim result into a short display name containing landmark/road/area/city
 const formatResult = (r) => {
+  if (!r) return '';
   const a = r.address || {};
-  const parts = [
-    a.road || a.pedestrian || a.footway,
-    a.suburb || a.neighbourhood || a.village || a.town,
-    a.city || a.county,
-    a.state,
-    a.country,
-  ].filter(Boolean);
-  return parts.length >= 2 ? parts.slice(0, 3).join(', ') : r.display_name;
+  
+  // Extract specific place name (like temple, shop, building, station)
+  const placeName = r.name || (r.display_name ? r.display_name.split(',')[0] : '');
+  
+  // Extract area info
+  const area = a.suburb || a.neighbourhood || a.village || a.town || a.city_district || a.residential;
+  const city = a.city || a.county || a.district;
+  
+  const parts = [];
+  if (placeName) parts.push(placeName);
+  
+  // Add road if it's not the same as placeName
+  if (a.road && a.road !== placeName) {
+    parts.push(a.road);
+  }
+  
+  // Add area if it's not the same as placeName
+  if (area && area !== placeName) {
+    parts.push(area);
+  }
+  
+  // Add city if it's not the same as placeName or area
+  if (city && city !== placeName && city !== area) {
+    parts.push(city);
+  }
+
+  // Filter out duplicates and empty values
+  const uniqueParts = [...new Set(parts.filter(Boolean))];
+  
+  // Return the first 3 parts (e.g. "Rosa Railway Station, Station Road, Rosa")
+  return uniqueParts.length > 0 ? uniqueParts.slice(0, 3).join(', ') : (r.display_name || '');
 };
 
 
@@ -81,7 +113,65 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
   const [addressDetails, setAddressDetails] = useState('');
   const [isReversing, setIsReversing] = useState(false);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
+  const [nearbyPlaces, setNearbyPlaces] = useState([]);
+  const [isNearbyLoading, setIsNearbyLoading] = useState(false);
   const debounceRef = useRef(null);
+
+  // Helper to fetch main geocode and lookup nearby landmarks/streets using the area name
+  const updateLocationAndNearby = async (lat, lng, preloadedData = null) => {
+    setIsReversing(true);
+    setIsNearbyLoading(true);
+    
+    let data = preloadedData;
+    if (!data) {
+      data = await reverseGeocode(lat, lng);
+    }
+    
+    const formattedAddress = data?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    setAddress(formattedAddress);
+    
+    if (data && data.address) {
+      const a = data.address || {};
+      // Prioritize area components (suburb, neighbourhood, town, village) or street/road
+      const areaName = a.suburb || a.neighbourhood || a.village || a.town || a.city_district || a.road;
+      if (areaName) {
+        try {
+          const left = lng - 0.05;
+          const right = lng + 0.05;
+          const top = lat + 0.05;
+          const bottom = lat - 0.05;
+          
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(areaName)}&viewbox=${left},${top},${right},${bottom}&limit=8&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en', 'User-Agent': '3Dish-App/1.0' } }
+          );
+          const searchData = await res.json();
+          const formatted = searchData
+            .map(r => ({
+              name: r.name || (r.display_name ? r.display_name.split(',')[0] : ''),
+              address: formatResult(r),
+              lat: parseFloat(r.lat),
+              lng: parseFloat(r.lon)
+            }))
+            .filter((item, index, self) => 
+              item.address && 
+              item.address.length > 5 &&
+              self.findIndex(t => t.address === item.address) === index
+            );
+          setNearbyPlaces(formatted.slice(0, 4));
+        } catch {
+          setNearbyPlaces([]);
+        }
+      } else {
+        setNearbyPlaces([]);
+      }
+    } else {
+      setNearbyPlaces([]);
+    }
+    
+    setIsReversing(false);
+    setIsNearbyLoading(false);
+  };
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -108,6 +198,9 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
 
     mapRef.current = map;
 
+    // Load initial nearby places for starting coordinate
+    updateLocationAndNearby(coords.lat, coords.lng);
+
     // Reverse geocode whenever map stops moving
     map.on('moveend', () => {
       const center = map.getCenter();
@@ -115,12 +208,9 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
       setCoords(newCoords);
 
       clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(async () => {
-        setIsReversing(true);
-        const addr = await reverseGeocode(newCoords.lat, newCoords.lng);
-        setAddress(addr);
-        setIsReversing(false);
-      }, 600);
+      debounceRef.current = setTimeout(() => {
+        updateLocationAndNearby(newCoords.lat, newCoords.lng);
+      }, 750);
     });
 
     return () => {
@@ -138,10 +228,7 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
         const lat = c.latitude, lng = c.longitude;
         mapRef.current?.flyTo([lat, lng], 17, { duration: 1 });
         setCoords({ lat, lng });
-        setIsReversing(true);
-        const addr = await reverseGeocode(lat, lng);
-        setAddress(addr);
-        setIsReversing(false);
+        await updateLocationAndNearby(lat, lng);
         setIsGpsLoading(false);
       },
       () => setIsGpsLoading(false),
@@ -173,8 +260,8 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
         </div>
       </div>
 
-      {/* Map — takes up top 55% */}
-      <div className="relative shrink-0" style={{ height: '55%' }}>
+      {/* Map — takes up top 50% */}
+      <div className="relative shrink-0" style={{ height: '50%' }}>
         <div ref={mapContainerRef} className="w-full h-full" />
 
         {/* Fixed center pin */}
@@ -222,7 +309,7 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
 
         {/* Address details (flat, floor, landmark) */}
         <div>
-          <label className="block text-xs font-black text-neutral-500 uppercase tracking-wider mb-2">Address Details</label>
+          <label className="block text-xs font-black text-neutral-500 uppercase tracking-wider mb-1.5">Address Details</label>
           <input
             type="text"
             value={addressDetails}
@@ -230,7 +317,42 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
             placeholder="Flat / Floor / Building / Landmark"
             className="w-full bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-[#D4AF37] placeholder:text-neutral-400 transition-colors"
           />
-          <p className="text-[10px] text-neutral-400 mt-1.5">E.g. Flat 4B, 3rd Floor, near SBI Bank</p>
+          <p className="text-[10px] text-neutral-400 mt-1">E.g. Flat 4B, 3rd Floor, near SBI Bank</p>
+        </div>
+
+        {/* Nearby locations list */}
+        <div>
+          <label className="block text-xs font-black text-neutral-500 uppercase tracking-wider mb-1.5">Nearby Areas & Landmarks</label>
+          {isNearbyLoading ? (
+            <div className="flex items-center gap-2 py-2 text-xs text-neutral-400">
+              <Loader2 size={12} className="animate-spin" />
+              <span>Finding nearby places...</span>
+            </div>
+          ) : nearbyPlaces.length > 0 ? (
+            <div className="grid grid-cols-1 gap-2">
+              {nearbyPlaces.map((place, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setCoords({ lat: place.lat, lng: place.lng });
+                    setAddress(place.address);
+                    mapRef.current?.flyTo([place.lat, place.lng], 16, { duration: 1 });
+                  }}
+                  className="w-full text-left flex items-start gap-2.5 p-2.5 rounded-xl border border-neutral-100 dark:border-white/5 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <MapPin size={13} className="text-neutral-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-neutral-800 dark:text-white truncate">{place.name}</p>
+                    <p className="text-[10px] text-neutral-400 truncate mt-0.5">{place.address}</p>
+                  </div>
+                  <ChevronRight size={12} className="text-neutral-400 shrink-0 self-center" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-400 italic">No nearby landmarks found. Drag map to load.</p>
+          )}
         </div>
 
         {/* Confirm button */}
@@ -273,8 +395,8 @@ function SearchView({ onClose, onLocationConfirmed }) {
         async ({ coords: c }) => {
           const lat = c.latitude, lng = c.longitude;
           setGpsCoords({ lat, lng });
-          const addr = await reverseGeocode(lat, lng);
-          setGpsAddress(addr);
+          const data = await reverseGeocode(lat, lng);
+          setGpsAddress(data?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
         },
         () => {},
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
@@ -288,12 +410,12 @@ function SearchView({ onClose, onLocationConfirmed }) {
     if (query.length < 3) { setResults([]); return; }
     setIsSearching(true);
     searchDebounce.current = setTimeout(async () => {
-      const data = await nominatimSearch(query);
+      const data = await nominatimSearch(query, gpsCoords);
       setResults(data);
       setIsSearching(false);
     }, 500);
     return () => clearTimeout(searchDebounce.current);
-  }, [query]);
+  }, [query, gpsCoords]);
 
   const handleGpsUse = () => {
     if (gpsCoords) {
@@ -307,7 +429,8 @@ function SearchView({ onClose, onLocationConfirmed }) {
       async ({ coords: c }) => {
         const lat = c.latitude, lng = c.longitude;
         setGpsCoords({ lat, lng });
-        const addr = await reverseGeocode(lat, lng);
+        const data = await reverseGeocode(lat, lng);
+        const addr = data?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         setGpsAddress(addr);
         setIsGpsLoading(false);
         setMapTarget({ lat, lng, address: addr });
