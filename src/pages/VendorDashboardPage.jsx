@@ -2575,6 +2575,147 @@ export default function VendorDashboardPage() {
     }, 250);
   }, [currentRestaurant, getOrderNumber, user]);
 
+  const handlePrintQRCodes = React.useCallback((tablesToPrint) => {
+    const restName = currentRestaurant?.name || 'Restaurant';
+    const logoUrl = currentRestaurant?.macros?.logo || currentRestaurant?.logo || '';
+
+    const cardsHtml = tablesToPrint.map(item => {
+      const svgElement = document.getElementById(item.svgId);
+      const svgHtml = svgElement ? svgElement.outerHTML : '';
+      
+      const brandingHtml = logoUrl 
+        ? `<img src="${logoUrl}" class="restaurant-logo" alt="${restName}" />`
+        : `<div class="restaurant-name-fallback">${restName}</div>`;
+
+      return `
+        <div class="qr-card">
+          <div class="table-name">${item.label}</div>
+          <div class="qr-code">
+            ${svgHtml}
+          </div>
+          <div class="scan-text">SCAN TO ORDER</div>
+          <div class="logo-container">
+            ${brandingHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>${restName} - QR Codes</title>
+          <style>
+            @media print {
+              @page { margin: 10mm; size: portrait; }
+              body { margin: 0; padding: 0; background: white; }
+            }
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              background: #f5f5f5;
+              color: black;
+              margin: 0;
+              padding: 20px;
+            }
+            .qr-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .qr-card {
+              border: 2px solid #eaeaea;
+              border-radius: 20px;
+              padding: 30px 20px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+              page-break-inside: avoid;
+              background: white;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+              box-sizing: border-box;
+            }
+            .table-name {
+              font-size: 16px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 0.15em;
+              color: #888;
+              margin-bottom: 16px;
+            }
+            .qr-code {
+              margin: 10px 0;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            .qr-code svg {
+              width: 160px;
+              height: 160px;
+            }
+            .scan-text {
+              font-size: 11px;
+              font-weight: 800;
+              letter-spacing: 0.1em;
+              color: #555;
+              margin-top: 10px;
+              margin-bottom: 20px;
+            }
+            .logo-container {
+              height: 50px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100%;
+            }
+            .restaurant-logo {
+              max-height: 48px;
+              max-width: 150px;
+              object-fit: contain;
+            }
+            .restaurant-name-fallback {
+              font-size: 20px;
+              font-weight: 900;
+              color: #111;
+              letter-spacing: 0.05em;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-grid">
+            ${cardsHtml}
+          </div>
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(htmlContent);
+    iframe.contentWindow.document.close();
+    
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 60000);
+    }, 250);
+  }, [currentRestaurant]);
+
   if (isStaffMode) {
     return (
       <StaffDashboard
@@ -6088,6 +6229,7 @@ export default function VendorDashboardPage() {
                     <div key={i} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 flex flex-col items-center shadow-sm">
                       <p className="font-black text-xs text-neutral-400 mb-4 uppercase tracking-widest">Table {i + 1}</p>
                       <QRCodeSVG
+                        id={`qr-svg-table-${i + 1}`}
                         value={`${window.location.origin}/menu?restId=${activeRestId}&table=${i + 1}`}
                         size={130} level="H" includeMargin={false} fgColor="#111111"
                         className="dark:hidden"
@@ -6099,6 +6241,12 @@ export default function VendorDashboardPage() {
                         className="hidden dark:block"
                       />
                       <p className="text-[10px] text-neutral-400 mt-3 text-center">{currentRestaurant?.name} · T{i+1}</p>
+                      <button
+                        onClick={() => handlePrintQRCodes([{ label: `Table ${i + 1}`, svgId: `qr-svg-table-${i + 1}` }])}
+                        className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/15 transition-all text-neutral-700 dark:text-neutral-300"
+                      >
+                        <Printer size={10} /> Print Card
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -6112,17 +6260,36 @@ export default function VendorDashboardPage() {
                       <MapPin size={14} /> Requests Live Location from Diner
                     </div>
                   </div>
-                  <div className="shrink-0 bg-white p-3 rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm relative z-10">
+                  <div className="shrink-0 bg-white p-3 rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm relative z-10 flex flex-col items-center">
                     <QRCodeSVG
+                      id="qr-svg-table-delivery"
                       value={`${window.location.origin}/menu?restId=${activeRestId}&table=delivery`}
                       size={110} level="H" includeMargin={false} fgColor="#111111"
                     />
                     <p className="text-[10px] text-neutral-500 font-bold mt-2 text-center uppercase tracking-widest">Scan to Order</p>
+                    <button
+                      onClick={() => handlePrintQRCodes([{ label: 'Delivery & Takeaway', svgId: 'qr-svg-table-delivery' }])}
+                      className="mt-2.5 w-full flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-neutral-100 hover:bg-neutral-200 transition-all text-neutral-700 border border-neutral-200"
+                    >
+                      <Printer size={10} /> Print Card
+                    </button>
                   </div>
                 </div>
 
-                <button onClick={() => window.print()}
-                  className="w-full py-4 rounded-2xl font-display font-black flex items-center justify-center gap-2 bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg">
+                <button
+                  onClick={() => {
+                    const list = Array.from({ length: tableCount }, (_, i) => ({
+                      label: `Table ${i + 1}`,
+                      svgId: `qr-svg-table-${i + 1}`
+                    }));
+                    list.push({
+                      label: 'Delivery & Takeaway',
+                      svgId: 'qr-svg-table-delivery'
+                    });
+                    handlePrintQRCodes(list);
+                  }}
+                  className="w-full py-4 rounded-2xl font-display font-black flex items-center justify-center gap-2 bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg"
+                >
                   <Printer size={18} /> Print All {tableCount} QR Codes
                 </button>
               </div>
