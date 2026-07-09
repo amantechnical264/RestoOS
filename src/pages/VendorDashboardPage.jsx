@@ -5380,7 +5380,15 @@ export default function VendorDashboardPage() {
                       savedDishId = resId;
                     }
                     if (success && savedDishId) {
-                      // Only sync customizations if the restaurant actually has customization categories
+                      const isEditMode = !!editingDish.id;
+                      // Reset publishing state and close the form immediately
+                      setIsPublishingDish(false);
+                      setEditingDish(null);
+                      setScanState('idle');
+                      setProgress(0);
+                      showNotification(isEditMode ? 'Dish updated!' : 'Dish published!');
+
+                      // Sync customizations in the background without blocking the UI
                       const existingCustomizations = currentRestaurant?.macros?.customizations || [];
                       if (existingCustomizations.length > 0) {
                         const stringSavedDishId = String(savedDishId);
@@ -5399,15 +5407,10 @@ export default function VendorDashboardPage() {
                           }
                           return { ...cat, linkedDishes: nextLinkedDishes };
                         });
-                        await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
+                        updateRestaurant(activeRestId, { customizations: updatedCustomizations }).catch(err => {
+                          console.error("Error syncing customizations in background:", err);
+                        });
                       }
-
-                      // Reset publishing state BEFORE closing the form so button reverts before exit animation
-                      setIsPublishingDish(false);
-                      setEditingDish(null);
-                      setScanState('idle');
-                      setProgress(0);
-                      showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!');
                     }
                   } catch (err) {
                     console.error("Error publishing dish:", err);
@@ -6285,7 +6288,7 @@ export default function VendorDashboardPage() {
                           x: undefined,
                           y: undefined,
                           height: 32,
-                          width: 32,
+                          width: 42,
                           excavate: true,
                         } : undefined}
                       />
@@ -6299,7 +6302,7 @@ export default function VendorDashboardPage() {
                           x: undefined,
                           y: undefined,
                           height: 32,
-                          width: 32,
+                          width: 42,
                           excavate: true,
                         } : undefined}
                       />
@@ -6317,7 +6320,7 @@ export default function VendorDashboardPage() {
                 <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-[100px] pointer-events-none" />
                   <div className="flex-1 text-center sm:text-left relative z-10">
-                    <h3 className="font-display font-black text-xl mb-1 text-neutral-900 dark:text-white">Delivery & Takeaway</h3>
+                     <h3 className="font-display font-black text-xl mb-1 text-neutral-900 dark:text-white">Delivery & Takeaway</h3>
                     <p className="text-sm text-neutral-500 mb-4">Print this QR for customers ordering from outside or for pick-up. No table assigned.</p>
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                       <MapPin size={14} /> Requests Live Location from Diner
@@ -6333,7 +6336,7 @@ export default function VendorDashboardPage() {
                         x: undefined,
                         y: undefined,
                         height: 26,
-                        width: 26,
+                        width: 34,
                         excavate: true,
                       } : undefined}
                     />
