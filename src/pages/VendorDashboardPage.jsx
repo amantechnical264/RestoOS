@@ -2184,7 +2184,7 @@ export default function VendorDashboardPage() {
 
   const uniqueCustomers = customerList.length;
   const repeatCustomers = customerList.filter(c => c.orderCount > 1).length;
-  const avgLifetimeValue = uniqueCustomers > 0 ? (completed.reduce((s, o) => s + (o.total || 0), 0) / uniqueCustomers) : 0;
+  const avgLifetimeValue = uniqueCustomers > 0 ? (customerList.reduce((s, c) => s + c.totalSpend, 0) / uniqueCustomers) : 0;
 
   const reviewOrders = React.useMemo(() => {
     return restOrders
