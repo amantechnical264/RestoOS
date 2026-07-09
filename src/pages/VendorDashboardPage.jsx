@@ -7604,6 +7604,7 @@ export default function VendorDashboardPage() {
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">Start Date</label>
                       <input 
                         type="date"
+                        lang="en-GB"
                         value={tempDineInStartDate}
                         max={tempDineInEndDate}
                         onKeyDown={(e) => e.preventDefault()}
@@ -7622,6 +7623,7 @@ export default function VendorDashboardPage() {
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">End Date</label>
                       <input 
                         type="date"
+                        lang="en-GB"
                         value={tempDineInEndDate}
                         min={tempDineInStartDate}
                         onKeyDown={(e) => e.preventDefault()}
@@ -7760,6 +7762,7 @@ export default function VendorDashboardPage() {
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">Start Date</label>
                       <input 
                         type="date"
+                        lang="en-GB"
                         value={tempDeliveryStartDate}
                         max={tempDeliveryEndDate}
                         onKeyDown={(e) => e.preventDefault()}
@@ -7778,6 +7781,7 @@ export default function VendorDashboardPage() {
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">End Date</label>
                       <input 
                         type="date"
+                        lang="en-GB"
                         value={tempDeliveryEndDate}
                         min={tempDeliveryStartDate}
                         onKeyDown={(e) => e.preventDefault()}
