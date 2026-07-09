@@ -26,7 +26,7 @@ const AdminDashboardPage  = React.lazy(() => import('./pages/AdminDashboardPage'
 class GlobalErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
@@ -34,13 +34,51 @@ class GlobalErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error("Global error caught:", error, errorInfo);
     this.setState({ error, errorInfo });
-    // If it's a chunk load error (from outdated PWA cache), force a hard reload
-    if (error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to fetch dynamically imported module')) {
-      window.location.reload(true);
+
+    const isChunkError =
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Importing a module script failed');
+
+    if (isChunkError) {
+      // Only auto-recover ONCE — use sessionStorage to track this.
+      // This prevents the infinite reload loop when the chunk is genuinely missing.
+      const alreadyRetried = sessionStorage.getItem('chunk_error_retry');
+      if (!alreadyRetried) {
+        sessionStorage.setItem('chunk_error_retry', '1');
+        // Clear all PWA/SW caches then hard-navigate with a cache-buster
+        const doRecovery = async () => {
+          try {
+            // Unregister all service workers so the stale cache is gone
+            if ('serviceWorker' in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map(r => r.unregister()));
+            }
+            // Clear CacheStorage (workbox precache etc.)
+            if ('caches' in window) {
+              const keys = await caches.keys();
+              await Promise.all(keys.map(k => caches.delete(k)));
+            }
+          } catch (e) {
+            console.warn('Cache clear failed:', e);
+          } finally {
+            // Hard-navigate to the same URL with a timestamp to bypass browser cache
+            const url = new URL(window.location.href);
+            url.searchParams.set('_cb', Date.now());
+            window.location.replace(url.toString());
+          }
+        };
+        doRecovery();
+        return; // Don't render the error UI yet — we're about to navigate away
+      }
     }
+    // If it's NOT a chunk error, or we already retried, clear the retry flag so
+    // future navigations can still auto-recover if needed.
+    sessionStorage.removeItem('chunk_error_retry');
   }
   render() {
-    if (this.state.hasError) {
+    if (this.state.hasError && !sessionStorage.getItem('chunk_error_retry')) {
       return (
         <div className="fixed inset-0 bg-neutral-50 dark:bg-black flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mb-4">
@@ -56,7 +94,7 @@ class GlobalErrorBoundary extends React.Component {
             </pre>
           )}
           <button onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.reload(true); }} className="px-6 py-3 bg-[#D4AF37] text-black font-bold rounded-full mb-4 w-full">
-            Clear Cache & Restart
+            Clear Cache &amp; Restart
           </button>
           <button onClick={() => window.location.reload(true)} className="px-6 py-3 border border-[#D4AF37] text-[#D4AF37] font-bold rounded-full w-full">
             Just Refresh
@@ -64,6 +102,8 @@ class GlobalErrorBoundary extends React.Component {
         </div>
       );
     }
+    // While auto-recovery is in progress, render nothing (we're navigating away)
+    if (this.state.hasError) return null;
     return this.props.children;
   }
 }
