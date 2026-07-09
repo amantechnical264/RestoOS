@@ -1344,8 +1344,8 @@ export default function VendorDashboardPage() {
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
   // Default variants pre-loaded when creating a new dish
   const DEFAULT_DISH_VARIANTS = [
-    { name: 'Full', price: '' },
     { name: 'Half', price: '' },
+    { name: 'Full', price: '' },
     { name: 'Regular', price: '' },
   ];
 
@@ -3549,7 +3549,7 @@ export default function VendorDashboardPage() {
                         className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-black hover:bg-[#D4AF37]/20 transition-colors shadow-[0_0_15px_rgba(212,175,55,0.15)]">
                         <Sparkles size={16} /> Import Menu (AI)
                       </button>
-                      <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', images: [], tags: [], variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
+                      <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', customizationCategories: [], images: [], tags: [], variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] })}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity">
                         <Plus size={16} /> Add Dish
                       </button>
@@ -3758,7 +3758,7 @@ export default function VendorDashboardPage() {
 
                 {/* Add Dish shortcut */}
                 <button
-                  onClick={() => { setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', images: [], tags: [], variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] }); setVendorTab('menu'); }}
+                  onClick={() => { setEditingDish({ name: '', price: '', description: '', modelUrl: '', chef: '', prepTime: '', origin: '', serves: '', spiceLevel: '', dietaryPreference: '', customizationCategories: [], images: [], tags: [], variants: DEFAULT_DISH_VARIANTS.map(v => ({ ...v })), macros: { calories: '', protein: '', carbs: '', fat: '' }, allergens: [], ingredients: [] }); setVendorTab('menu'); }}
                   className="mx-3 mt-3 mb-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-xs font-bold hover:opacity-90 transition-opacity"
                 >
                   <Plus size={13} /> Add Dish
