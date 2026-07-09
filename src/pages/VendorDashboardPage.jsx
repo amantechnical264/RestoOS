@@ -7707,10 +7707,16 @@ export default function VendorDashboardPage() {
         <AnimatePresence>
           {deliveryDetailOrder && (() => {
             const od = deliveryDetailOrder;
-            const _locFromItems = od.items?.find(i => i.type === 'location_meta');
+            // Safely parse metadata — Supabase JSONB returns objects but occasionally arrives as a string
+            const _meta = (() => {
+              if (!od.metadata) return {};
+              if (typeof od.metadata === 'string') { try { return JSON.parse(od.metadata); } catch { return {}; } }
+              return od.metadata;
+            })();
+            const _locFromItems = od.items?.find(i => i.type === 'location_meta' || i.id === '__location');
             const _parseGPS = (str) => { if (!str) return null; const m = String(str).match(/[\[\s]GPS:([\d.\-]+),([\d.\-]+)/); return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null; };
-            const _rawAddr = od.metadata?.address || _locFromItems?.address || '';
-            const _loc = od.metadata?.location || _locFromItems || _parseGPS(_rawAddr) || {};
+            const _rawAddr = _meta.address || _locFromItems?.address || '';
+            const _loc = _meta.location || (_locFromItems?.lat ? _locFromItems : null) || _parseGPS(_rawAddr) || {};
             const displayAddr = _rawAddr.replace(/\s*\[GPS:[\d.,\-]+\]/, '').trim();
             const detailMapUrl = _loc.lat && _loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${_loc.lat},${_loc.lng}` : null;
             const orderNote = getOrderNote(od);
@@ -7719,13 +7725,13 @@ export default function VendorDashboardPage() {
             const isDeliveryOrder = od.order_type === 'delivery' || od.orderType === 'delivery';
             const deliveryConfig = currentRestaurant?.macros?.deliveryConfig || {};
             const deliveryFee = isDeliveryOrder
-              ? (od.metadata?.deliveryFee !== undefined ? Number(od.metadata.deliveryFee) : (Number(deliveryConfig.deliveryFee) || 0))
+              ? (_meta.deliveryFee !== undefined ? Number(_meta.deliveryFee) : (Number(deliveryConfig.deliveryFee) || 0))
               : 0;
             const convenienceFee = isDeliveryOrder
-              ? (od.metadata?.convenienceFee !== undefined ? Number(od.metadata.convenienceFee) : (Number(deliveryConfig.convenienceFee) || 0))
+              ? (_meta.convenienceFee !== undefined ? Number(_meta.convenienceFee) : (Number(deliveryConfig.convenienceFee) || 0))
               : 0;
             const otherFees = isDeliveryOrder
-              ? (od.metadata?.otherFees || deliveryConfig.otherFees || [])
+              ? (_meta.otherFees || deliveryConfig.otherFees || [])
               : [];
             const taxRate = currentRestaurant?.taxRate !== undefined ? currentRestaurant.taxRate / 100 : 0.08;
             const subtotal = foodItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0);
@@ -7756,7 +7762,7 @@ export default function VendorDashboardPage() {
                           <AlertTriangle size={10} /> Cancellation Reason
                         </p>
                         <p className="text-sm font-bold text-red-800 dark:text-red-300">
-                          {od.metadata?.cancelReason || od.items?.find(i => i.id === '__cancel_reason')?.reason || 'No cancellation reason specified.'}
+                          {_meta.cancelReason || od.items?.find(i => i.id === '__cancel_reason')?.reason || 'No cancellation reason specified.'}
                         </p>
                       </div>
                     )}

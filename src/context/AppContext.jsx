@@ -775,12 +775,21 @@ export const AppProvider = ({ children }) => {
       newOrder.metadata = finalMetadata;
     }
 
-    // Always encode location into items as a resilient fallback (survives metadata column being absent)
-    if (orderData?.metadata?.location) {
-      const { lat, lng } = orderData.metadata.location;
+    // Always encode location into items as a resilient fallback (survives metadata column being absent).
+    // This covers both GPS-detected locations AND manually typed addresses.
+    if (orderData?.metadata?.location || orderData?.metadata?.address) {
+      const coords = orderData.metadata.location || {};
       newOrder.items = [
         ...newOrder.items,
-        { id: '__location', lat, lng, address: orderData.metadata.address || '', price: 0, quantity: 0, type: 'location_meta' }
+        {
+          id: '__location',
+          lat: coords.lat ?? null,
+          lng: coords.lng ?? null,
+          address: orderData.metadata.address || '',
+          price: 0,
+          quantity: 0,
+          type: 'location_meta'
+        }
       ];
     }
 
