@@ -231,22 +231,11 @@ export const AppProvider = ({ children }) => {
   const ordersChannelRef = useRef(null);
 
   // ── Subscription Plan State ────────────────────────────────────────
-  // Stored per restaurant: { [restId]: 'Starter' | 'Pro' | 'Enterprise' }
-  const [plans, setPlans] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('3dish_plans') || '{}'); } catch { return {}; }
-  });
-
-  // Get plan for a given restaurant (defaults to 'Starter')
-  const planFor = (restId) => plans[restId] || 'Starter';
-
-  // Upgrade (or downgrade) a restaurant's plan
-  const upgradePlan = (restId, newPlan) => {
-    setPlans(prev => {
-      const next = { ...prev, [restId]: newPlan };
-      localStorage.setItem('3dish_plans', JSON.stringify(next));
-      return next;
-    });
-  };
+  // Get plan for a given restaurant directly from the live database macros (defaults to 'Starter' for backward compatibility)
+  const planFor = React.useCallback((restId) => {
+    const rest = restaurants.find(r => r.id === restId);
+    return rest?.macros?.plan || 'Starter';
+  }, [restaurants]);
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('3dish_favorites') || '[]'); } catch { return []; }
   });
