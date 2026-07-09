@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, ChevronLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { Shield, Lock, ChevronLeft, Loader2, AlertTriangle, Mail, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../services/supabase';
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   
   // The Honeypot State
-  // true = shows fake 404 page
-  // false = shows the real admin login
   const [isHidden, setIsHidden] = useState(true);
   const [clickCount, setClickCount] = useState(0);
 
-  // Secret unlock mechanism: Triple-click the "404" text within a short timeframe
+  // If already logged in, they shouldn't need to do this unless their role is wrong.
+  // Actually, we'll check role on the dashboard. But let's let them login first.
+
   const handleSecretClick = () => {
     const newCount = clickCount + 1;
     setClickCount(newCount);
@@ -25,31 +27,31 @@ export default function AdminAuthPage() {
       setClickCount(0); // reset
     }
     
-    // Reset clicks if they don't do it fast enough
     setTimeout(() => {
       setClickCount(0);
     }, 1500);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Verify against the VITE_ADMIN_PIN env variable
-    const adminPin = import.meta.env.VITE_ADMIN_PIN || '123456';
-    
-    setTimeout(() => {
-      if (pin === adminPin) {
-        // Industry Standard: Use sessionStorage for super-admin so it expires on tab close
-        sessionStorage.setItem('3dish_sys_admin_token', 'secure_granted_session');
-        navigate('/hq-portal/dashboard', { replace: true });
-      } else {
-        setError('Access Denied: Invalid Security Credential');
-        setPin('');
-      }
+    try {
+      // Send Magic Link
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: window.location.origin + '/hq-portal/dashboard',
+        }
+      });
+      if (error) throw error;
+      setMagicLinkSent(true);
+    } catch (err) {
+      setError(err.message || 'Failed to send secure token.');
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   // -------------------------------------------------------------
@@ -92,7 +94,6 @@ export default function AdminAuthPage() {
       className="min-h-screen flex flex-col items-center justify-center p-6 relative"
       style={{ background: 'radial-gradient(ellipse at top, #110d1c 0%, #05020a 50%, #000000 100%)' }}
     >
-      {/* Ambient glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full pointer-events-none opacity-20"
         style={{ background: 'radial-gradient(ellipse, rgba(139,92,246,0.15), transparent 70%)' }} />
 
@@ -125,48 +126,66 @@ export default function AdminAuthPage() {
 
           <h1 className="text-3xl font-serif font-bold text-white mb-3">System Terminal</h1>
           <p className="text-neutral-500 text-sm font-sans">
-            Enter secure credential sequence to establish connection.
+            Cryptographic Authentication Required.
           </p>
         </div>
 
-        <form onSubmit={handleLogin}
-          className="rounded-3xl p-7 shadow-2xl bg-white/[0.02] border border-white/[0.07] backdrop-blur-xl">
+        <div className="rounded-3xl p-7 shadow-2xl bg-white/[0.02] border border-white/[0.07] backdrop-blur-xl">
           
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {error && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <motion.div key="error" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="text-sm font-sans font-medium p-4 rounded-xl mb-5 bg-red-500/10 border border-red-500/20 text-red-400">
                 ⚠ {error}
               </motion.div>
             )}
+
+            {magicLinkSent ? (
+              <motion.div key="sent" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/30">
+                  <CheckCircle2 size={32} className="text-emerald-400" />
+                </div>
+                <p className="font-sans font-bold text-white mb-2">Transmission Sent</p>
+                <p className="text-sm text-neutral-500 mb-5">
+                  A secure access token has been dispatched to <span className="text-purple-400">{email}</span>.
+                </p>
+                <button
+                  onClick={() => { setMagicLinkSent(false); setEmail(''); setError(''); }}
+                  className="text-xs font-sans text-neutral-500 hover:text-neutral-300 transition-colors underline">
+                  Initiate new request
+                </button>
+              </motion.div>
+            ) : (
+              <motion.form key="form" onSubmit={handleLogin} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="mb-6">
+                  <label className="block text-xs font-black uppercase tracking-widest text-neutral-500 mb-2 ml-1">Admin Identity (Email)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <Mail size={18} className="text-neutral-500" />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@system.local"
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-neutral-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono text-sm tracking-wider"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <motion.button type="submit" disabled={loading || !email}
+                  whileHover={{ scale: (loading || !email) ? 1 : 1.02 }}
+                  whileTap={{ scale: (loading || !email) ? 1 : 0.98 }}
+                  className="w-full py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold">
+                  {loading ? <Loader2 size={22} className="animate-spin" /> : 'Request Access Token'}
+                </motion.button>
+              </motion.form>
+            )}
           </AnimatePresence>
-
-          <div className="mb-6">
-            <label className="block text-xs font-black uppercase tracking-widest text-neutral-500 mb-2 ml-1">Access PIN</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <Lock size={18} className="text-neutral-500" />
-              </div>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="••••••"
-                className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-neutral-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono text-xl tracking-widest text-center"
-                required
-                autoFocus
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          <motion.button type="submit" disabled={loading || !pin}
-            whileHover={{ scale: (loading || !pin) ? 1 : 1.02 }}
-            whileTap={{ scale: (loading || !pin) ? 1 : 0.98 }}
-            className="w-full py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold">
-            {loading ? <Loader2 size={22} className="animate-spin" /> : 'Establish Connection'}
-          </motion.button>
-        </form>
+        </div>
       </div>
     </motion.div>
   );

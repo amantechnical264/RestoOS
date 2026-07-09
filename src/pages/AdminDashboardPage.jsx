@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Users, Store, DollarSign, Activity, LogOut, Search, Star, Zap, Crown, Power, PowerOff } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
+// HARDCODED FALLBACK WHITELIST (For initial setup before DB table is ready)
+const ADMIN_EMAILS = ['therohitkumar579@gmail.com'];
+
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -10,15 +13,38 @@ export default function AdminDashboardPage() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
-    // Security: Check SessionStorage token
-    if (sessionStorage.getItem('3dish_sys_admin_token') !== 'secure_granted_session') {
-      navigate('/hq-portal', { replace: true });
-      return;
-    }
-    fetchPlatformData();
+    checkAdminAuth();
   }, [navigate]);
+
+  const checkAdminAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/hq-portal', { replace: true });
+        return;
+      }
+
+      // Check against DB system_admins table OR fallback hardcoded list
+      const { data: adminRecord } = await supabase.from('system_admins').select('*').eq('email', user.email).single();
+      
+      if (!adminRecord && !ADMIN_EMAILS.includes(user.email)) {
+        console.error("Unauthorized: Not an admin");
+        await supabase.auth.signOut();
+        navigate('/hq-portal', { replace: true });
+        return;
+      }
+
+      setAdminUser(user);
+      fetchPlatformData();
+    } catch (err) {
+      console.error("Auth check failed", err);
+      navigate('/hq-portal', { replace: true });
+    }
+  };
 
   const fetchPlatformData = async () => {
     try {
@@ -43,8 +69,8 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('3dish_sys_admin_token');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/hq-portal', { replace: true });
   };
 
