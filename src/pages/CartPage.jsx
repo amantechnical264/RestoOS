@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CheckCircle2, Store, Trash2, Plus, Minus, Zap, Box, Sparkles, X, Truck, Gift } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingCart, MapPin, Clock, Smartphone, CheckCircle2, Store, Trash2, Plus, Minus, Zap, Box, Sparkles, X, Truck, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
