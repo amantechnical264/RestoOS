@@ -898,7 +898,7 @@ export const AppProvider = ({ children }) => {
         requireVerificationCode: updateData.requireVerificationCode !== undefined
           ? updateData.requireVerificationCode
           : r.requireVerificationCode,
-        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined)
+        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined || updateData.logo !== undefined)
           ? {
               ...(r.macros || {}),
               ...(updateData.deliveryConfig          !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
@@ -908,6 +908,7 @@ export const AppProvider = ({ children }) => {
               ...(updateData.socials                 !== undefined ? { socials: updateData.socials } : {}),
               ...(updateData.customizations          !== undefined ? { customizations: updateData.customizations } : {}),
               ...(updateData.offers                  !== undefined ? { offers: updateData.offers } : {}),
+              ...(updateData.logo                   !== undefined ? { logo: updateData.logo } : {}),
             }
           : r.macros,
       } : r);
@@ -934,7 +935,7 @@ export const AppProvider = ({ children }) => {
       // requireVerificationCode and deliveryConfig live here. If the column is missing,
       // the value is already saved in local state + localStorage above, so the toggle
       // still works correctly for the session and across page reloads.
-      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined) {
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined || updateData.logo !== undefined) {
         const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
         const newMacros = { ...currentMacros };
         if (updateData.deliveryConfig          !== undefined) newMacros.deliveryConfig          = updateData.deliveryConfig;
@@ -944,6 +945,7 @@ export const AppProvider = ({ children }) => {
         if (updateData.socials                 !== undefined) newMacros.socials                 = updateData.socials;
         if (updateData.customizations          !== undefined) newMacros.customizations          = updateData.customizations;
         if (updateData.offers                  !== undefined) newMacros.offers                  = updateData.offers;
+        if (updateData.logo                   !== undefined) newMacros.logo                   = updateData.logo;
 
         const { error: macrosError } = await supabase.from('restaurants')
           .update({ macros: newMacros })

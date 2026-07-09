@@ -1565,7 +1565,7 @@ export default function VendorDashboardPage() {
   };
 
   const [settingsForm, setSettingsForm] = React.useState({
-    name: '', cover: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00', requireVerificationCode: true,
+    name: '', cover: '', logo: '', taxRate: 8, acceptCash: true, phone: '', hours: '10:00 - 22:00', requireVerificationCode: true,
     deliveryConfig: { convenienceFee: 0, deliveryFee: 0, otherFees: [] }
   });
 
@@ -1627,6 +1627,7 @@ export default function VendorDashboardPage() {
       setSettingsForm({
         name: currentRestaurant.name || '',
         cover: currentRestaurant.cover || '',
+        logo: currentRestaurant.macros?.logo || currentRestaurant.logo || '',
         taxRate: currentRestaurant.taxRate !== undefined ? currentRestaurant.taxRate : 8,
         acceptCash: currentRestaurant.acceptCash !== undefined ? currentRestaurant.acceptCash : true,
         requireVerificationCode: currentRestaurant.requireVerificationCode !== undefined ? currentRestaurant.requireVerificationCode : true,
@@ -2620,12 +2621,21 @@ export default function VendorDashboardPage() {
         className="px-5 py-3 flex justify-between items-center z-10 shrink-0 backdrop-blur-xl bg-white dark:bg-black/95 border-b border-neutral-200 dark:border-[rgba(212,175,55,0.2)] shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
       >
         <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: goldGradient, boxShadow: '0 4px 15px rgba(212,175,55,0.3)' }}
-          >
-            <Store size={18} className="text-black" />
-          </div>
+          {currentRestaurant?.macros?.logo || currentRestaurant?.logo ? (
+            <img
+              src={currentRestaurant.macros?.logo || currentRestaurant.logo}
+              alt="logo"
+              className="w-10 h-10 rounded-2xl object-cover border-2"
+              style={{ borderColor: 'rgba(212,175,55,0.4)' }}
+            />
+          ) : (
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center"
+              style={{ background: goldGradient, boxShadow: '0 4px 15px rgba(212,175,55,0.3)' }}
+            >
+              <Store size={18} className="text-black" />
+            </div>
+          )}
           <div>
             <h1 className="font-display font-black text-base leading-tight text-neutral-900 dark:text-white">{currentRestaurant?.name || 'Dashboard'}</h1>
             <p className="text-[11px] flex items-center gap-1.5 text-neutral-500">
@@ -6353,6 +6363,58 @@ export default function VendorDashboardPage() {
                       <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Restaurant Name *</label>
                       <input required type="text" value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})}
                         className="w-full rounded-xl p-3 text-sm" placeholder="My Restaurant" />
+                    </div>
+
+                    {/* Restaurant Logo */}
+                    <div>
+                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest flex items-center gap-2">
+                        <Store size={12} /> Restaurant Logo
+                      </label>
+                      <div className="flex items-center gap-4">
+                        {/* Logo preview */}
+                        <div
+                          className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border-2 overflow-hidden"
+                          style={{ borderColor: 'rgba(212,175,55,0.3)', background: settingsForm.logo ? 'transparent' : 'rgba(212,175,55,0.06)' }}
+                        >
+                          {settingsForm.logo ? (
+                            <img src={settingsForm.logo} alt="logo preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <Store size={22} style={{ color: GOLD, opacity: 0.5 }} />
+                          )}
+                        </div>
+
+                        {/* Upload / Remove controls */}
+                        <div className="flex flex-col gap-2 flex-1">
+                          <label className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+                            style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)', color: GOLD }}
+                          >
+                            <Upload size={14} />
+                            {settingsForm.logo ? 'Replace Logo' : 'Upload Logo'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (evt) => setSettingsForm(f => ({ ...f, logo: evt.target.result }));
+                                reader.readAsDataURL(file);
+                              }}
+                            />
+                          </label>
+                          {settingsForm.logo && (
+                            <button
+                              type="button"
+                              onClick={() => setSettingsForm(f => ({ ...f, logo: '' }))}
+                              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                            >
+                              <X size={13} /> Remove Logo
+                            </button>
+                          )}
+                          <p className="text-[10px] text-neutral-400">Shown in the dashboard header. Square images work best.</p>
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Cover Image</label>
