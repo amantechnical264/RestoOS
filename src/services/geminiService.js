@@ -3,9 +3,36 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-// gemini-2.5-flash is used as the key has quota limit: 0 for gemini-2.0-flash
-const VISION_MODEL = "gemini-2.5-flash";
-const TEXT_MODEL   = "gemini-2.5-flash";
+// Sequential fallback list to handle model quotas and rate limits under the Free Tier
+const TEXT_MODELS = [
+  "gemini-2.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash"
+];
+
+const VISION_MODELS = [
+  "gemini-2.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash"
+];
+
+// Helper: Generates content with sequential model fallback
+async function generateContentWithFallback(contentArray, modelList) {
+  let lastError = null;
+  for (const modelName of modelList) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(contentArray);
+      return result;
+    } catch (err) {
+      console.warn(`Gemini Model fallback: ${modelName} failed. Error:`, err.message);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("All generative models failed due to quota limit.");
+}
 
 // Utility: Compress and resize image before converting to base64
 async function compressImage(file) {
@@ -92,11 +119,10 @@ Rules:
 - Return ONLY the JSON array, absolutely nothing else.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: VISION_MODEL });
-    const result = await model.generateContent([
+    const result = await generateContentWithFallback([
       prompt,
       { inlineData: { data: base64Data, mimeType } }
-    ]);
+    ], VISION_MODELS);
     const text = result.response.text();
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleaned);
@@ -151,8 +177,7 @@ Return ONLY valid JSON (no markdown, no explanation):
 }`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: TEXT_MODEL });
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt, TEXT_MODELS);
     const text = result.response.text();
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     return JSON.parse(cleaned);
@@ -181,8 +206,7 @@ export async function getConciergeResponse(userMessage, dishes, restaurantName, 
   const prompt = `${systemPrompt}\n\nMENU:\n${menuContext}\n\nCUSTOMER: ${userMessage}\n\nCONCIERGE:`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: TEXT_MODEL });
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt, TEXT_MODELS);
     const response = await result.response;
     return response.text().trim() || "I'd love to help! Could you be a bit more specific about what you're looking for?";
   } catch (error) {
@@ -242,8 +266,7 @@ The description MUST be exactly 15 to 20 words long. Focus on flavours, textures
 Do not use markdown formatting. Return ONLY the plain text description itself, with no extra explanation.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: TEXT_MODEL });
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt, TEXT_MODELS);
     const text = result.response.text();
     return text.replace(/["']/g, '').trim(); // Remove any extra quotes
   } catch (err) {
