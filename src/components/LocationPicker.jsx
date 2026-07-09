@@ -117,8 +117,24 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
   const [isNearbyLoading, setIsNearbyLoading] = useState(false);
   const debounceRef = useRef(null);
 
+  // coordsRef always mirrors `coords` so handleConfirm never has stale closures
+  const coordsRef = useRef(coords);
+  const addressRef = useRef(address);
+  // When a nearby place is clicked we "lock" the address to prevent moveend from overwriting it
+  const pendingOverrideRef = useRef(null); // { address, coords } | null
+
+  // Keep refs in sync with state
+  useEffect(() => { coordsRef.current = coords; }, [coords]);
+  useEffect(() => { addressRef.current = address; }, [address]);
+
   // Helper to fetch main geocode and lookup nearby landmarks/streets using the area name
   const updateLocationAndNearby = async (lat, lng, preloadedData = null) => {
+    // If there's a pending override (from clicking a nearby place), don't overwrite it with the geocode result
+    if (pendingOverrideRef.current) {
+      pendingOverrideRef.current = null; // consume the lock
+      return;
+    }
+
     setIsReversing(true);
     setIsNearbyLoading(true);
     
@@ -129,6 +145,7 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
     
     const formattedAddress = data?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     setAddress(formattedAddress);
+    addressRef.current = formattedAddress;
     
     if (data && data.address) {
       const a = data.address || {};
@@ -205,7 +222,9 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
     map.on('moveend', () => {
       const center = map.getCenter();
       const newCoords = { lat: center.lat, lng: center.lng };
+      // Always update coords state so handleConfirm always has the latest pin position
       setCoords(newCoords);
+      coordsRef.current = newCoords;
 
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
@@ -226,8 +245,12 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
     navigator.geolocation.getCurrentPosition(
       async ({ coords: c }) => {
         const lat = c.latitude, lng = c.longitude;
+        // Update coords ref immediately so confirm always saves GPS coords
+        const newCoords = { lat, lng };
+        setCoords(newCoords);
+        coordsRef.current = newCoords;
+        // flyTo triggers moveend which will call updateLocationAndNearby
         mapRef.current?.flyTo([lat, lng], 17, { duration: 1 });
-        setCoords({ lat, lng });
         await updateLocationAndNearby(lat, lng);
         setIsGpsLoading(false);
       },
@@ -236,12 +259,28 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
     );
   };
 
+  const handleNearbySelect = (place) => {
+    const newCoords = { lat: place.lat, lng: place.lng };
+    // Update state and ref immediately — this is the authoritative selection
+    setCoords(newCoords);
+    coordsRef.current = newCoords;
+    setAddress(place.address);
+    addressRef.current = place.address;
+    // Lock: prevent the next moveend (triggered by flyTo) from overwriting this address
+    pendingOverrideRef.current = { address: place.address, coords: newCoords };
+    // Fly map to the selected place (triggers moveend, but pendingOverride will suppress overwrite)
+    mapRef.current?.flyTo([place.lat, place.lng], 16, { duration: 1 });
+  };
+
   const handleConfirm = () => {
+    // Always read from refs to avoid stale closure issues
+    const finalCoords = coordsRef.current;
+    const finalAddressBase = addressRef.current;
     const finalAddress = addressDetails
-      ? `${addressDetails}, ${address}`
-      : address;
-    saveRecent({ address: finalAddress, lat: coords.lat, lng: coords.lng });
-    onConfirm({ address: finalAddress, coords });
+      ? `${addressDetails}, ${finalAddressBase}`
+      : finalAddressBase;
+    saveRecent({ address: finalAddress, lat: finalCoords.lat, lng: finalCoords.lng });
+    onConfirm({ address: finalAddress, coords: finalCoords });
   };
 
   return (
@@ -334,11 +373,7 @@ function MapView({ initialCoords, initialAddress, onBack, onConfirm }) {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => {
-                    setCoords({ lat: place.lat, lng: place.lng });
-                    setAddress(place.address);
-                    mapRef.current?.flyTo([place.lat, place.lng], 16, { duration: 1 });
-                  }}
+                  onClick={() => handleNearbySelect(place)}
                   className="w-full text-left flex items-start gap-2.5 p-2.5 rounded-xl border border-neutral-100 dark:border-white/5 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
                 >
                   <MapPin size={13} className="text-neutral-400 shrink-0 mt-0.5" />

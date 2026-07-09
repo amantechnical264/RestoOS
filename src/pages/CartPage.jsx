@@ -815,7 +815,7 @@ export default function CartPage() {
                                 {tempAddress
                                   ? <>
                                       <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Location Selected ✓</p>
-                                      <p className="text-xs font-bold text-neutral-800 dark:text-white truncate">{tempAddress}</p>
+                                      <p className="text-xs font-bold text-neutral-800 dark:text-white truncate">{tempAddress.replace(/\s*\[GPS:[^\]]+\]/, '').trim()}</p>
                                     </>
                                   : <>
                                       <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Select delivery location</p>
@@ -1115,8 +1115,15 @@ export default function CartPage() {
         isOpen={showLocationPicker}
         onClose={() => setShowLocationPicker(false)}
         onLocationConfirmed={({ address, coords }) => {
-          setTempAddress(address);
+          // Store coords object separately for precise order metadata
           setLocationCoords(coords);
+          // Also embed GPS tag in address string as a reliable fallback for vendor dashboard parsing
+          // (matches the same format as handleFetchLocation's [GPS:lat,lng] tag)
+          const addrWithGps = coords
+            ? `${address} [GPS:${coords.lat},${coords.lng}]`
+            : address;
+          setTempAddress(addrWithGps);
+          setShowLocationPicker(false);
         }}
       />
     </motion.div>
