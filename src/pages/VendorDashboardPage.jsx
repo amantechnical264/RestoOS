@@ -5339,41 +5339,50 @@ export default function VendorDashboardPage() {
 
                 <form onSubmit={async (e) => {
                   e.preventDefault();
-                  let success;
-                  let savedDishId = editingDish.id;
-                  if (editingDish.id) {
-                    success = await updateDish(editingDish.id, editingDish) !== null;
-                  } else {
-                    const resId = await addDish({ ...editingDish, restId: activeRestId });
-                    success = resId !== null;
-                    savedDishId = resId;
-                  }
-                  if (success && savedDishId) {
-                    // Sync customizations in the restaurant's metadata
-                    const stringSavedDishId = String(savedDishId);
-                    const thisDishKeys = [stringSavedDishId, ...(editingDish.variants || []).map(v => `${stringSavedDishId}::${v.name}`)];
-                    const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(cat => {
-                      const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
-                      // Start with a clean list of keys from other dishes (coerced to String)
-                      let nextLinkedDishes = (cat.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
-                      if (isChecked) {
-                        if (editingDish.variants && editingDish.variants.length > 0) {
-                          editingDish.variants.forEach(v => {
-                            nextLinkedDishes.push(`${stringSavedDishId}::${v.name}`);
-                          });
-                        } else {
-                          nextLinkedDishes.push(stringSavedDishId);
+                  if (isPublishingDish) return;
+                  setIsPublishingDish(true);
+                  try {
+                    let success;
+                    let savedDishId = editingDish.id;
+                    if (editingDish.id) {
+                      success = await updateDish(editingDish.id, editingDish) !== null;
+                    } else {
+                      const resId = await addDish({ ...editingDish, restId: activeRestId });
+                      success = resId !== null;
+                      savedDishId = resId;
+                    }
+                    if (success && savedDishId) {
+                      // Sync customizations in the restaurant's metadata
+                      const stringSavedDishId = String(savedDishId);
+                      const thisDishKeys = [stringSavedDishId, ...(editingDish.variants || []).map(v => `${stringSavedDishId}::${v.name}`)];
+                      const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(cat => {
+                        const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
+                        // Start with a clean list of keys from other dishes (coerced to String)
+                        let nextLinkedDishes = (cat.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
+                        if (isChecked) {
+                          if (editingDish.variants && editingDish.variants.length > 0) {
+                            editingDish.variants.forEach(v => {
+                              nextLinkedDishes.push(`${stringSavedDishId}::${v.name}`);
+                            });
+                          } else {
+                            nextLinkedDishes.push(stringSavedDishId);
+                          }
                         }
-                      }
-                      return { ...cat, linkedDishes: nextLinkedDishes };
-                    });
-                    
-                    await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
-                    
-                    setEditingDish(null); 
-                    setScanState('idle'); 
-                    setProgress(0); 
-                    showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!'); 
+                        return { ...cat, linkedDishes: nextLinkedDishes };
+                      });
+                      
+                      await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
+                      
+                      setEditingDish(null); 
+                      setScanState('idle'); 
+                      setProgress(0); 
+                      showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!'); 
+                    }
+                  } catch (err) {
+                    console.error("Error publishing dish:", err);
+                    showNotification('Error saving dish. Please try again.');
+                  } finally {
+                    setIsPublishingDish(false);
                   }
                 }} className="space-y-5">
 
@@ -5757,9 +5766,16 @@ export default function VendorDashboardPage() {
                     </div>
                   </div>
 
-                  <button type="submit"
-                    className="w-full py-4 rounded-2xl font-display font-black text-base bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg">
-                    {editingDish.id ? 'Save Changes' : 'Publish Dish'}
+                   <button type="submit" disabled={isPublishingDish}
+                    className="w-full py-4 rounded-2xl font-display font-black text-base bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    {isPublishingDish ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" />
+                        {editingDish.id ? 'Saving changes, please wait...' : 'Adding your dish, please wait...'}
+                      </>
+                    ) : (
+                      editingDish.id ? 'Save Changes' : 'Publish Dish'
+                    )}
                   </button>
                 </form>
               </div>
