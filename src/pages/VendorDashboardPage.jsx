@@ -6409,7 +6409,7 @@ export default function VendorDashboardPage() {
                               onClick={() => setSettingsForm(f => ({ ...f, logo: '' }))}
                               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                             >
-                              <X size={13} /> Remove Logo
+                              <CloseIcon size={13} /> Remove Logo
                             </button>
                           )}
                           <p className="text-[10px] text-neutral-400">Shown in the dashboard header. Square images work best.</p>
