@@ -3,9 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-// Use 1.5-flash as it has generous free tier quotas (2.0-flash often has limit: 0 on free tier)
-const VISION_MODEL = "gemini-1.5-flash";
-const TEXT_MODEL   = "gemini-1.5-flash";
+// gemini-2.0-flash is the current stable model (1.5-flash is deprecated in v1beta)
+const VISION_MODEL = "gemini-2.0-flash";
+const TEXT_MODEL   = "gemini-2.0-flash";
 
 // Utility: Compress and resize image before converting to base64
 async function compressImage(file) {
