@@ -3787,7 +3787,7 @@ export default function VendorDashboardPage() {
               className="absolute inset-0 flex overflow-hidden">
 
               {/* ── LEFT: Category Sidebar ── */}
-              <div className="w-64 shrink-0 border-r border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
+              <div className="w-[30%] shrink-0 border-r border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
                 <div className="p-4 border-b border-neutral-100 dark:border-white/5">
                   <h2 className="font-display font-black text-base">Edit Menu</h2>
                   <p className="text-[11px] text-neutral-500 mt-0.5">{vendDishes.length} dishes</p>
@@ -3900,7 +3900,7 @@ export default function VendorDashboardPage() {
               </div>
 
               {/* ── RIGHT: Dish List ── */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="w-[40%] shrink-0 overflow-y-auto">
                 {/* Section header */}
                 <div className="sticky top-0 z-10 bg-white dark:bg-[#0d0d10] border-b border-neutral-100 dark:border-white/5 px-5 py-3.5 flex items-center justify-between">
                   <div>
@@ -4035,7 +4035,7 @@ export default function VendorDashboardPage() {
               </div>
 
               {/* ── RIGHT: Combo Panel ── */}
-              <div className="w-64 shrink-0 border-l border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
+              <div className="w-[30%] shrink-0 border-l border-neutral-200 dark:border-white/8 bg-white dark:bg-[#0d0d10] overflow-y-auto flex flex-col">
                 <div className="p-4 border-b border-neutral-100 dark:border-white/5">
                   <h2 className="font-display font-black text-sm">Edit Suggestions</h2>
                   <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
