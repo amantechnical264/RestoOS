@@ -4278,7 +4278,18 @@ export default function VendorDashboardPage() {
                     >
                       <div className="flex justify-between items-start mb-3">
                         <h3 className="font-bold text-neutral-900 dark:text-white text-lg">{cat.name}</h3>
-                        <span className="text-[10px] font-bold text-neutral-400">{cat.options?.length || 0} options</span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={cat.type === 'single'
+                              ? { background: 'rgba(99,102,241,0.12)', color: '#6366f1' }
+                              : { background: 'rgba(16,185,129,0.12)', color: '#10b981' }
+                            }
+                          >
+                            {cat.type === 'single' ? '⊙ Single Choice' : '☑ Multi-Choice'}
+                          </span>
+                          <span className="text-[10px] font-bold text-neutral-400">{cat.options?.length || 0} opts</span>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         {cat.options.map((opt, i) => (
@@ -4317,6 +4328,42 @@ export default function VendorDashboardPage() {
                         <div>
                           <label className="text-xs font-bold text-neutral-500 mb-1 block">Category Name (e.g. Toppings, Size)</label>
                           <input type="text" value={editingCustomization.name} onChange={e => setEditingCustomization(p => ({ ...p, name: e.target.value }))} className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" placeholder="Extra Toppings" />
+                        </div>
+
+                        {/* Selection Type Toggle */}
+                        <div>
+                          <label className="text-xs font-bold text-neutral-500 mb-2 block">Selection Type</label>
+                          <div className="flex gap-2">
+                            {['single', 'multiple'].map(t => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => setEditingCustomization(p => ({ ...p, type: t }))}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border transition-all"
+                                style={(editingCustomization.type || 'multiple') === t
+                                  ? t === 'single'
+                                    ? { background: 'rgba(99,102,241,0.1)', borderColor: 'rgba(99,102,241,0.5)', color: '#6366f1' }
+                                    : { background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.5)', color: '#10b981' }
+                                  : { background: 'transparent', borderColor: 'rgba(212,175,55,0.15)', color: '#9ca3af' }
+                                }
+                              >
+                                {t === 'single' ? (
+                                  <>
+                                    <span style={{ fontSize: 16 }}>⊙</span> Single Choice
+                                  </>
+                                ) : (
+                                  <>
+                                    <span style={{ fontSize: 16 }}>☑</span> Multiple Choice
+                                  </>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-neutral-400 mt-1.5">
+                            {(editingCustomization.type || 'multiple') === 'single'
+                              ? 'Customer can pick only one option from this category.'
+                              : 'Customer can pick multiple options from this category.'}
+                          </p>
                         </div>
 
                         {/* Options */}
@@ -4464,7 +4511,7 @@ export default function VendorDashboardPage() {
                           const isExisting = existing.some(c => c.id === editingCustomization.id);
                           const cleaned = {
                             ...editingCustomization,
-                            type: 'multiple',
+                            type: editingCustomization.type || 'multiple',
                             options: editingCustomization.options.filter(o => o.name.trim() !== '').map(o => ({...o, price: Number(o.price) || 0})),
                             linkedDishes: editingCustomization.linkedDishes || [],
                           };

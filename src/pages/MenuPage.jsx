@@ -1660,8 +1660,14 @@ export default function MenuPage() {
                     <div key={cat.id} className="space-y-3">
                       <div className="flex justify-between items-center">
                         <h4 className="font-bold text-sm text-neutral-700 dark:text-neutral-300">{cat.name}</h4>
-                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-neutral-100 dark:bg-white/5 text-neutral-500">
-                          {cat.type === 'single' ? 'Choose 1' : 'Optional'}
+                        <span
+                          className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded"
+                          style={cat.type === 'single'
+                            ? { background: 'rgba(99,102,241,0.1)', color: '#6366f1' }
+                            : { background: 'rgba(16,185,129,0.1)', color: '#10b981' }
+                          }
+                        >
+                          {cat.type === 'single' ? '⊙ Choose 1' : '☑ Choose any'}
                         </span>
                       </div>
                       
@@ -1690,15 +1696,23 @@ export default function MenuPage() {
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                                  isSelected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-neutral-300 dark:border-white/20'
-                                }`}>
-                                  {isSelected && (
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                                      <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                  )}
-                                </div>
+                                {cat.type === 'single' ? (
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                                    isSelected ? 'border-emerald-500' : 'border-neutral-300 dark:border-white/20'
+                                  }`}>
+                                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />}
+                                  </div>
+                                ) : (
+                                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                                    isSelected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-neutral-300 dark:border-white/20'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                )}
                                 <span className="font-bold text-sm">{opt.name}</span>
                               </div>
                               <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
