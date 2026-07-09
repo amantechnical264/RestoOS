@@ -12,6 +12,44 @@ import {
 } from 'lucide-react';
 import { Share2, Globe, Layers, PlusCircle, Trash } from 'lucide-react';
 
+const removeImageBackground = (imgUrl) => {
+  return new Promise((resolve) => {
+    if (!imgUrl) return resolve('');
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    const isRemote = imgUrl.startsWith('http') || imgUrl.startsWith('//');
+    img.src = isRemote ? (imgUrl + (imgUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime()) : imgUrl;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      try {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i+1];
+          const b = data[i+2];
+          if (r > 230 && g > 230 && b > 230) {
+            data[i+3] = 0;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL());
+      } catch (e) {
+        console.error("CORS issue or canvas read error, using original logo:", e);
+        resolve(imgUrl);
+      }
+    };
+    img.onerror = (err) => {
+      console.error("Failed to load logo image:", err);
+      resolve(imgUrl);
+    };
+  });
+};
+
 // Custom Social Media SVG Icons
 const InstagramIcon = ({ size = 20, className = "" }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -1350,6 +1388,18 @@ export default function VendorDashboardPage() {
   ];
 
   const [editingDish, setEditingDish] = React.useState(null);
+  const [isPublishingDish, setIsPublishingDish] = React.useState(false);
+  const [transparentLogo, setTransparentLogo] = React.useState('');
+
+  React.useEffect(() => {
+    const logoUrl = currentRestaurant?.macros?.logo || currentRestaurant?.logo || '';
+    if (logoUrl) {
+      removeImageBackground(logoUrl).then(setTransparentLogo);
+    } else {
+      setTransparentLogo('');
+    }
+  }, [currentRestaurant]);
+
   const [editingEvent, setEditingEvent] = React.useState(null);
   const [viewingRsvpsEvent, setviewingRsvpsEvent] = React.useState(null);
   const [editingCustomization, setEditingCustomization] = React.useState(null);
@@ -2577,15 +2627,10 @@ export default function VendorDashboardPage() {
 
   const handlePrintQRCodes = React.useCallback((tablesToPrint) => {
     const restName = currentRestaurant?.name || 'Restaurant';
-    const logoUrl = currentRestaurant?.macros?.logo || currentRestaurant?.logo || '';
 
     const cardsHtml = tablesToPrint.map(item => {
       const svgElement = document.getElementById(item.svgId);
       const svgHtml = svgElement ? svgElement.outerHTML : '';
-      
-      const brandingHtml = logoUrl 
-        ? `<img src="${logoUrl}" class="restaurant-logo" alt="${restName}" />`
-        : `<div class="restaurant-name-fallback">${restName}</div>`;
 
       return `
         <div class="qr-card">
@@ -2594,9 +2639,7 @@ export default function VendorDashboardPage() {
             ${svgHtml}
           </div>
           <div class="scan-text">SCAN TO ORDER</div>
-          <div class="logo-container">
-            ${brandingHtml}
-          </div>
+          <div class="restaurant-name-fallback">${restName}</div>
         </div>
       `;
     }).join('');
@@ -2664,18 +2707,6 @@ export default function VendorDashboardPage() {
               margin-top: 10px;
               margin-bottom: 20px;
             }
-            .logo-container {
-              height: 50px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              width: 100%;
-            }
-            .restaurant-logo {
-              max-height: 48px;
-              max-width: 150px;
-              object-fit: contain;
-            }
             .restaurant-name-fallback {
               font-size: 20px;
               font-weight: 900;
@@ -2688,12 +2719,6 @@ export default function VendorDashboardPage() {
           <div class="qr-grid">
             ${cardsHtml}
           </div>
-          <script>
-            window.onload = function() {
-              window.focus();
-              window.print();
-            };
-          </script>
         </body>
       </html>
     `;
@@ -2702,18 +2727,21 @@ export default function VendorDashboardPage() {
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
     
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }, 300);
+    };
+
     iframe.contentWindow.document.open();
     iframe.contentWindow.document.write(htmlContent);
     iframe.contentWindow.document.close();
-    
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 60000);
-    }, 250);
   }, [currentRestaurant]);
 
   if (isStaffMode) {
@@ -6249,12 +6277,28 @@ export default function VendorDashboardPage() {
                         value={`${window.location.origin}/menu?restId=${activeRestId}&table=${i + 1}`}
                         size={130} level="H" includeMargin={false} fgColor="#111111"
                         className="dark:hidden"
+                        imageSettings={transparentLogo ? {
+                          src: transparentLogo,
+                          x: undefined,
+                          y: undefined,
+                          height: 32,
+                          width: 32,
+                          excavate: true,
+                        } : undefined}
                       />
                       <QRCodeSVG
                         value={`${window.location.origin}/menu?restId=${activeRestId}&table=${i + 1}`}
                         size={130} level="H" includeMargin={false} fgColor="#FFFFFF"
                         bgColor="#12141D"
                         className="hidden dark:block"
+                        imageSettings={transparentLogo ? {
+                          src: transparentLogo,
+                          x: undefined,
+                          y: undefined,
+                          height: 32,
+                          width: 32,
+                          excavate: true,
+                        } : undefined}
                       />
                       <p className="text-[10px] text-neutral-400 mt-3 text-center">{currentRestaurant?.name} · T{i+1}</p>
                       <button
@@ -6281,6 +6325,14 @@ export default function VendorDashboardPage() {
                       id="qr-svg-table-delivery"
                       value={`${window.location.origin}/menu?restId=${activeRestId}&table=delivery`}
                       size={110} level="H" includeMargin={false} fgColor="#111111"
+                      imageSettings={transparentLogo ? {
+                        src: transparentLogo,
+                        x: undefined,
+                        y: undefined,
+                        height: 26,
+                        width: 26,
+                        excavate: true,
+                      } : undefined}
                     />
                     <p className="text-[10px] text-neutral-500 font-bold mt-2 text-center uppercase tracking-widest">Scan to Order</p>
                     <button
