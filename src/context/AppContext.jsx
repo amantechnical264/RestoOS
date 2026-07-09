@@ -875,13 +875,13 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updateRestaurant = async (restId, updateData) => {
+  const updateRestaurant = async (restId, updateData, silent = false) => {
     if (!supabaseUser) {
-      showNotification('You must be logged in to update settings.');
+      if (!silent) showNotification('You must be logged in to update settings.');
       return;
     }
     if (!restId) {
-      showNotification('No restaurant selected. Please complete onboarding first.');
+      if (!silent) showNotification('No restaurant selected. Please complete onboarding first.');
       return;
     }
 
@@ -957,10 +957,10 @@ export const AppProvider = ({ children }) => {
         }
       }
 
-      showNotification('Settings updated successfully!');
+      if (!silent) showNotification('Settings updated successfully!');
     } catch (error) {
       console.error('Update restaurant error:', error);
-      showNotification(`Failed to update settings: ${error.message}`);
+      if (!silent) showNotification(`Failed to update settings: ${error.message}`);
     }
   };
 

@@ -5407,7 +5407,7 @@ export default function VendorDashboardPage() {
                           }
                           return { ...cat, linkedDishes: nextLinkedDishes };
                         });
-                        updateRestaurant(activeRestId, { customizations: updatedCustomizations }).catch(err => {
+                        updateRestaurant(activeRestId, { customizations: updatedCustomizations }, true).catch(err => {
                           console.error("Error syncing customizations in background:", err);
                         });
                       }
