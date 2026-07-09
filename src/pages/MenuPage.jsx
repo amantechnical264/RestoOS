@@ -1552,7 +1552,7 @@ export default function MenuPage() {
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#D4AF37]/10 blur-3xl rounded-full pointer-events-none" />
               
               {/* Categories list */}
-              <div className="overflow-y-auto pr-1 flex-1 py-2 space-y-4">
+              <div className="overflow-y-auto no-scrollbar flex-1 py-2 space-y-4">
                 {(() => {
                   const totalAllDishesCount = categoriesForMenuPopup.reduce((acc, catGroup) => acc + catGroup.dishes.length, 0);
                   const isAllActive = activeCategory === 'All';
