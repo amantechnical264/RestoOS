@@ -2794,15 +2794,15 @@ export default function VendorDashboardPage() {
             <img
               src={currentRestaurant.macros?.logo || currentRestaurant.logo}
               alt="logo"
-              className="w-10 h-10 rounded-2xl object-cover border-2"
+              className="w-14 h-14 rounded-2xl object-cover border-2"
               style={{ borderColor: 'rgba(212,175,55,0.4)' }}
             />
           ) : (
             <div
-              className="w-10 h-10 rounded-2xl flex items-center justify-center"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{ background: goldGradient, boxShadow: '0 4px 15px rgba(212,175,55,0.3)' }}
             >
-              <Store size={18} className="text-black" />
+              <Store size={24} className="text-black" />
             </div>
           )}
           <div>
