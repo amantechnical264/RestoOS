@@ -5380,31 +5380,34 @@ export default function VendorDashboardPage() {
                       savedDishId = resId;
                     }
                     if (success && savedDishId) {
-                      // Sync customizations in the restaurant's metadata
-                      const stringSavedDishId = String(savedDishId);
-                      const thisDishKeys = [stringSavedDishId, ...(editingDish.variants || []).map(v => `${stringSavedDishId}::${v.name}`)];
-                      const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(cat => {
-                        const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
-                        // Start with a clean list of keys from other dishes (coerced to String)
-                        let nextLinkedDishes = (cat.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
-                        if (isChecked) {
-                          if (editingDish.variants && editingDish.variants.length > 0) {
-                            editingDish.variants.forEach(v => {
-                              nextLinkedDishes.push(`${stringSavedDishId}::${v.name}`);
-                            });
-                          } else {
-                            nextLinkedDishes.push(stringSavedDishId);
+                      // Only sync customizations if the restaurant actually has customization categories
+                      const existingCustomizations = currentRestaurant?.macros?.customizations || [];
+                      if (existingCustomizations.length > 0) {
+                        const stringSavedDishId = String(savedDishId);
+                        const thisDishKeys = [stringSavedDishId, ...(editingDish.variants || []).map(v => `${stringSavedDishId}::${v.name}`)];
+                        const updatedCustomizations = existingCustomizations.map(cat => {
+                          const isChecked = (editingDish.customizationCategories || []).includes(cat.id);
+                          let nextLinkedDishes = (cat.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
+                          if (isChecked) {
+                            if (editingDish.variants && editingDish.variants.length > 0) {
+                              editingDish.variants.forEach(v => {
+                                nextLinkedDishes.push(`${stringSavedDishId}::${v.name}`);
+                              });
+                            } else {
+                              nextLinkedDishes.push(stringSavedDishId);
+                            }
                           }
-                        }
-                        return { ...cat, linkedDishes: nextLinkedDishes };
-                      });
-                      
-                      await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
-                      
-                      setEditingDish(null); 
-                      setScanState('idle'); 
-                      setProgress(0); 
-                      showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!'); 
+                          return { ...cat, linkedDishes: nextLinkedDishes };
+                        });
+                        await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
+                      }
+
+                      // Reset publishing state BEFORE closing the form so button reverts before exit animation
+                      setIsPublishingDish(false);
+                      setEditingDish(null);
+                      setScanState('idle');
+                      setProgress(0);
+                      showNotification(editingDish.id ? 'Dish updated!' : 'Dish published!');
                     }
                   } catch (err) {
                     console.error("Error publishing dish:", err);
