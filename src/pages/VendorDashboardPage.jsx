@@ -5196,7 +5196,11 @@ export default function VendorDashboardPage() {
                                showNotification('AI Description generated!');
                              } catch (err) {
                                console.error(err);
-                               showNotification(err.message || 'Failed to generate description');
+                               if (err.message === 'GEMINI_API_KEY_MISSING') {
+                                 showNotification('⚠️ Gemini API key not configured. Add VITE_GEMINI_API_KEY to your .env file.');
+                               } else {
+                                 showNotification(err.message || 'Failed to generate description. Please try again.');
+                               }
                              } finally {
                                setIsGeneratingDesc(false);
                              }
