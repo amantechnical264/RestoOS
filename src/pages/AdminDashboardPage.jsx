@@ -13,7 +13,7 @@ export default function AdminDashboardPage() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [adminUser, setAdminUser] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     checkAdminAuth();
@@ -21,28 +21,36 @@ export default function AdminDashboardPage() {
 
   const checkAdminAuth = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        setAuthError('getUser error: ' + userError.message);
+        return;
+      }
       
       if (!user) {
-        navigate('/hq-portal', { replace: true });
+        setAuthError('No user returned from getUser().');
         return;
       }
 
       // Check against DB system_admins table OR fallback hardcoded list
-      const { data: adminRecord } = await supabase.from('system_admins').select('*').eq('email', user.email).maybeSingle();
+      const { data: adminRecord, error: dbError } = await supabase.from('system_admins').select('*').eq('email', user.email).maybeSingle();
+      
+      if (dbError && dbError.code !== '42P01') {
+        // Ignore table not found (42P01), but alert on other errors
+        console.warn("DB check error:", dbError);
+      }
       
       if (!adminRecord && !ADMIN_EMAILS.includes(user.email)) {
-        console.error("Unauthorized: Not an admin");
+        setAuthError('Unauthorized: Email ' + user.email + ' is not an admin.');
         await supabase.auth.signOut();
-        navigate('/hq-portal', { replace: true });
         return;
       }
 
       setAdminUser(user);
       fetchPlatformData();
     } catch (err) {
-      console.error("Auth check failed", err);
-      navigate('/hq-portal', { replace: true });
+      setAuthError('Exception in checkAdminAuth: ' + err.message);
     }
   };
 
@@ -103,6 +111,22 @@ export default function AdminDashboardPage() {
     r.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (r.vendor_id || r.vendorId || '')?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-[#05020a] flex flex-col items-center justify-center p-6 text-center text-white">
+        <AlertTriangle size={64} className="text-red-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Authentication Failed</h2>
+        <p className="text-neutral-400 font-mono text-sm max-w-lg mb-6 break-words bg-red-900/20 p-4 rounded-xl border border-red-500/20">
+          {authError}
+        </p>
+        <button onClick={() => navigate('/hq-portal', { replace: true })}
+          className="px-6 py-3 bg-white text-black font-bold rounded-full">
+          Return to Login
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
