@@ -29,7 +29,7 @@ export default function AdminDashboardPage() {
       }
 
       // Check against DB system_admins table OR fallback hardcoded list
-      const { data: adminRecord } = await supabase.from('system_admins').select('*').eq('email', user.email).single();
+      const { data: adminRecord } = await supabase.from('system_admins').select('*').eq('email', user.email).maybeSingle();
       
       if (!adminRecord && !ADMIN_EMAILS.includes(user.email)) {
         console.error("Unauthorized: Not an admin");
