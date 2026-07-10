@@ -1469,14 +1469,17 @@ export default function VendorDashboardPage() {
 
     setIsSendingVendorOtp(true);
     try {
-      const container = document.getElementById('vendor-recaptcha-container');
-      if (container) container.innerHTML = '';
       if (vendorRecaptchaRef.current) {
         try { vendorRecaptchaRef.current.clear(); } catch {}
         vendorRecaptchaRef.current = null;
       }
+      
+      const container = document.getElementById('vendor-recaptcha-container');
+      if (container) container.innerHTML = '';
+      
       vendorRecaptchaRef.current = new RecaptchaVerifier(auth, 'vendor-recaptcha-container', { size: 'invisible' });
       await vendorRecaptchaRef.current.render();
+      
       const result = await signInWithPhoneNumber(auth, phone, vendorRecaptchaRef.current);
       setVendorConfirmResult(result);
       setVendorOtpSent(true);
