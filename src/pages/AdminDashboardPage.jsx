@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
   const [totalOrders, setTotalOrders] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [authError, setAuthError] = useState(null);
+  const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
     checkAdminAuth();
