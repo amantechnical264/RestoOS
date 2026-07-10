@@ -113,6 +113,42 @@ export default function AdminDashboardPage() {
     (r.vendor_id || r.vendorId || '')?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // ── Admin Actions for Pending Approvals ────────────────────────────
+  const approveVendor = async (restId) => {
+    const rest = restaurants.find(r => r.id === restId);
+    if (!rest) return;
+    const newMacros = { ...(rest.macros || {}), status: 'active' };
+    setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
+    await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+  };
+
+  const rejectVendor = async (restId) => {
+    const rest = restaurants.find(r => r.id === restId);
+    if (!rest) return;
+    const newMacros = { ...(rest.macros || {}), status: 'suspended' };
+    setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
+    await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+  };
+
+  const approveUpgrade = async (restId) => {
+    const rest = restaurants.find(r => r.id === restId);
+    if (!rest || !rest.macros?.pendingPlan) return;
+    const newMacros = { ...(rest.macros || {}), plan: rest.macros.pendingPlan, pendingPlan: null };
+    setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
+    await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+  };
+
+  const rejectUpgrade = async (restId) => {
+    const rest = restaurants.find(r => r.id === restId);
+    if (!rest) return;
+    const newMacros = { ...(rest.macros || {}), pendingPlan: null };
+    setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
+    await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+  };
+
+  const pendingNewVendors = restaurants.filter(r => r.macros?.status === 'pending');
+  const pendingUpgrades = restaurants.filter(r => r.macros?.pendingPlan);
+
   if (authError) {
     return (
       <div className="min-h-screen bg-[#05020a] flex flex-col items-center justify-center p-6 text-center text-white">
@@ -158,6 +194,73 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
+
+        {/* ── Pending Approvals ── */}
+        {(pendingNewVendors.length > 0 || pendingUpgrades.length > 0) && (
+          <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-serif font-bold text-white">Pending Approvals</h2>
+                <p className="text-xs text-neutral-500">{pendingNewVendors.length + pendingUpgrades.length} request(s) awaiting your review</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {/* New Vendor Approvals */}
+              {pendingNewVendors.map(r => (
+                <div key={r.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-neutral-800 overflow-hidden shrink-0">
+                      {r.cover ? <img src={r.cover} className="w-full h-full object-cover" alt="" /> : <Store className="w-full h-full p-2 text-neutral-600" />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-white">{r.name}</p>
+                      <p className="text-[10px] text-amber-400 font-bold uppercase tracking-widest">🆕 New Vendor — Starter Plan</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => approveVendor(r.id)}
+                      className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-black border border-emerald-500/20 transition-colors">
+                      ✓ Approve
+                    </button>
+                    <button onClick={() => rejectVendor(r.id)}
+                      className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-black border border-red-500/20 transition-colors">
+                      ✗ Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Upgrade Request Approvals */}
+              {pendingUpgrades.map(r => (
+                <div key={r.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-neutral-800 overflow-hidden shrink-0">
+                      {r.cover ? <img src={r.cover} className="w-full h-full object-cover" alt="" /> : <Store className="w-full h-full p-2 text-neutral-600" />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-white">{r.name}</p>
+                      <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest">⬆ Upgrade Request: {r.macros?.plan || 'Starter'} → {r.macros?.pendingPlan}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => approveUpgrade(r.id)}
+                      className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-black border border-emerald-500/20 transition-colors">
+                      ✓ Approve
+                    </button>
+                    <button onClick={() => rejectUpgrade(r.id)}
+                      className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-black border border-red-500/20 transition-colors">
+                      ✗ Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* KPI Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -756,7 +756,7 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
 };
 
 // ─── Subscription Gating Lock Component ──────────────────────────────
-const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNotification }) => {
+const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNotification, pendingPlan }) => {
   const PLANS = ['Starter', 'Pro', 'Enterprise'];
   return (
     <motion.div
@@ -773,20 +773,35 @@ const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNot
           Upgrade your plan to unlock {feature}, deeper analytics, customer CRM, AI concierge, and more premium capabilities.
         </p>
         <div className="grid grid-cols-1 gap-3">
-          {PLANS.filter(p => PLANS.indexOf(p) >= PLANS.indexOf(requiredPlan)).map(p => (
-            <button key={p} type="button"
-              onClick={() => { if (activeRestId) { upgradePlan(activeRestId, p); showNotification(`🌟 Upgraded to ${p}!`); } }}
-              className="w-full py-3.5 rounded-2xl font-black text-sm transition-all"
-              style={p === requiredPlan
-                ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }
-                : { background: 'transparent', border: `1px solid ${GOLD}`, color: GOLD }
-              }
-            >
-              {p === 'Pro' ? 'Upgrade to Pro — ₹49/mo' : 'Upgrade to Enterprise — ₹99/mo'}
-            </button>
-          ))}
+          {PLANS.filter(p => PLANS.indexOf(p) >= PLANS.indexOf(requiredPlan)).map(p => {
+            const isPending = pendingPlan === p;
+            return (
+              <button key={p} type="button"
+                onClick={() => {
+                  if (isPending) return;
+                  if (activeRestId) {
+                    upgradePlan(activeRestId, p);
+                    showNotification(`✅ Upgrade request to ${p} submitted! Awaiting admin approval.`);
+                  }
+                }}
+                disabled={isPending}
+                className="w-full py-3.5 rounded-2xl font-black text-sm transition-all"
+                style={isPending
+                  ? { background: 'rgba(212,175,55,0.1)', border: `1px solid ${GOLD}`, color: GOLD, cursor: 'default' }
+                  : p === requiredPlan
+                    ? { background: goldGradient, color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }
+                    : { background: 'transparent', border: `1px solid ${GOLD}`, color: GOLD }
+                }
+              >
+                {isPending
+                  ? `⏳ ${p} Request Pending...`
+                  : p === 'Pro' ? 'Request Pro — ₹49/mo' : 'Request Enterprise — ₹99/mo'
+                }
+              </button>
+            );
+          })}
         </div>
-        <p className="mt-4 text-xs text-neutral-500">Cancel anytime. Instant access upon upgrade.</p>
+        <p className="mt-4 text-xs text-neutral-500">Upgrades require admin approval. You will be notified once activated.</p>
       </div>
     </motion.div>
   );
@@ -1380,6 +1395,7 @@ export default function VendorDashboardPage() {
   };
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
+  const pendingPlan = currentRestaurant?.macros?.pendingPlan || null;
   // Default variants pre-loaded when creating a new dish
   const DEFAULT_DISH_VARIANTS = [
     { name: 'Half', price: '' },
@@ -2760,6 +2776,45 @@ export default function VendorDashboardPage() {
     );
   }
 
+  // ── Pending Approval Gate ───────────────────────────────────────────
+  const vendorStatus = currentRestaurant?.macros?.status;
+  if (vendorStatus === 'pending') {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse"
+          style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.4)' }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <h1 className="text-3xl font-black text-white mb-3">Awaiting Approval</h1>
+        <p className="text-neutral-400 max-w-sm mb-8 leading-relaxed">
+          Your restaurant has been registered successfully. Our admin team is reviewing your account and will activate it shortly.
+        </p>
+        <div className="w-full max-w-xs bg-white/5 border border-white/10 rounded-2xl p-5 text-left space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span className="text-sm text-neutral-300">Account created</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-spin border-2 border-yellow-400/30 border-t-yellow-400" />
+            <span className="text-sm text-neutral-300">Admin review in progress...</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-white/10 flex-shrink-0" />
+            <span className="text-sm text-neutral-500">Access granted</span>
+          </div>
+        </div>
+        <button onClick={handleLogout}
+          className="mt-8 px-6 py-3 rounded-2xl text-sm font-bold text-neutral-400 border border-white/10 hover:border-white/20 transition-colors">
+          Logout
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white relative">
       
@@ -3451,7 +3506,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'analytics' && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Analytics Hub" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Analytics Hub" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} pendingPlan={pendingPlan} /> : (
               <div className="max-w-5xl mx-auto space-y-6">
 
                 {/* Header */}
@@ -5111,7 +5166,7 @@ export default function VendorDashboardPage() {
           {/* ── EVENTS TAB ── */}
           {vendorTab === 'events' && (
             <motion.div key="events" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Events & Promos" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Events & Promos" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} pendingPlan={pendingPlan} /> : (
                 editingEvent ? (
                   <div className="max-w-2xl mx-auto bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl p-6 relative">
                     <div className="flex justify-between items-center mb-6">
@@ -5815,7 +5870,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'growth' && (
             <motion.div key="growth" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Growth Tools" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Growth Tools" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} pendingPlan={pendingPlan} /> : (
               <div className="max-w-3xl mx-auto space-y-6">
                 <div>
                   <h2 className="font-display font-black text-2xl">Growth Tools</h2>
@@ -6142,7 +6197,7 @@ export default function VendorDashboardPage() {
           {vendorTab === 'customers' && (
             <motion.div key="customers" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
-              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Customer Insights" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
+              {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Customer Insights" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} pendingPlan={pendingPlan} /> : (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div>
                   <h2 className="font-display font-black text-2xl">Customer Insights</h2>

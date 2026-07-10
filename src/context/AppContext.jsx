@@ -240,21 +240,21 @@ export const AppProvider = ({ children }) => {
   // Backward compatibility object so context doesn't break
   const plans = {};
 
-  // Upgrade (or downgrade) a restaurant's plan from the vendor dashboard
+  // Request a plan upgrade — sets pendingPlan for admin approval instead of upgrading directly
   const upgradePlan = async (restId, newPlan) => {
     const rest = restaurants.find(r => r.id === restId);
     if (!rest) return;
     const currentMacros = rest.macros || {};
-    const newMacros = { ...currentMacros, plan: newPlan };
+    const newMacros = { ...currentMacros, pendingPlan: newPlan };
     
-    // Optimistic UI update
+    // Optimistic UI update (only pendingPlan changes, actual plan stays the same)
     setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
     
     try {
       const { error } = await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
       if (error) throw error;
     } catch (err) {
-      console.error("Failed to upgrade plan", err);
+      console.error("Failed to request plan upgrade", err);
     }
   };
   const [favorites, setFavorites] = useState(() => {
@@ -872,7 +872,8 @@ export const AppProvider = ({ children }) => {
     const newRest = {
       vendor_id: supabaseUser.id,
       name: restData.name,
-      cover: restData.cover
+      cover: restData.cover,
+      macros: { status: 'pending', plan: 'Starter' }
     };
 
     try {
