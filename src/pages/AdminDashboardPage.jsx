@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, Store, DollarSign, Activity, LogOut, Search, Star, Zap, Crown, Power, PowerOff } from 'lucide-react';
+import { Shield, Users, Store, DollarSign, Activity, LogOut, Search, Star, Zap, Crown, Power, PowerOff, AlertTriangle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
 // HARDCODED FALLBACK WHITELIST (For initial setup before DB table is ready)
