@@ -8,11 +8,12 @@ export default function AdminAuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // States for OTP flow
-  const [step, setStep] = useState('email'); // 'email' | 'otp'
+  // States for Auth flow
+  const [step, setStep] = useState('email'); // 'email' | 'otp' | 'password'
   const [attempts, setAttempts] = useState(0);
   const MAX_ATTEMPTS = 3;
   
@@ -40,11 +41,10 @@ export default function AdminAuthPage() {
     setError('');
 
     try {
-      // Send OTP
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          shouldCreateUser: false // only existing admins
+          shouldCreateUser: false 
         }
       });
       if (error) throw error;
@@ -52,7 +52,6 @@ export default function AdminAuthPage() {
       setAttempts(0);
       setOtp('');
     } catch (err) {
-      // Don't leak if email exists or not in UI for security, just generic message
       setError(err.message || 'Failed to send secure token.');
     } finally {
       setLoading(false);
@@ -74,8 +73,6 @@ export default function AdminAuthPage() {
       });
 
       if (error) throw error;
-
-      // OTP is correct! Navigate to dashboard
       navigate('/hq-portal/dashboard', { replace: true });
     } catch (err) {
       const newAttempts = attempts + 1;
@@ -92,9 +89,26 @@ export default function AdminAuthPage() {
     }
   };
 
-  // -------------------------------------------------------------
-  // FAKE 404 VIEW (HONEYPOT)
-  // -------------------------------------------------------------
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+      if (error) throw error;
+      navigate('/hq-portal/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Invalid email or password.');
+      setPassword('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (isHidden) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-[#05020a] flex flex-col items-center justify-center p-6 text-center">
@@ -121,9 +135,6 @@ export default function AdminAuthPage() {
     );
   }
 
-  // -------------------------------------------------------------
-  // REAL SECURE LOGIN VIEW
-  // -------------------------------------------------------------
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }} 
@@ -169,7 +180,6 @@ export default function AdminAuthPage() {
         </div>
 
         <div className="rounded-3xl p-7 shadow-2xl bg-white/[0.02] border border-white/[0.07] backdrop-blur-xl">
-          
           <AnimatePresence mode="wait">
             {error && (
               <motion.div key="error" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -220,6 +230,57 @@ export default function AdminAuthPage() {
                   </button>
                 )}
               </motion.form>
+            ) : step === 'password' ? (
+              <motion.form key="password-form" onSubmit={handlePasswordLogin} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                <div className="mb-4">
+                  <label className="block text-xs font-black uppercase tracking-widest text-neutral-500 mb-2 ml-1">Admin Email</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <Mail size={18} className="text-neutral-500" />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@system.local"
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-neutral-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono text-sm tracking-wider"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-xs font-black uppercase tracking-widest text-neutral-500 mb-2 ml-1">Master Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <Lock size={18} className="text-neutral-500" />
+                    </div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-neutral-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono text-xl tracking-widest"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <motion.button type="submit" disabled={loading || !email || !password}
+                  whileHover={{ scale: (loading || !email || !password) ? 1 : 1.02 }}
+                  whileTap={{ scale: (loading || !email || !password) ? 1 : 0.98 }}
+                  className="w-full py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold mb-4">
+                  {loading ? <Loader2 size={22} className="animate-spin" /> : 'Establish Connection'}
+                </motion.button>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep('email'); setError(''); }}
+                  className="w-full text-center text-xs font-sans text-neutral-500 hover:text-neutral-300 transition-colors underline">
+                  Back to OTP Login
+                </button>
+              </motion.form>
             ) : (
               <motion.form key="email-form" onSubmit={handleSendOtp} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="mb-6">
@@ -243,9 +304,16 @@ export default function AdminAuthPage() {
                 <motion.button type="submit" disabled={loading || !email}
                   whileHover={{ scale: (loading || !email) ? 1 : 1.02 }}
                   whileTap={{ scale: (loading || !email) ? 1 : 0.98 }}
-                  className="w-full py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold">
-                  {loading ? <Loader2 size={22} className="animate-spin" /> : 'Request Access Token'}
+                  className="w-full py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold mb-4">
+                  {loading ? <Loader2 size={22} className="animate-spin" /> : 'Request Access Token (OTP)'}
                 </motion.button>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep('password'); setError(''); }}
+                  className="w-full text-center text-xs font-sans text-neutral-500 hover:text-neutral-300 transition-colors underline">
+                  Use Master Password instead
+                </button>
               </motion.form>
             )}
           </AnimatePresence>
