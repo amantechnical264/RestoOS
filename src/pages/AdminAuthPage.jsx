@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, ChevronLeft, Loader2, AlertTriangle, Mail, CheckCircle2 } from 'lucide-react';
+import { Shield, Lock, ChevronLeft, Loader2, AlertTriangle, Mail, KeyRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabase';
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  
+  // States for OTP flow
+  const [step, setStep] = useState('email'); // 'email' | 'otp'
+  const [attempts, setAttempts] = useState(0);
+  const MAX_ATTEMPTS = 3;
   
   // The Honeypot State
   const [isHidden, setIsHidden] = useState(true);
   const [clickCount, setClickCount] = useState(0);
-
-  // If already logged in, they shouldn't need to do this unless their role is wrong.
-  // Actually, we'll check role on the dashboard. But let's let them login first.
 
   const handleSecretClick = () => {
     const newCount = clickCount + 1;
@@ -32,23 +34,59 @@ export default function AdminAuthPage() {
     }, 1500);
   };
 
-  const handleLogin = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Send Magic Link
+      // Send OTP
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          emailRedirectTo: window.location.origin + '/hq-portal/dashboard',
+          shouldCreateUser: false // only existing admins
         }
       });
       if (error) throw error;
-      setMagicLinkSent(true);
+      setStep('otp');
+      setAttempts(0);
+      setOtp('');
     } catch (err) {
+      // Don't leak if email exists or not in UI for security, just generic message
       setError(err.message || 'Failed to send secure token.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (attempts >= MAX_ATTEMPTS) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp.trim(),
+        type: 'email'
+      });
+
+      if (error) throw error;
+
+      // OTP is correct! Navigate to dashboard
+      navigate('/hq-portal/dashboard', { replace: true });
+    } catch (err) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      setOtp('');
+      
+      if (newAttempts >= MAX_ATTEMPTS) {
+        setError('Maximum attempts reached. Access locked.');
+      } else {
+        setError(`Invalid token. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -140,24 +178,50 @@ export default function AdminAuthPage() {
               </motion.div>
             )}
 
-            {magicLinkSent ? (
-              <motion.div key="sent" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-4">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/30">
-                  <CheckCircle2 size={32} className="text-emerald-400" />
+            {step === 'otp' ? (
+              <motion.form key="otp-form" onSubmit={handleVerifyOtp} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                <div className="mb-6">
+                  <div className="flex justify-between items-end mb-2 ml-1">
+                    <label className="block text-xs font-black uppercase tracking-widest text-neutral-500">One-Time Password</label>
+                    <span className="text-[10px] text-neutral-600 font-mono">Sent to {email}</span>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <KeyRound size={18} className="text-neutral-500" />
+                    </div>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      placeholder="••••••"
+                      maxLength={6}
+                      disabled={attempts >= MAX_ATTEMPTS}
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-neutral-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono text-xl tracking-widest text-center disabled:opacity-50"
+                      required
+                      autoFocus
+                      autoComplete="one-time-code"
+                    />
+                  </div>
                 </div>
-                <p className="font-sans font-bold text-white mb-2">Transmission Sent</p>
-                <p className="text-sm text-neutral-500 mb-5">
-                  A secure access token has been dispatched to <span className="text-purple-400">{email}</span>.
-                </p>
-                <button
-                  onClick={() => { setMagicLinkSent(false); setEmail(''); setError(''); }}
-                  className="text-xs font-sans text-neutral-500 hover:text-neutral-300 transition-colors underline">
-                  Initiate new request
-                </button>
-              </motion.div>
+
+                <motion.button type="submit" disabled={loading || !otp || attempts >= MAX_ATTEMPTS}
+                  whileHover={{ scale: (loading || !otp || attempts >= MAX_ATTEMPTS) ? 1 : 1.02 }}
+                  whileTap={{ scale: (loading || !otp || attempts >= MAX_ATTEMPTS) ? 1 : 0.98 }}
+                  className="w-full py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold mb-4">
+                  {loading ? <Loader2 size={22} className="animate-spin" /> : 'Verify & Enter'}
+                </motion.button>
+                
+                {attempts < MAX_ATTEMPTS && (
+                  <button
+                    type="button"
+                    onClick={() => { setStep('email'); setError(''); setOtp(''); }}
+                    className="w-full text-center text-xs font-sans text-neutral-500 hover:text-neutral-300 transition-colors underline">
+                    Use a different email
+                  </button>
+                )}
+              </motion.form>
             ) : (
-              <motion.form key="form" onSubmit={handleLogin} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.form key="email-form" onSubmit={handleSendOtp} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="mb-6">
                   <label className="block text-xs font-black uppercase tracking-widest text-neutral-500 mb-2 ml-1">Admin Identity (Email)</label>
                   <div className="relative">
