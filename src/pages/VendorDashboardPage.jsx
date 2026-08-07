@@ -1845,6 +1845,7 @@ export default function VendorDashboardPage() {
   }, []);
 
   const [glbUpload, setGlbUpload] = React.useState({ uploading: false, progress: 0, error: null });
+  const [imageUpload, setImageUpload] = React.useState({ uploading: false, progress: 0, error: null });
 
   const uploadGlbFile = async (file) => {
     // 5MB limit to protect Supabase egress quota
@@ -5632,6 +5633,31 @@ export default function VendorDashboardPage() {
 
                     <div>
                       <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Images (Multiple)</label>
+                      
+                      {imageUpload.uploading && (
+                        <div className="rounded-xl p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 mb-3">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">Uploading images... please wait</span>
+                            <span className="ml-auto text-xs font-black text-blue-600 dark:text-blue-400 tabular-nums">{imageUpload.progress}%</span>
+                          </div>
+                          <div className="h-1.5 bg-blue-200 dark:bg-blue-900/40 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${imageUpload.progress}%` }}
+                              transition={{ duration: 0.3, ease: 'easeOut' }}
+                              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {imageUpload.error && (
+                        <div className="rounded-xl p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 mb-3">
+                          <p className="text-xs font-bold text-red-600 dark:text-red-400">{imageUpload.error}</p>
+                        </div>
+                      )}
+
                       <div className="flex gap-2 mb-2 flex-wrap">
                         {(editingDish.images || [editingDish.cover]).filter(Boolean).map((img, i) => (
                           <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 dark:border-white/10">
@@ -5649,19 +5675,40 @@ export default function VendorDashboardPage() {
                         <input type="file" accept="image/*" className="hidden" id="cover-upload" multiple onChange={async e => {
                           const files = Array.from(e.target.files);
                           if (files.length > 0) {
-                            showNotification('Uploading images...');
+                            setImageUpload({ uploading: true, progress: 0, error: null });
+                            let currentProgress = 0;
+                            const progressInterval = setInterval(() => {
+                              currentProgress += (90 - currentProgress) * 0.15;
+                              setImageUpload(prev => ({ ...prev, progress: Math.min(Math.round(currentProgress), 89) }));
+                            }, 250);
+
                             const newUrls = [];
+                            let hasError = false;
                             for (const file of files) {
-                              const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
+                              const filePath = `${activeRestId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
                               const { error } = await supabase.storage.from('models').upload(filePath, file, { cacheControl: '3600', upsert: false });
-                              if (!error) {
+                              if (error) {
+                                hasError = true;
+                                console.error("Upload failed:", error);
+                              } else {
                                 const { data: pub } = supabase.storage.from('models').getPublicUrl(filePath);
                                 newUrls.push(pub.publicUrl);
                               }
                             }
-                            const updatedImgs = [...(editingDish.images || (editingDish.cover ? [editingDish.cover] : [])), ...newUrls];
-                            setEditingDish(prev => ({ ...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover }));
-                            showNotification('Images uploaded!');
+                            clearInterval(progressInterval);
+                            
+                            if (newUrls.length > 0) {
+                              const updatedImgs = [...(editingDish.images || (editingDish.cover ? [editingDish.cover] : [])), ...newUrls];
+                              setEditingDish(prev => ({ ...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover }));
+                              setImageUpload({ uploading: false, progress: 100, error: null });
+                              showNotification('Images uploaded!');
+                            } else if (hasError) {
+                              setImageUpload({ uploading: false, progress: 0, error: 'Upload failed.' });
+                              showNotification('Image upload failed. File too large or network error.', 'error');
+                            } else {
+                              setImageUpload({ uploading: false, progress: 0, error: null });
+                            }
+                            e.target.value = null;
                           }
                         }} />
                         <label htmlFor="cover-upload" className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#1a1a1f] border border-neutral-200 dark:border-white/10 text-xs font-bold hover:bg-neutral-50 transition-colors text-blue-500">
