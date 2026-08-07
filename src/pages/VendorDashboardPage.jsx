@@ -5273,7 +5273,7 @@ export default function VendorDashboardPage() {
                       <div className="grid grid-cols-2 gap-4 font-sans">
                         <div>
                           <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Entry Price (₹) (0 if free)</label>
-                          <input type="number" step="0.01" value={editingEvent.price || 0} onChange={e => setEditingEvent({ ...editingEvent, price: e.target.value })}
+                          <input type="number" step="0.01" value={editingEvent.price ?? ''} onChange={e => setEditingEvent({ ...editingEvent, price: e.target.value })}
                             className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
                         </div>
                         <div>
@@ -6996,8 +6996,8 @@ export default function VendorDashboardPage() {
                         <input
                           type="number" min="0" step="0.5"
                           disabled={!isEditingDelivery}
-                          value={settingsForm.deliveryConfig?.convenienceFee ?? 0}
-                          onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, convenienceFee: parseFloat(e.target.value) || 0 } }))}
+                          value={settingsForm.deliveryConfig?.convenienceFee ?? ''}
+                          onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, convenienceFee: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) } }))}
                           className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${!isEditingDelivery
                             ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                             : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
@@ -7010,8 +7010,8 @@ export default function VendorDashboardPage() {
                         <input
                           type="number" min="0" step="0.5"
                           disabled={!isEditingDelivery}
-                          value={settingsForm.deliveryConfig?.deliveryFee ?? 0}
-                          onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryFee: parseFloat(e.target.value) || 0 } }))}
+                          value={settingsForm.deliveryConfig?.deliveryFee ?? ''}
+                          onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryFee: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) } }))}
                           className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${!isEditingDelivery
                             ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                             : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
@@ -7057,7 +7057,7 @@ export default function VendorDashboardPage() {
                                 type="number" min="0" step="0.5"
                                 disabled={!isEditingDelivery}
                                 value={fee.amount}
-                                onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], amount: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
+                                onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], amount: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
                                 className={`w-24 rounded-xl p-2.5 text-xs text-center transition-all duration-200 ${!isEditingDelivery
                                   ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                                   : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
@@ -7111,54 +7111,7 @@ export default function VendorDashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── AI Waiter Settings ── */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
-                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <BrainCircuit size={13} /> AI Waiter Settings
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-neutral-900 dark:text-white">Enable AI Concierge</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">Show floating AI Waiter to customers</p>
-                      </div>
-                      <button type="button" className="w-12 h-6 rounded-full transition-all relative"
-                        style={{ background: goldGradient, boxShadow: '0 2px 8px rgba(212,175,55,0.3)' }}>
-                        <span className="absolute right-1 top-1 w-4 h-4 bg-black rounded-full" />
-                      </button>
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">AI Personality / Instructions</label>
-                      <textarea rows={3} placeholder="e.g. You are a formal luxury dining concierge. Always recommend the chef's special first..."
-                        className="w-full rounded-xl p-3 text-sm resize-none" />
-                    </div>
-                  </div>
-
-                  {/* ── Happy Hour / Offers Management ── */}
-                  <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
-                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Flame size={13} /> Dynamic Offers (Happy Hour)
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Start Time</label>
-                        <input type="time" defaultValue="16:00" className="w-full rounded-xl p-3 text-sm" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">End Time</label>
-                        <input type="time" defaultValue="19:00" className="w-full rounded-xl p-3 text-sm" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Offer Message</label>
-                      <input type="text" defaultValue="20% off all drinks and starters" className="w-full rounded-xl p-3 text-sm" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Discount %</label>
-                      <input type="number" defaultValue={20} min={0} max={100} className="w-full rounded-xl p-3 text-sm" />
-                    </div>
-                  </div>
-
-                  {/* ── Subscription Plans ── */}
+                                    {/* ── Subscription Plans ── */}
                   <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
                       <Crown size={13} /> Subscription Plan
