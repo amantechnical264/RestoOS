@@ -6278,7 +6278,7 @@ export default function VendorDashboardPage() {
           )}
 
           {/* ════════════════════ TABLES & QR CODES ════════════════════ */}
-          {vendorTab === 'tables' && (
+          {vendorTab === 'qr' && (
             <motion.div key="tables" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6 bg-neutral-50 dark:bg-[#050505]">
               <div className="max-w-4xl mx-auto space-y-6">
