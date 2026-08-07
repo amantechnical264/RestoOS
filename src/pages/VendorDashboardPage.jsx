@@ -2492,14 +2492,36 @@ export default function VendorDashboardPage() {
 
     const foodItems = (order.items || []).filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions');
 
-    const itemsHtml = foodItems.map(item => {
-      const variantText = item.selectedVariant?.name || item.variantName ? `<div style="font-size: 10px; color: #666; margin-left: 12px;">(${item.selectedVariant?.name || item.variantName})</div>` : '';
-      const customizationsText = item.selectedCustomizations && item.selectedCustomizations.length > 0 ? `<div style="font-size: 10px; color: #666; margin-left: 12px;">+ ${item.selectedCustomizations.map(c => c.name).join(', ')}</div>` : '';
+    // Group duplicate items (same name + variant + customizations) into a single line
+    const groupedItems = [];
+    foodItems.forEach(item => {
+      const variantKey = item.selectedVariant?.name || item.variantName || '';
+      const customKey = (item.selectedCustomizations || []).map(c => c.name).sort().join(',');
+      const key = `${item.name}||${variantKey}||${customKey}`;
+      const existing = groupedItems.find(g => g.key === key);
+      if (existing) {
+        existing.quantity += (item.quantity || 1);
+        existing.totalPrice += Number(item.price || 0) * (item.quantity || 1);
+      } else {
+        groupedItems.push({
+          key,
+          name: item.name,
+          quantity: item.quantity || 1,
+          totalPrice: Number(item.price || 0) * (item.quantity || 1),
+          variantName: item.selectedVariant?.name || item.variantName || '',
+          customizations: item.selectedCustomizations || [],
+        });
+      }
+    });
+
+    const itemsHtml = groupedItems.map(item => {
+      const variantText = item.variantName ? `<div style="font-size: 10px; color: #666; margin-left: 12px;">(${item.variantName})</div>` : '';
+      const customizationsText = item.customizations.length > 0 ? `<div style="font-size: 10px; color: #666; margin-left: 12px;">+ ${item.customizations.map(c => c.name).join(', ')}</div>` : '';
       return `
         <div style="margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; font-size: 12px;">
-            <span style="flex: 1; font-weight: bold;">${item.quantity || 1} x ${item.name}</span>
-            <span>₹${(Number(item.price || 0) * (item.quantity || 1)).toFixed(0)}</span>
+            <span style="flex: 1; font-weight: bold;">${item.quantity} x ${item.name}</span>
+            <span>₹${item.totalPrice.toFixed(0)}</span>
           </div>
           ${variantText}
           ${customizationsText}
@@ -2588,7 +2610,7 @@ export default function VendorDashboardPage() {
           </div>
           <div class="info">
             <div>${printDate} &nbsp; ${printTime}</div>
-            <div>Server: ${serverName.toUpperCase()}</div>
+
             <div style="font-weight:bold; font-size:14px; margin-top:5px;">${orderTypeStr}</div>
             <div style="margin-top:5px; border-bottom: 1px dashed #000; width: 100%; text-align:center; padding-bottom:5px;">
               ${customerName}
