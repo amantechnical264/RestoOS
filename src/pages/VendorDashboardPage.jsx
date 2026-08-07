@@ -163,6 +163,29 @@ const cardStyleLight = {
   boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
 };
 
+// Groups duplicate order items (same name + variant + customizations) into
+// a single entry with a combined quantity. Safe — does not mutate originals.
+const groupOrderItems = (items) => {
+  const filtered = (items || []).filter(
+    item => item.type !== 'metadata' && item.type !== 'location_meta' &&
+            item.id !== '__contact_info' && item.id !== '__location' &&
+            item.id !== '__cancel_reason' && item.id !== '__special_instructions'
+  );
+  const groups = [];
+  filtered.forEach(item => {
+    const variantKey = item.selectedVariant?.name || item.variantName || '';
+    const customKey = (item.selectedCustomizations || []).map(c => c.name).sort().join(',');
+    const key = `${item.name}||${variantKey}||${customKey}`;
+    const existing = groups.find(g => g._key === key);
+    if (existing) {
+      existing.quantity += (item.quantity || 1);
+    } else {
+      groups.push({ ...item, _key: key, quantity: item.quantity || 1 });
+    }
+  });
+  return groups;
+};
+
 // ─── Yearly Contribution Grid Chart ────────────────────────────────────
 const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
   const [selectedYear, setSelectedYear] = React.useState(() => new Date().getFullYear());
@@ -2986,9 +3009,9 @@ export default function VendorDashboardPage() {
                           </span>
                         </div>
                         <ul className="text-xs font-semibold space-y-1 mb-2 text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-[#0d0d10]/60 p-2 rounded-lg border border-neutral-100 dark:border-white/5">
-                          {o.items?.filter(item => item.type !== 'metadata' && item.type !== 'location_meta' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__special_instructions').map((item, i) => (
+                          {groupOrderItems(o.items).map((item, i) => (
                             <li key={i} className="flex items-center gap-1.5 flex-wrap">
-                              <span>· {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
+                              <span>· {item.quantity}x {item.name} {(item.selectedVariant?.name || item.variantName) ? `(${item.selectedVariant?.name || item.variantName})` : ''}</span>
                               {(item.isFree || item.type === 'free_dish') && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                                   <Gift size={9} /> free
@@ -3092,10 +3115,10 @@ export default function VendorDashboardPage() {
                             {o.orderType === 'dine_in' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">DINE-IN</span>}
                           </div>
                           <ul className="text-xs font-semibold space-y-1 mb-3 text-neutral-600 dark:text-neutral-400">
-                            {o.items?.filter(item => item.type !== 'metadata' && item.type !== 'location_meta' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__special_instructions').map((item, i) => (
+                            {groupOrderItems(o.items).map((item, i) => (
                               <li key={i} className="flex flex-col">
                                 <span className="flex items-center gap-1.5 flex-wrap">
-                                  · {item.quantity || 1}x {item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+                                  · {item.quantity}x {item.name} {(item.selectedVariant?.name || item.variantName) ? `(${item.selectedVariant?.name || item.variantName})` : ''}
                                   {(item.isFree || item.type === 'free_dish') && (
                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                                       <Gift size={9} /> free
