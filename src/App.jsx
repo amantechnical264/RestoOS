@@ -157,9 +157,9 @@ function AnimatedRoutes() {
         <Route path="/health"   element={<HealthDashboardPage />} />
         <Route path="/settings" element={<SettingsPage />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin"          element={<AdminAuthPage />} />
-        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        {/* System Admin Routes (Hidden) */}
+        <Route path="/hq-portal"          element={<AdminAuthPage />} />
+        <Route path="/hq-portal/dashboard" element={<AdminDashboardPage />} />
       </Routes>
     </AnimatePresence>
   );

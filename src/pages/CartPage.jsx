@@ -409,15 +409,21 @@ export default function CartPage() {
 
     setIsSendingOtp(true);
     try {
-      // Ensure recaptchaVerifier is ready
-      if (!window.recaptchaVerifier) {
-        const container = document.getElementById('recaptcha-container');
-        if (container) container.innerHTML = ''; // Force clear any stale iframe
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
-        await window.recaptchaVerifier.render();
+      // FIX: Always destroy and recreate the recaptcha verifier to avoid stale iframe issues in React
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch (e) {}
+        window.recaptchaVerifier = null;
       }
+      
+      const container = document.getElementById('recaptcha-container');
+      if (container) container.innerHTML = ''; 
+      
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+      await window.recaptchaVerifier.render();
+      
       const appVerifier = window.recaptchaVerifier;
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      
       setConfirmationResult(result);
       setShowOtpPrompt(true);
       setOtpCode('');

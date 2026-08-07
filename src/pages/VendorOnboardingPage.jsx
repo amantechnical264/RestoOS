@@ -24,13 +24,17 @@ export default function VendorOnboardingPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   // ── Redirect logic: wait for BOTH auth AND data to be fully loaded ──
+  const [hadAuthParams] = useState(() => 
+    window.location.hash.includes('access_token') || window.location.search.includes('code=')
+  );
+
   useEffect(() => {
     if (isInitializing) return; // Still loading auth
 
-    // If auth callback params in URL — wait for Supabase to process them
-    const hasAuthParams = window.location.hash.includes('access_token') ||
-      window.location.search.includes('code=');
-    if (hasAuthParams && !supabaseUser) return;
+    // If auth callback params were in URL — wait for Supabase to process them and set the user.
+    // We use the initial state 'hadAuthParams' because Supabase strips the URL hash immediately,
+    // which could otherwise cause a race condition kicking the user back to the login page.
+    if (hadAuthParams && !supabaseUser) return;
 
     // Not logged in → send to auth
     if (!supabaseUser) {

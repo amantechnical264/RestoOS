@@ -231,21 +231,31 @@ export const AppProvider = ({ children }) => {
   const ordersChannelRef = useRef(null);
 
   // ── Subscription Plan State ────────────────────────────────────────
-  // Stored per restaurant: { [restId]: 'Starter' | 'Pro' | 'Enterprise' }
-  const [plans, setPlans] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('3dish_plans') || '{}'); } catch { return {}; }
-  });
+  // Get plan for a given restaurant directly from the live database macros (defaults to 'Starter' for backward compatibility)
+  const planFor = React.useCallback((restId) => {
+    const rest = restaurants.find(r => r.id === restId);
+    return rest?.macros?.plan || 'Starter';
+  }, [restaurants]);
 
-  // Get plan for a given restaurant (defaults to 'Starter')
-  const planFor = (restId) => plans[restId] || 'Starter';
+  // Backward compatibility object so context doesn't break
+  const plans = {};
 
-  // Upgrade (or downgrade) a restaurant's plan
-  const upgradePlan = (restId, newPlan) => {
-    setPlans(prev => {
-      const next = { ...prev, [restId]: newPlan };
-      localStorage.setItem('3dish_plans', JSON.stringify(next));
-      return next;
-    });
+  // Request a plan upgrade — sets pendingPlan for admin approval instead of upgrading directly
+  const upgradePlan = async (restId, newPlan) => {
+    const rest = restaurants.find(r => r.id === restId);
+    if (!rest) return;
+    const currentMacros = rest.macros || {};
+    const newMacros = { ...currentMacros, pendingPlan: newPlan };
+    
+    // Optimistic UI update (only pendingPlan changes, actual plan stays the same)
+    setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, macros: newMacros } : r));
+    
+    try {
+      const { error } = await supabase.from('restaurants').update({ macros: newMacros }).eq('id', restId);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Failed to request plan upgrade", err);
+    }
   };
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('3dish_favorites') || '[]'); } catch { return []; }
@@ -862,7 +872,8 @@ export const AppProvider = ({ children }) => {
     const newRest = {
       vendor_id: supabaseUser.id,
       name: restData.name,
-      cover: restData.cover
+      cover: restData.cover,
+      macros: { status: 'pending', plan: 'Starter' }
     };
 
     try {
