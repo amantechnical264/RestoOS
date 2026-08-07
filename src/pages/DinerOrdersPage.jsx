@@ -14,6 +14,30 @@ import { DishRatingStore } from '../services/AIReviewService';
 const GOLD = '#D4AF37';
 const goldGradient = 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 60%, #D4AF37 100%)';
 
+// Groups duplicate order items (same name + variant + customizations) into
+// a single entry with summed quantity. Does not mutate originals.
+const groupDinerItems = (items) => {
+  const filtered = (items || []).filter(
+    item => item.type !== 'metadata' && item.type !== 'location_meta' &&
+            item.id !== '__contact_info' && item.id !== '__location' &&
+            item.id !== '__cancel_reason' && item.id !== '__special_instructions'
+  );
+  const groups = [];
+  filtered.forEach(item => {
+    const variantKey = item.selectedVariant?.name || item.variantName || '';
+    const customKey = (item.selectedCustomizations || []).map(c => c.name).sort().join(',');
+    const key = `${item.name}||${variantKey}||${customKey}`;
+    const existing = groups.find(g => g._key === key);
+    if (existing) {
+      existing.quantity += (item.quantity || item.qty || 1);
+    } else {
+      groups.push({ ...item, _key: key, quantity: item.quantity || item.qty || 1 });
+    }
+  });
+  return groups;
+};
+
+
 const STATUS_STEPS = [
   { id: 'Pending',   icon: Clock,        label: 'Received' },
   { id: 'Preparing', icon: ChefHat,      label: 'Cooking' },
@@ -172,7 +196,7 @@ function ZomatoStyleOrderCard({ order, restaurant, formattedDate, formattedTime,
 
         {/* Items List with per-dish review buttons */}
         <div className="p-4 space-y-3">
-          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => {
+          {groupDinerItems(order.items).map((item, i) => {
             const isNonVeg = item.tags?.some(t => t.toLowerCase() === 'non-veg' || t.toLowerCase() === 'non veg');
             const iconColor = isNonVeg ? '#E23744' : '#22c55e';
             const itemRating = reviewedItems[item.id] || reviewedItems['order'] || 0;
@@ -365,7 +389,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
       {/* Items list */}
       <div className="rounded-2xl p-4 mb-4 mt-2" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
         <ul className="text-sm font-medium space-y-2 text-neutral-600 dark:text-neutral-300">
-          {order.items.filter(item => item.type !== 'location_meta' && item.type !== 'metadata' && item.id !== '__contact_info' && item.id !== '__location' && item.id !== '__cancel_reason' && item.id !== '__special_instructions').map((item, i) => (
+          {groupDinerItems(order.items).map((item, i) => (
             <li key={i} className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                                 <span className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-1.5 flex-wrap">
@@ -389,7 +413,7 @@ function ActiveOrderCard({ order, restaurantName, getOrderNumber, formattedDate,
                   </div>
                 )}
               </div>
-              <span className="font-bold ml-2 shrink-0" style={{ color: GOLD }}>₹{Number(item.price).toFixed(2)}</span>
+              <span className="font-bold ml-2 shrink-0" style={{ color: GOLD }}>₹{(Number(item.price) * item.quantity).toFixed(2)}</span>
             </li>
           ))}
         </ul>
