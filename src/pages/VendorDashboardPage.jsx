@@ -30,10 +30,10 @@ const removeImageBackground = (imgUrl) => {
         const data = imgData.data;
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
-          const g = data[i+1];
-          const b = data[i+2];
+          const g = data[i + 1];
+          const b = data[i + 2];
           if (r > 230 && g > 230 && b > 230) {
-            data[i+3] = 0;
+            data[i + 3] = 0;
           }
         }
         ctx.putImageData(imgData, 0, 0);
@@ -101,14 +101,14 @@ import { generateMeshyModel } from '../services/meshyService';
 
 const getOrderNote = (o) => {
   if (!o) return null;
-  const rawNote = o.metadata?.specialInstructions || 
-                  o.metadata?.special_instructions || 
-                  o.specialInstructions || 
-                  o.special_instructions || 
-                  o.note || 
-                  o.notes || 
-                  o.items?.find(item => item.id === '__special_instructions')?.instructions || 
-                  o.items?.find(item => item.id === '__special_instructions')?.specialInstructions;
+  const rawNote = o.metadata?.specialInstructions ||
+    o.metadata?.special_instructions ||
+    o.specialInstructions ||
+    o.special_instructions ||
+    o.note ||
+    o.notes ||
+    o.items?.find(item => item.id === '__special_instructions')?.instructions ||
+    o.items?.find(item => item.id === '__special_instructions')?.specialInstructions;
   if (!rawNote) return null;
   const noteStr = String(rawNote).trim();
   if (noteStr.startsWith('GPS:')) return null;
@@ -121,10 +121,10 @@ const getOrderNote = (o) => {
 const DietIcon = ({ type }) => {
   if (!type || type === 'None') return null;
   const t = type.toLowerCase();
-  
+
   let bColor = '';
   let bgColor = '';
-  
+
   if (t === 'vegetarian') {
     bColor = 'border-green-700';
     bgColor = 'bg-green-700';
@@ -139,8 +139,8 @@ const DietIcon = ({ type }) => {
   }
 
   return (
-    <span 
-      className={`inline-flex items-center justify-center w-[14px] h-[14px] border-[1.5px] ${bColor} bg-white rounded-[2px] mr-1.5 align-middle shrink-0`} 
+    <span
+      className={`inline-flex items-center justify-center w-[14px] h-[14px] border-[1.5px] ${bColor} bg-white rounded-[2px] mr-1.5 align-middle shrink-0`}
       title={type}
     >
       <span className={`w-[6px] h-[6px] rounded-full ${bgColor}`}></span>
@@ -184,7 +184,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
   const yearData = React.useMemo(() => {
     const map = {};
     let totalOrders = 0;
-    
+
     // Filter completed/delivered orders
     const yearOrders = orders.filter(o => {
       if (!o.timestamp) return false;
@@ -219,7 +219,7 @@ const YearlyContributionGrid = React.memo(({ orders = [], onDayClick }) => {
     });
 
     const activeDays = new Set(Object.keys(map));
-    
+
     // Calculate max streak
     let maxStreak = 0;
     let currentStreak = 0;
@@ -464,7 +464,7 @@ const MiniBarChart = React.memo(({ data, color = '#D4AF37', height = 80, onBarCl
 // ─── Combo Card Item ───────────────────────────────────────────────────
 const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateDish, deleteDish, setComboDraft, setShowComboCreator }) => {
   const [imgIdx, setImgIdx] = React.useState(0);
-  
+
   const allImages = React.useMemo(() => {
     const imgs = [];
     if (combo.cover) imgs.push(combo.cover);
@@ -508,7 +508,7 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
             <Gift size={32} className="opacity-20" />
           </div>
         )}
-        
+
         {isSoldOut && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
             <span className="font-display font-black text-white text-lg tracking-wider">SOLD OUT</span>
@@ -525,11 +525,11 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
           )}
         </div>
       </div>
-      
+
       <div className="p-5 flex-1 flex flex-col">
         <h3 className="font-display font-black text-lg mb-1 line-clamp-1">{combo.name}</h3>
         <p className="text-xs text-neutral-500 line-clamp-2 mb-4">{combo.description}</p>
-        
+
         <div className="flex -space-x-2 mb-4">
           {comboChildren.slice(0, 4).map((child, idx) => (
             <div key={idx} className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111115] bg-neutral-100 dark:bg-black overflow-hidden flex shrink-0" title={child.name}>
@@ -546,7 +546,7 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
             </div>
           )}
         </div>
-        
+
         <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-white/5 flex flex-col gap-4">
           <div className="flex items-end justify-between">
             <div>
@@ -567,42 +567,42 @@ const ComboCardItem = React.memo(({ combo, comboChildren, originalTotal, updateD
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <button onClick={() => {
-                setComboDraft({
-                  id: combo.id,
-                  name: combo.name,
-                  description: combo.description || '',
-                  price: combo.price,
-                  dishes: combo.macros?.comboDishes || []
-                });
-                setShowComboCreator(true);
-              }}
+              setComboDraft({
+                id: combo.id,
+                name: combo.name,
+                description: combo.description || '',
+                price: combo.price,
+                dishes: combo.macros?.comboDishes || []
+              });
+              setShowComboCreator(true);
+            }}
               className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
               <Edit2 size={11} /> Edit
             </button>
             <button onClick={async () => {
-                const newTags = isSoldOut
-                  ? (combo.tags || []).filter(t => t !== 'sold_out')
-                  : [...(combo.tags || []), 'sold_out'];
-                await updateDish(combo.id, { tags: newTags });
-              }}
+              const newTags = isSoldOut
+                ? (combo.tags || []).filter(t => t !== 'sold_out')
+                : [...(combo.tags || []), 'sold_out'];
+              await updateDish(combo.id, { tags: newTags });
+            }}
               className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isSoldOut ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
               <Package size={11} /> {isSoldOut ? 'Restore' : 'Sold Out'}
             </button>
             <button onClick={async () => {
-                const newTags = isHidden
-                  ? (combo.tags || []).filter(t => t !== 'hidden')
-                  : [...(combo.tags || []), 'hidden'];
-                await updateDish(combo.id, { tags: newTags });
-              }}
+              const newTags = isHidden
+                ? (combo.tags || []).filter(t => t !== 'hidden')
+                : [...(combo.tags || []), 'hidden'];
+              await updateDish(combo.id, { tags: newTags });
+            }}
               className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isHidden ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
               {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
               {isHidden ? 'Hidden' : 'Visible'}
             </button>
             <button onClick={async () => {
-                if(window.confirm(`Are you sure you want to delete combo "${combo.name}"?`)) {
-                  await deleteDish(combo.id);
-                }
-              }}
+              if (window.confirm(`Are you sure you want to delete combo "${combo.name}"?`)) {
+                await deleteDish(combo.id);
+              }
+            }}
               className="py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 hover:opacity-80">
               <Trash2 size={11} /> Delete
             </button>
@@ -618,7 +618,7 @@ const KpiCard = React.memo(({ icon: Icon, label, value, sub, color, trend, onCli
   <div
     onClick={onClick}
     className={`rounded-3xl p-5 flex flex-col gap-3 transition-transform bg-white dark:bg-transparent ${onClick ? 'cursor-pointer hover:scale-[1.02] active:scale-95' : 'hover:scale-[1.02] cursor-default'}`}
-    style={{ ...( document.documentElement.classList.contains('dark') ? cardStyle : cardStyleLight ) }}
+    style={{ ...(document.documentElement.classList.contains('dark') ? cardStyle : cardStyleLight) }}
   >
     <div className="flex justify-between items-start">
       <div
@@ -628,11 +628,10 @@ const KpiCard = React.memo(({ icon: Icon, label, value, sub, color, trend, onCli
         <Icon size={18} style={{ color: GOLD }} />
       </div>
       {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${
-          trend >= 0
+        <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${trend >= 0
             ? 'text-emerald-400'
             : 'text-red-400'
-        }`} style={{ background: trend >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }}>
+          }`} style={{ background: trend >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }}>
           {trend >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
           {Math.abs(trend)}%
         </div>
@@ -652,7 +651,7 @@ const PopularityRow = React.memo(({ rank, name, count, revenue, total, badge }) 
   return (
     <div className="flex items-center gap-4 py-3 border-b border-neutral-100 dark:border-white/5 last:border-0">
       <span className="font-display font-black text-lg w-5 text-center">
-        {rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : <span className="text-neutral-500 text-sm">{rank}</span>}
+        {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : <span className="text-neutral-500 text-sm">{rank}</span>}
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1.5">
@@ -717,7 +716,7 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
 
     const initialIdSet = new Set(initialDishes.map(d => d.id));
     const currentIdSet = new Set(items.map(d => d.id));
-    const hasDifferentItems = initialDishes.length !== items.length || 
+    const hasDifferentItems = initialDishes.length !== items.length ||
       [...initialIdSet].some(id => !currentIdSet.has(id));
 
     if (hasDifferentItems || metaChanged) {
@@ -728,7 +727,7 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
   const saveOrder = async (newOrder) => {
     if (!metadataRecord) return;
     const ids = newOrder.map(d => d.id);
-    await updateDish(metadataRecord.id, { 
+    await updateDish(metadataRecord.id, {
       macros: { ...metadataRecord.macros, categoryOrders: { ...(metadataRecord.macros?.categoryOrders || {}), [cat]: ids } }
     });
   };
@@ -736,8 +735,8 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
   return (
     <Reorder.Group axis="y" values={items} onReorder={setItems} className="flex flex-col gap-2 mt-2">
       {items.map((dish) => (
-        <Reorder.Item 
-          key={dish.id} 
+        <Reorder.Item
+          key={dish.id}
           value={dish}
           onDragEnd={() => saveOrder(items)}
           className="flex justify-between items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200/50 dark:border-white/5 text-xs group cursor-grab active:cursor-grabbing relative select-none touch-none"
@@ -746,7 +745,7 @@ const CategoryReorderList = ({ cat, initialDishes, metadataRecord, updateDish })
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-neutral-500 font-sans mr-2">₹{Number(dish.price).toFixed(0)}</span>
             <div className="p-1 text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 transition-colors">
-               <GripVertical size={16} />
+              <GripVertical size={16} />
             </div>
           </div>
         </Reorder.Item>
@@ -925,7 +924,7 @@ const ReviewsAnalytics = ({ reviews }) => {
                           {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][review.rating]}
                         </span>
                       </div>
-                      
+
                       {/* Review Text */}
                       {review.text && (
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 italic mt-1 leading-relaxed border-l-2 pl-2 border-neutral-200 dark:border-white/10">
@@ -950,9 +949,9 @@ const resolveDishOrVariant = (dishIdOrStr, dishesList, keepBaseId = false) => {
   const targetId = dishId || dishIdOrStr;
   const d = dishesList.find(x => x.id === targetId);
   if (!d) return null;
-  
+
   if (d.variants && d.variants.length > 0) {
-    const v = variantName 
+    const v = variantName
       ? d.variants.find(varItem => varItem.name === variantName)
       : d.variants[0];
     const actualVariantName = variantName || v?.name || '';
@@ -967,7 +966,7 @@ const resolveDishOrVariant = (dishIdOrStr, dishesList, keepBaseId = false) => {
       selectedVariant: v
     };
   }
-  
+
   return {
     ...d,
     originalId: d.id,
@@ -1335,7 +1334,7 @@ export default function VendorDashboardPage() {
   // ── Subscription helpers ────────────────────────────────────────
   const PLANS = ['Starter', 'Pro', 'Enterprise'];
   const currentPlan = planFor(activeRestId);
-  const hasPro        = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Pro');
+  const hasPro = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Pro');
   const hasEnterprise = PLANS.indexOf(currentPlan) >= PLANS.indexOf('Enterprise');
 
 
@@ -1408,10 +1407,10 @@ export default function VendorDashboardPage() {
   const [selectedEditCategory, setSelectedEditCategory] = React.useState('All');
   const [showVendorSidebar, setShowVendorSidebar] = React.useState(false);
   const [vendorActiveCategory, setVendorActiveCategory] = React.useState('All');
-  const [scanState, setScanState]     = React.useState('idle');
+  const [scanState, setScanState] = React.useState('idle');
   const [isGeneratingDesc, setIsGeneratingDesc] = React.useState(false);
   const [scanStageLabel, setScanStageLabel] = React.useState('');
-  const [progress, setProgress]       = React.useState(0);
+  const [progress, setProgress] = React.useState(0);
   const glbInputRef = React.useRef(null);
   const [isStaffMode, setIsStaffMode] = React.useState(false);
   const [aiImportState, setAiImportState] = React.useState('idle'); // 'idle' | 'chooser' | 'analyzing' | 'enriching' | 'reviewing'
@@ -1424,10 +1423,10 @@ export default function VendorDashboardPage() {
   const cameraInputRef = React.useRef(null);
   const galleryInputRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
-  const [tableCount, setTableCount]   = React.useState(5);
+  const [tableCount, setTableCount] = React.useState(5);
   const [activePromo, setActivePromo] = React.useState(null);
-  const [notifText, setNotifText]     = React.useState('');
-  const [promoForm, setPromoForm]     = React.useState({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
+  const [notifText, setNotifText] = React.useState('');
+  const [promoForm, setPromoForm] = React.useState({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
   const [happyHourForm, setHappyHourForm] = React.useState({ startTime: '17:00', endTime: '19:00', discount: 20 });
   const [flashDishSearch, setFlashDishSearch] = React.useState('');
   const [flashCategoryFilter, setFlashCategoryFilter] = React.useState('All');
@@ -1456,7 +1455,7 @@ export default function VendorDashboardPage() {
       const container = document.getElementById('vendor-recaptcha-container');
       if (container) container.innerHTML = '';
       if (vendorRecaptchaRef.current) {
-        try { vendorRecaptchaRef.current.clear(); } catch {}
+        try { vendorRecaptchaRef.current.clear(); } catch { }
         vendorRecaptchaRef.current = null;
       }
       vendorRecaptchaRef.current = new RecaptchaVerifier(auth, 'vendor-recaptcha-container', { size: 'invisible' });
@@ -1469,7 +1468,7 @@ export default function VendorDashboardPage() {
     } catch (err) {
       console.error('Vendor OTP error:', err);
       showNotification(err.message?.includes('reCAPTCHA') ? 'Verification failed. Try again.' : (err.message || 'Failed to send OTP.'));
-      if (vendorRecaptchaRef.current) { try { vendorRecaptchaRef.current.clear(); } catch {} vendorRecaptchaRef.current = null; }
+      if (vendorRecaptchaRef.current) { try { vendorRecaptchaRef.current.clear(); } catch { } vendorRecaptchaRef.current = null; }
     }
     setIsSendingVendorOtp(false);
   };
@@ -1514,7 +1513,7 @@ export default function VendorDashboardPage() {
       discount: disc,
       applicableDishes: promoForm.applicableDishes
     });
-    
+
     const existingFlash = promos[activeRestId]?.flash;
     showNotification(`Promo "${promoForm.label}" ${existingFlash ? 'updated' : 'activated'} for ${promoForm.applicableDishes.length} dishes!`);
     setActivePromo(null);
@@ -1536,13 +1535,13 @@ export default function VendorDashboardPage() {
       endTime: happyHourForm.endTime,
       discount: disc
     });
-    
+
     const existingHappy = promos[activeRestId]?.happyHour;
     showNotification(`Happy Hour ${existingHappy ? 'updated' : 'activated'}: ${happyHourForm.startTime} - ${happyHourForm.endTime} at ${disc}% off!`);
     setActivePromo(null);
   };
   const [dishVisibility, setDishVisibility] = React.useState({});
-  const [soldOutDishes, setSoldOutDishes]   = React.useState({});
+  const [soldOutDishes, setSoldOutDishes] = React.useState({});
   const [analyticsRange, setAnalyticsRange] = React.useState('Week');
   const [isGenerating3D, setIsGenerating3D] = React.useState(false);
   const [showAIImageGen, setShowAIImageGen] = React.useState(false);
@@ -1557,7 +1556,7 @@ export default function VendorDashboardPage() {
   const [showComboDialog, setShowComboDialog] = React.useState(false);
   const [comboParent, setComboParent] = React.useState(null);
   const [comboRecs, setComboRecs] = React.useState([]);
-  
+
   // Custom Combo Creator State
   const [showComboCreator, setShowComboCreator] = React.useState(false);
   const [comboDraft, setComboDraft] = React.useState({ name: '', description: '', price: '', dishes: [] });
@@ -1602,11 +1601,11 @@ export default function VendorDashboardPage() {
         const rows = text.split('\n').map(row => row.split(','));
         let count = 0;
         for (let i = 1; i < rows.length; i++) {
-           const r = rows[i];
-           if (r.length >= 3 && r[0].trim()) {
-             await addDish({ name: r[0], price: parseFloat(r[1]), description: r[2], restId: activeRestId });
-             count++;
-           }
+          const r = rows[i];
+          if (r.length >= 3 && r[0].trim()) {
+            await addDish({ name: r[0], price: parseFloat(r[1]), description: r[2], restId: activeRestId });
+            count++;
+          }
         }
         showNotification(`Imported ${count} dishes successfully!`);
       };
@@ -1874,14 +1873,14 @@ export default function VendorDashboardPage() {
 
   // ── Order helpers ─────────────────────────────────────────────────
   const restOrders = React.useMemo(() => orders.filter(o => o.restId === activeRestId || o.rest_id === activeRestId), [orders, activeRestId]);
-  
+
   // Kitchen/Live Orders should not include delivery orders. They are managed in the Delivery tab.
   const kitchenOrders = React.useMemo(() => restOrders.filter(o => o.orderType !== 'delivery' && o.order_type !== 'delivery'), [restOrders]);
-  
+
   const pendingVerification = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Pending Verification'), [kitchenOrders]);
-  const pending   = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled'), [kitchenOrders]);
-  const prep      = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Preparing'), [kitchenOrders]);
-  const ready     = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Ready'), [kitchenOrders]);
+  const pending = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled'), [kitchenOrders]);
+  const prep = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Preparing'), [kitchenOrders]);
+  const ready = React.useMemo(() => kitchenOrders.filter(o => o.status === 'Ready'), [kitchenOrders]);
   const completed = React.useMemo(() => {
     const todayStr = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" in local time
     return kitchenOrders.filter(o => {
@@ -1916,7 +1915,7 @@ export default function VendorDashboardPage() {
   }, [restOrders, deliveryStartDate, deliveryEndDate]);
 
   const getOrderNumber = React.useCallback((order) => {
-    const sorted = [...restOrders].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const sorted = [...restOrders].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const idx = sorted.findIndex(o => o.id === order.id);
     return `#${String(idx + 1).padStart(3, '0')}`;
   }, [restOrders]);
@@ -1975,26 +1974,26 @@ export default function VendorDashboardPage() {
   // Previous period's metrics for comparison (adapts to selected range)
   const prevPeriodMetrics = React.useMemo(() => {
     const now = new Date();
-    
+
     if (analyticsRange === 'Today') {
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toLocaleDateString('en-CA');
-  
+
       const prevCompleted = restOrders.filter(o => {
         if (o.status !== 'Completed' || !o.timestamp) return false;
         return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
       });
-  
+
       const prevAll = restOrders.filter(o => {
         if (!o.timestamp) return false;
         return new Date(o.timestamp).toLocaleDateString('en-CA') === yesterdayStr;
       });
-  
+
       const prevRevenue = prevCompleted.reduce((s, o) => s + (o.total || 0), 0);
       const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
       const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
-  
+
       return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
     }
 
@@ -2013,11 +2012,11 @@ export default function VendorDashboardPage() {
       const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
       return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
     }
-    
+
     // For Week and Month
     const prevStart = new Date(now);
     const prevEnd = new Date(now);
-    
+
     if (analyticsRange === 'Week') {
       prevStart.setDate(now.getDate() - 14);
       prevEnd.setDate(now.getDate() - 7);
@@ -2025,23 +2024,23 @@ export default function VendorDashboardPage() {
       prevStart.setDate(now.getDate() - 60);
       prevEnd.setDate(now.getDate() - 30);
     }
-    
+
     const prevCompleted = restOrders.filter(o => {
       if (o.status !== 'Completed' || !o.timestamp) return false;
       const t = new Date(o.timestamp);
       return t >= prevStart && t < prevEnd;
     });
-    
+
     const prevAll = restOrders.filter(o => {
       if (!o.timestamp) return false;
       const t = new Date(o.timestamp);
       return t >= prevStart && t < prevEnd;
     });
-    
+
     const prevRevenue = prevCompleted.reduce((s, o) => s + (o.total || 0), 0);
     const prevAvg = prevCompleted.length > 0 ? prevRevenue / prevCompleted.length : 0;
     const prevCancelRate = prevAll.length > 0 ? Math.round((prevAll.filter(o => o.status === 'Cancelled').length / prevAll.length) * 100) : 0;
-    
+
     return { revenue: prevRevenue, orders: prevCompleted.length, avgOrder: prevAvg, cancelRate: prevCancelRate };
   }, [restOrders, analyticsRange]);
 
@@ -2087,7 +2086,7 @@ export default function VendorDashboardPage() {
       const dayRev = dayOrders.reduce((s, o) => s + (o.total || 0), 0);
       const dineInRev = dayOrders.filter(o => o.orderType === 'dine_in' || o.order_type === 'dine_in').reduce((s, o) => s + (o.total || 0), 0);
       const deliveryRev = dayOrders.filter(o => o.orderType === 'delivery' || o.order_type === 'delivery').reduce((s, o) => s + (o.total || 0), 0);
-      
+
       return {
         label: days === 1 ? `${d.getHours()}h` : d.toLocaleDateString('en-US', { weekday: 'short' })[0],
         value: dayRev,
@@ -2102,7 +2101,7 @@ export default function VendorDashboardPage() {
 
   // Peak hours (real heatmap data)
   const peakData = React.useMemo(() => {
-    const HOURS = ['10','11','12','13','14','15','16','17','18','19','20','21'];
+    const HOURS = ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21'];
     return HOURS.map(h => ({
       hour: h,
       value: restOrders.filter(o => o.timestamp && new Date(o.timestamp).getHours() === parseInt(h)).length
@@ -2131,9 +2130,9 @@ export default function VendorDashboardPage() {
           displayName = `Guest (${cPhone})`;
         } else if (o.user_id && o.user_id !== 'anonymous') {
           if (o.user_id.startsWith('guest_')) {
-             displayName = 'Guest Diner';
+            displayName = 'Guest Diner';
           } else {
-             displayName = `Member (${o.user_id.substring(0, 8)})`;
+            displayName = `Member (${o.user_id.substring(0, 8)})`;
           }
         }
 
@@ -2159,11 +2158,11 @@ export default function VendorDashboardPage() {
           map[key].phone = cPhone;
         }
       }
-      
+
       map[key].totalSpend += Number(o.total || 0);
       map[key].orderCount += 1;
       map[key].orders.push(o);
-      
+
       // Update latest order details if this order is newer than the stored one
       if (orderDate > new Date(map[key].lastOrder)) {
         map[key].lastOrder = o.timestamp;
@@ -2206,9 +2205,9 @@ export default function VendorDashboardPage() {
           displayName = `Guest (${cPhone})`;
         } else if (o.user_id && o.user_id !== 'anonymous') {
           if (o.user_id.startsWith('guest_')) {
-             displayName = 'Guest Diner';
+            displayName = 'Guest Diner';
           } else {
-             displayName = `Member (${o.user_id.substring(0, 8)})`;
+            displayName = `Member (${o.user_id.substring(0, 8)})`;
           }
         }
 
@@ -2233,11 +2232,11 @@ export default function VendorDashboardPage() {
           map[key].phone = cPhone;
         }
       }
-      
+
       map[key].totalSpend += Number(o.total || 0);
       map[key].orderCount += 1;
       map[key].orders.push(o);
-      
+
       if (orderDate > new Date(map[key].lastOrder)) {
         map[key].lastOrder = o.timestamp;
         map[key].latestBill = Number(o.total || 0);
@@ -2251,10 +2250,10 @@ export default function VendorDashboardPage() {
 
   const handleExportVCF = React.useCallback(() => {
     // If none selected, export all
-    const targets = selectedCustomerIds.length > 0 
+    const targets = selectedCustomerIds.length > 0
       ? customerList.filter(c => selectedCustomerIds.includes(c.id))
       : customerList;
-      
+
     let vcfContent = '';
     targets.forEach(c => {
       vcfContent += 'BEGIN:VCARD\n';
@@ -2287,15 +2286,15 @@ export default function VendorDashboardPage() {
       .map(o => {
         let dinerName = o.review_name || o.contactName || o.contact_name || 'Anonymous Diner';
         let text = o.review_text;
-        
+
         if (o.review_name && o.review_name.startsWith('{')) {
           try {
             const parsed = JSON.parse(o.review_name);
             if (parsed.name) dinerName = parsed.name;
             if (parsed.text) text = parsed.text;
-          } catch(e) {}
+          } catch (e) { }
         }
-        
+
         return {
           id: o.id,
           rating: o.review_rating,
@@ -2357,7 +2356,7 @@ export default function VendorDashboardPage() {
     if (!newName) return;
     const trimmed = newName.trim();
     if (trimmed === oldCat || !trimmed) return;
-    
+
     // Check if new name already exists
     if (customCategories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
       showNotification('A category with this name already exists.');
@@ -2397,7 +2396,7 @@ export default function VendorDashboardPage() {
     // Update dishes that have this category tag
     const dishesToUpdate = vendDishes.filter(d => d.tags?.includes(oldCat));
     let successCount = 0;
-    
+
     for (const d of dishesToUpdate) {
       const updatedTags = d.tags.map(t => t === oldCat ? trimmed : t);
       const res = await updateDish(d.id, { tags: updatedTags });
@@ -2408,57 +2407,57 @@ export default function VendorDashboardPage() {
   };
 
 
-   const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
- 
-   React.useEffect(() => {
-     let display = [...vendDishes].sort((a, b) => (a.macros?.sort_order || 0) - (b.macros?.sort_order || 0));
-     if (selectedEditCategory === '__uncategorised__') {
-       display = display.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
-     } else if (selectedEditCategory !== 'All') {
-       display = display.filter(d => d.tags?.includes(selectedEditCategory));
-     }
-     setLocalDisplayDishes(expandDishesWithVariants(display));
-   }, [vendDishes, selectedEditCategory, customCategories]);
- 
-   const handleReorderDishes = (newOrder) => {
-     setLocalDisplayDishes(newOrder);
-     const updatedParentIds = new Set();
-     newOrder.forEach((dish, index) => {
-       const parentId = dish.originalId || dish.id;
-       if (!updatedParentIds.has(parentId)) {
-         updatedParentIds.add(parentId);
-         const originalDish = vendDishes.find(d => d.id === parentId);
-         if (originalDish && (originalDish.macros?.sort_order || 0) !== index) {
-           updateDish(parentId, {
-             ...originalDish,
-             macros: { ...(originalDish.macros || {}), sort_order: index }
-           });
-         }
-       }
-     });
-   };
+  const [localDisplayDishes, setLocalDisplayDishes] = React.useState([]);
+
+  React.useEffect(() => {
+    let display = [...vendDishes].sort((a, b) => (a.macros?.sort_order || 0) - (b.macros?.sort_order || 0));
+    if (selectedEditCategory === '__uncategorised__') {
+      display = display.filter(d => !customCategories.some(cat => d.tags?.includes(cat)));
+    } else if (selectedEditCategory !== 'All') {
+      display = display.filter(d => d.tags?.includes(selectedEditCategory));
+    }
+    setLocalDisplayDishes(expandDishesWithVariants(display));
+  }, [vendDishes, selectedEditCategory, customCategories]);
+
+  const handleReorderDishes = (newOrder) => {
+    setLocalDisplayDishes(newOrder);
+    const updatedParentIds = new Set();
+    newOrder.forEach((dish, index) => {
+      const parentId = dish.originalId || dish.id;
+      if (!updatedParentIds.has(parentId)) {
+        updatedParentIds.add(parentId);
+        const originalDish = vendDishes.find(d => d.id === parentId);
+        if (originalDish && (originalDish.macros?.sort_order || 0) !== index) {
+          updateDish(parentId, {
+            ...originalDish,
+            macros: { ...(originalDish.macros || {}), sort_order: index }
+          });
+        }
+      }
+    });
+  };
 
   const FULL_TAB_CONFIG = [
-    { key: 'orders',    icon: ListOrdered,  label: 'Kitchen',  badge: pendingVerification.length + pending.length + prep.length },
-    { key: 'delivery',  icon: Package,      label: 'Delivery',    badge: activeDeliveryOrders.length },
-    { key: 'floor',     icon: Bell,         label: 'Floor',    badge: serviceAlerts.length },
-    { key: 'analytics', icon: BarChart2,    label: 'Analytics' },
-    { key: 'menu',      icon: Utensils,     label: 'Menu' },
-    { key: 'editmenu',  icon: BookOpen,     label: 'Edit Menu' },
-    { key: 'customize', icon: Sliders,      label: 'Customize' },
-    { key: 'growth',    icon: Zap,          label: 'Growth' },
-    { key: 'customers', icon: Users,        label: 'Customers' },
-    { key: 'events',    icon: Calendar,     label: 'Events' },
-    { key: 'combos',    icon: Gift,         label: 'Combos' },
-    { key: 'offers',    icon: Percent,      label: 'Offers' },
-    { key: 'qr',        icon: QrIcon,       label: 'Tables' },
-    { key: 'settings',  icon: Settings,     label: 'Settings' },
+    { key: 'orders', icon: ListOrdered, label: 'Kitchen', badge: pendingVerification.length + pending.length + prep.length },
+    { key: 'delivery', icon: Package, label: 'Delivery', badge: activeDeliveryOrders.length },
+    { key: 'floor', icon: Bell, label: 'Floor', badge: serviceAlerts.length },
+    { key: 'analytics', icon: BarChart2, label: 'Analytics' },
+    { key: 'menu', icon: Utensils, label: 'Menu' },
+    { key: 'editmenu', icon: BookOpen, label: 'Edit Menu' },
+    { key: 'customize', icon: Sliders, label: 'Customize' },
+    { key: 'growth', icon: Zap, label: 'Growth' },
+    { key: 'customers', icon: Users, label: 'Customers' },
+    { key: 'events', icon: Calendar, label: 'Events' },
+    { key: 'combos', icon: Gift, label: 'Combos' },
+    { key: 'offers', icon: Percent, label: 'Offers' },
+    { key: 'qr', icon: QrIcon, label: 'Tables' },
+    { key: 'settings', icon: Settings, label: 'Settings' },
   ];
 
-  const TAB_CONFIG = isStaffMode 
-    ? FULL_TAB_CONFIG.filter(t => ['orders', 'floor', 'menu'].includes(t.key)) 
+  const TAB_CONFIG = isStaffMode
+    ? FULL_TAB_CONFIG.filter(t => ['orders', 'floor', 'menu'].includes(t.key))
     : FULL_TAB_CONFIG;
-    
+
   React.useEffect(() => {
     if (isStaffMode && !['orders', 'floor', 'menu'].includes(vendorTab)) {
       setVendorTab('orders');
@@ -2481,7 +2480,7 @@ export default function VendorDashboardPage() {
         <div style="margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; font-size: 12px;">
             <span style="flex: 1; font-weight: bold;">${item.quantity || 1} x ${item.name}</span>
-            <span>₹{(Number(item.price || 0) * (item.quantity || 1)).toFixed(0)}</span>
+            <span>₹${(Number(item.price || 0) * (item.quantity || 1)).toFixed(0)}</span>
           </div>
           ${variantText}
           ${customizationsText}
@@ -2581,19 +2580,19 @@ export default function VendorDashboardPage() {
           </div>
           <div class="tax-row">
             <span>Subtotal</span>
-            <span>₹{subtotal.toFixed(0)}</span>
+            <span>₹${subtotal.toFixed(0)}</span>
           </div>
           <div class="tax-row">
             <span>Tax (${Math.round(taxRate * 100)}%)</span>
-            <span>₹{taxAmount.toFixed(0)}</span>
+            <span>₹${taxAmount.toFixed(0)}</span>
           </div>
           <div class="totals">
             <span>Total</span>
-            <span>₹{totalAmount}</span>
+            <span>₹${totalAmount}</span>
           </div>
           <div class="due">
             <span>Cash</span>
-            <span>₹{totalAmount}</span>
+            <span>₹${totalAmount}</span>
           </div>
           <div class="due">
             <span>Due</span>
@@ -2609,11 +2608,11 @@ export default function VendorDashboardPage() {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
-    
+
     iframe.contentWindow.document.open();
     iframe.contentWindow.document.write(htmlContent);
     iframe.contentWindow.document.close();
-    
+
     setTimeout(() => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
@@ -2726,7 +2725,7 @@ export default function VendorDashboardPage() {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
-    
+
     iframe.onload = () => {
       setTimeout(() => {
         iframe.contentWindow.focus();
@@ -2762,7 +2761,7 @@ export default function VendorDashboardPage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white relative">
-      
+
       {/* ── SERVICE ALERTS ── */}
       <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-3">
         <AnimatePresence>
@@ -2918,25 +2917,25 @@ export default function VendorDashboardPage() {
                             </li>
                           ))}
                         </ul>
-                        
+
                         <div className="flex justify-between items-center mb-3 px-1">
                           <span className="text-xs font-black text-emerald-600">₹{(o.total || 0).toFixed(0)}</span>
                           {o.paymentStatus === 'Unpaid' && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">COLLECT CASH</span>}
                         </div>
                         {getOrderNote(o) && (
                           <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
-                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
+                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10} /> Order Note</p>
                             <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{getOrderNote(o)}</p>
                           </div>
                         )}
-                        
+
                         <div className="mb-3 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 rounded-xl p-3">
                           <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">
                             {o.verificationCode ? "Enter Customer Code" : "Action Required"}
                           </p>
                           {o.verificationCode ? (
                             <div className="space-y-2">
-                              <input 
+                              <input
                                 type="text"
                                 maxLength={4}
                                 placeholder="Enter 4-digit code"
@@ -2945,13 +2944,13 @@ export default function VendorDashboardPage() {
                                 className="w-full text-center bg-white dark:bg-black border border-neutral-300 dark:border-neutral-800 rounded-lg py-2 font-mono font-bold text-lg tracking-[0.25em] focus:outline-none focus:border-[#D4AF37] text-neutral-900 dark:text-white"
                               />
                               <p className="text-[10px] text-center font-semibold text-neutral-400">
-                                { (enteredCodes[o.id] || '').length === 4 ? (
-                                    (enteredCodes[o.id] === o.verificationCode) ? (
-                                      <span className="text-emerald-500">✓ Code matches</span>
-                                    ) : (
-                                      <span className="text-red-500">✕ Code mismatch</span>
-                                    )
-                                  ) : "Code required to approve"
+                                {(enteredCodes[o.id] || '').length === 4 ? (
+                                  (enteredCodes[o.id] === o.verificationCode) ? (
+                                    <span className="text-emerald-500">✓ Code matches</span>
+                                  ) : (
+                                    <span className="text-red-500">✕ Code mismatch</span>
+                                  )
+                                ) : "Code required to approve"
                                 }
                               </p>
                             </div>
@@ -2963,15 +2962,15 @@ export default function VendorDashboardPage() {
                         </div>
 
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             disabled={o.verificationCode ? enteredCodes[o.id] !== o.verificationCode : false}
-                            onClick={() => updateOrderStatus(o.id, 'Pending')} 
+                            onClick={() => updateOrderStatus(o.id, 'Pending')}
                             className="flex-1 py-2.5 rounded-lg text-xs font-black bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500"
                           >
                             ✓ Approve
                           </button>
-                          <button 
-                            onClick={() => { setRejectReasonOrder(o); setRejectReasonText(''); }} 
+                          <button
+                            onClick={() => { setRejectReasonOrder(o); setRejectReasonText(''); }}
                             className="flex-1 py-2.5 rounded-lg text-xs font-black bg-red-500 text-white hover:bg-red-600 transition-colors"
                           >
                             ✕ Reject
@@ -2986,9 +2985,9 @@ export default function VendorDashboardPage() {
 
               {/* Standard lanes */}
               {[
-                { title: 'New Orders',  data: pending,   accent: 'blue',   action: 'Preparing', actionLabel: '🔥 Start Cooking' },
-                { title: 'Preparing',   data: prep,      accent: 'orange',  action: 'Ready',     actionLabel: '✓ Mark Ready' },
-                { title: 'Ready',       data: ready,     accent: 'emerald', action: 'Completed', actionLabel: '🏁 Complete' },
+                { title: 'New Orders', data: pending, accent: 'blue', action: 'Preparing', actionLabel: '🔥 Start Cooking' },
+                { title: 'Preparing', data: prep, accent: 'orange', action: 'Ready', actionLabel: '✓ Mark Ready' },
+                { title: 'Ready', data: ready, accent: 'emerald', action: 'Completed', actionLabel: '🏁 Complete' },
               ].map(lane => (
                 <div key={lane.title} className={`w-72 shrink-0 bg-white dark:bg-[#12141D] rounded-2xl border dark:border-white/6 border-neutral-200 flex flex-col max-h-full overflow-hidden shadow-sm`}>
                   <div className={`p-4 border-b border-neutral-100 dark:border-white/6 flex justify-between items-center`}>
@@ -3033,7 +3032,7 @@ export default function VendorDashboardPage() {
                           </ul>
                           {getOrderNote(o) && (
                             <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
-                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10}/> Order Note</p>
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-0.5 flex items-center gap-1"><AlertTriangle size={10} /> Order Note</p>
                               <p className="text-xs font-bold text-blue-800 dark:text-blue-300">{getOrderNote(o)}</p>
                             </div>
                           )}
@@ -3057,14 +3056,14 @@ export default function VendorDashboardPage() {
               <div className="w-56 shrink-0 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 p-4 flex flex-col gap-3">
                 <div className="flex justify-between items-center w-full">
                   <p className="font-display font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><CheckCircle size={14} /> Completed Today</p>
-                  <button 
+                  <button
                     title="View Dine-In History"
                     onClick={() => {
                       setTempDineInStartDate(dineInStartDate);
                       setTempDineInEndDate(dineInEndDate);
                       setDineInAnalysisShown(false);
                       setShowDineInHistoryModal(true);
-                    }} 
+                    }}
                     className="p-1.5 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 transition-colors"
                   >
                     <Calendar size={14} />
@@ -3077,9 +3076,9 @@ export default function VendorDashboardPage() {
                     <div key={o.id} className="flex flex-col gap-1 text-xs text-emerald-700/70 dark:text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/20 p-2 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="font-bold">{getOrderNumber(o)}</span>
-                        <span className="font-black text-emerald-600 dark:text-emerald-400">₹{(o.total||0).toFixed(0)}</span>
+                        <span className="font-black text-emerald-600 dark:text-emerald-400">₹{(o.total || 0).toFixed(0)}</span>
                       </div>
-                      <button 
+                      <button
                         onClick={() => handlePrintBill(o)}
                         className="flex items-center justify-center gap-1 w-full py-1.5 mt-1 bg-white dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 rounded text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-800 transition-colors"
                       >
@@ -3104,12 +3103,12 @@ export default function VendorDashboardPage() {
             const todayDeliveryRevenue = deliveryOrders
               .filter(o => o.status !== 'Cancelled')
               .reduce((sum, o) => sum + Number(o.total || 0), 0);
-            
+
             return (
               <motion.div key="delivery" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 overflow-y-auto p-4 sm:p-6 no-scrollbar">
                 <div className="max-w-4xl mx-auto space-y-6">
-                  
+
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h2 className="text-3xl font-display font-black tracking-tight flex items-center gap-3">
@@ -3118,13 +3117,13 @@ export default function VendorDashboardPage() {
                       <p className="text-sm font-medium text-neutral-500 mt-1">Manage external orders and dispatch delivery agents.</p>
                     </div>
                     {/* Calendar Range Button */}
-                    <button 
+                    <button
                       onClick={() => {
                         setTempDeliveryStartDate(deliveryStartDate);
                         setTempDeliveryEndDate(deliveryEndDate);
                         setDeliveryAnalysisShown(false);
                         setShowDeliveryHistoryModal(true);
-                      }} 
+                      }}
                       className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-sm"
                     >
                       <Calendar size={14} />
@@ -3170,7 +3169,7 @@ export default function VendorDashboardPage() {
                         const loc = _locFromMeta || _locFromItems || _locFromSI || _locFromAddr || {};
                         const savedAddress = _rawAddr.replace(/\s*\[GPS:[\d.,\-]+\]/, '').trim();
                         const mapUrl = loc.lat && loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}` : null;
-                        
+
                         const itemsList = order.items
                           .filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location')
                           .map(i => {
@@ -3183,7 +3182,7 @@ export default function VendorDashboardPage() {
                         const waMessage = [
                           `🛵 *New Delivery Order!*`,
                           ``,
-                          `🪪 *Order Code:* ${order.verificationCode || order.id.slice(0,6)}`,
+                          `🪪 *Order Code:* ${order.verificationCode || order.id.slice(0, 6)}`,
                           `👤 *Customer:* ${order.contactName || 'Guest'}`,
                           order.contactPhone ? `📞 *Phone:* ${order.contactPhone}` : null,
                           ``,
@@ -3203,7 +3202,7 @@ export default function VendorDashboardPage() {
                         return (
                           <div key={order.id} className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none" />
-                            
+
                             {/* Cancelled overlay */}
                             {isCancelledOrder && (
                               <div className="absolute inset-0 z-30 flex items-center justify-center rounded-3xl" style={{ backdropFilter: 'blur(3px)', backgroundColor: 'rgba(0,0,0,0.35)' }}>
@@ -3229,10 +3228,10 @@ export default function VendorDashboardPage() {
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md ${isCancelledOrder ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}`}>{isCancelledOrder ? 'Cancelled' : 'Delivery Order'}</span>
-                                    <span className="text-xs text-neutral-400 font-bold">{new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <span className="text-xs text-neutral-400 font-bold">{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                   </div>
                                   <h3 className="font-display font-black text-lg text-neutral-900 dark:text-white">{order.contactName || 'Guest'}</h3>
-                                  {order.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-1.5"><Phone size={12}/> {order.contactPhone}</p>}
+                                  {order.contactPhone && <p className="text-sm font-bold text-neutral-500 flex items-center gap-1.5"><Phone size={12} /> {order.contactPhone}</p>}
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
                                   <p className="text-2xl font-black text-[#D4AF37]">₹{parseFloat(order.total).toFixed(0)}</p>
@@ -3250,17 +3249,17 @@ export default function VendorDashboardPage() {
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* Delivery Progress Tracker */}
                             <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5">
                               <div className="relative flex items-center justify-between px-1">
                                 {/* track line */}
                                 <div className="absolute top-4 left-4 right-4 h-0.5 rounded-full bg-neutral-200 dark:bg-white/10 z-0" />
                                 {[
-                                  { id: 'Pending',        label: 'Received',       icon: Clock },
-                                  { id: 'Preparing',      label: 'Preparing',      icon: ChefHat },
+                                  { id: 'Pending', label: 'Received', icon: Clock },
+                                  { id: 'Preparing', label: 'Preparing', icon: ChefHat },
                                   { id: 'OutForDelivery', label: 'Out for\nDelivery', icon: Package },
-                                  { id: 'Delivered',      label: 'Delivered',      icon: CheckCircle },
+                                  { id: 'Delivered', label: 'Delivered', icon: CheckCircle },
                                 ].map((step, idx, arr) => {
                                   const statusOrder = ['Pending', 'Preparing', 'OutForDelivery', 'Delivered'];
                                   const curIdx = statusOrder.indexOf(order.status);
@@ -3269,11 +3268,10 @@ export default function VendorDashboardPage() {
                                   const active = stepIdx === curIdx;
                                   return (
                                     <div key={step.id} className="relative z-10 flex flex-col items-center gap-1 flex-1">
-                                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                                        done
+                                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${done
                                           ? 'text-black shadow-md'
                                           : 'bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-neutral-600'
-                                      } ${active ? 'scale-110' : ''}`}
+                                        } ${active ? 'scale-110' : ''}`}
                                         style={done ? { background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', boxShadow: '0 3px 10px rgba(212,175,55,0.35)' } : {}}>
                                         <step.icon size={13} />
                                       </div>
@@ -3286,18 +3284,18 @@ export default function VendorDashboardPage() {
                                 })}
                               </div>
                             </div>
-                            
+
                             {/* Actions sidebar */}
                             <div className="md:w-52 shrink-0 flex flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-neutral-100 dark:border-white/5 pt-4 md:pt-0 md:pl-6 relative z-10">
-                              <a 
-                                href={waUrl} 
-                                target="_blank" 
+                              <a
+                                href={waUrl}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-full py-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-[#25D366]/20"
                               >
                                 <MessageSquare size={16} /> Share to WhatsApp
                               </a>
-                              
+
                               {order.status === 'Pending' && (
                                 <div className="flex flex-col gap-2 w-full">
                                   <button
@@ -3314,28 +3312,28 @@ export default function VendorDashboardPage() {
                                   </button>
                                 </div>
                               )}
-                              
+
                               {order.status === 'Preparing' && (
                                 <button
                                   onClick={() => updateOrderStatus(order.id, 'OutForDelivery')}
                                   className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                                 >
-                                  <Package size={15}/> Out for Delivery
+                                  <Package size={15} /> Out for Delivery
                                 </button>
                               )}
-                              
+
                               {order.status === 'OutForDelivery' && (
                                 <button
                                   onClick={() => updateOrderStatus(order.id, 'Delivered')}
                                   className="w-full py-3 bg-emerald-500 text-white rounded-xl font-black text-sm shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
                                 >
-                                  <CheckCircle size={15}/> Mark Delivered
+                                  <CheckCircle size={15} /> Mark Delivered
                                 </button>
                               )}
 
                               {order.status === 'Delivered' && (
                                 <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center gap-2">
-                                  <CheckCircle size={15}/> Order Delivered
+                                  <CheckCircle size={15} /> Order Delivered
                                 </div>
                               )}
                             </div>
@@ -3364,32 +3362,32 @@ export default function VendorDashboardPage() {
                     <input type="number" value={tableCount} onChange={(e) => setTableCount(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1 text-sm font-bold text-center" />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {Array.from({ length: tableCount }).map((_, i) => {
                     const tNum = String(i + 1);
                     const tableAlerts = serviceAlerts.filter(a => String(a.tableNumber) === tNum);
                     const activeTableOrders = restOrders.filter(o => String(o.tableNumber) === tNum && (o.status === 'Pending' || o.status === 'Preparing' || o.status === 'Ready'));
-                    
+
                     let status = 'available'; // available, occupied, service
                     if (tableAlerts.length > 0) status = 'service';
                     else if (activeTableOrders.length > 0) status = 'occupied';
-                    
+
                     const statusConfig = {
                       available: { bg: 'bg-neutral-50 dark:bg-white/[0.02]', border: 'border-neutral-200 dark:border-white/5', text: 'text-neutral-500', icon: null },
-                      occupied: { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-500/20', text: 'text-blue-500', icon: <Utensils size={14}/> },
+                      occupied: { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-500/20', text: 'text-blue-500', icon: <Utensils size={14} /> },
                       service: { bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-300 dark:border-amber-500/30', text: 'text-amber-500', icon: <Bell size={14} className="animate-pulse" /> }
                     };
                     const sc = statusConfig[status];
-                    
+
                     return (
                       <motion.div key={i} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}
                         className={`relative p-5 rounded-3xl border flex flex-col items-center justify-center gap-3 transition-all ${sc.bg} ${sc.border}`}>
-                        
+
                         <div className={`w-14 h-14 rounded-full flex items-center justify-center font-display font-black text-xl border-4 ${status === 'available' ? 'border-neutral-200 dark:border-white/10 text-neutral-400' : status === 'occupied' ? 'border-blue-500/30 text-blue-500 bg-blue-500/10' : 'border-amber-500/30 text-amber-500 bg-amber-500/10'}`}>
                           {tNum}
                         </div>
-                        
+
                         <div className="flex flex-col items-center">
                           <span className={`text-[10px] font-black uppercase tracking-widest ${sc.text}`}>
                             {status === 'service' ? 'Needs Service' : status}
@@ -3398,13 +3396,13 @@ export default function VendorDashboardPage() {
                             <span className="text-xs font-bold text-neutral-400 mt-0.5">{activeTableOrders.length} Order(s)</span>
                           )}
                         </div>
-                        
+
                         {tableAlerts.length > 0 && (
                           <div className="absolute top-2 right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce">
                             <Bell size={12} />
                           </div>
                         )}
-                        
+
                         {status === 'service' && (
                           <button onClick={() => setServiceAlerts(prev => prev.filter(a => String(a.tableNumber) !== tNum))}
                             className="mt-2 w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase rounded-xl transition-colors">
@@ -3415,7 +3413,7 @@ export default function VendorDashboardPage() {
                     );
                   })}
                 </div>
-                
+
                 {serviceAlerts.length > 0 && (
                   <div className="mt-8 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
                     <h3 className="font-display font-black text-lg mb-4">Active Service Requests Log</h3>
@@ -3452,153 +3450,153 @@ export default function VendorDashboardPage() {
             <motion.div key="analytics" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
               {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Analytics Hub" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
-              <div className="max-w-5xl mx-auto space-y-6">
+                <div className="max-w-5xl mx-auto space-y-6">
 
-                {/* Header */}
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="font-display font-black text-2xl">Analytics Hub</h2>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Deep insights into your restaurant's performance</p>
+                  {/* Header */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="font-display font-black text-2xl">Analytics Hub</h2>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Deep insights into your restaurant's performance</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {['Today', 'Week', 'Month', 'Year'].map(r => (
+                        <button key={r} onClick={() => setAnalyticsRange(r)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${analyticsRange === r ? 'bg-neutral-900 dark:bg-white text-white dark:text-black' : 'bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500'}`}>
+                          {r}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {['Today','Week','Month','Year'].map(r => (
-                      <button key={r} onClick={() => setAnalyticsRange(r)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${analyticsRange === r ? 'bg-neutral-900 dark:bg-white text-white dark:text-black' : 'bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500'}`}>
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                {/* KPI Grid — skeleton while data loads */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {!isDataLoaded ? (
-                    Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
-                  ) : (
-                    <>
-                      <KpiCard icon={DollarSign}   label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange === 'Week' ? "This Week's" : analyticsRange === 'Month' ? "This Month's" : "This Year's"} Revenue`}  value={`₹${todayRevenue.toFixed(0)}`}     color="bg-emerald-500" trend={trendRevenue} />
-                      <KpiCard icon={ShoppingBag}  label="Orders Completed" value={rangedCompleted.length}                  color="bg-blue-500"    trend={trendOrders} />
-                      <KpiCard icon={TrendingUp}   label="Avg Order Value"  value={`₹${avgOrderValue.toFixed(0)}`}   color="bg-purple-500"  trend={trendAvg} />
-                      <KpiCard icon={XCircle}      label="Cancellation Rate" value={`${cancelRate}%`}                 color="bg-red-500"     trend={trendCancel} />
-                    </>
-                  )}
-                </div>
-
-                {/* Revenue Chart + Order Split */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
-                    {analyticsRange === 'Year' ? (
-                      <YearlyContributionGrid
-                        orders={restOrders}
-                        onDayClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })}
-                      />
+                  {/* KPI Grid — skeleton while data loads */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {!isDataLoaded ? (
+                      Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
                     ) : (
                       <>
-                        <div className="flex justify-between items-center mb-6">
-                          <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === 'Week' ? '7 Days' : '30 Days'}</h3>
-                          <span className="text-xs font-semibold text-neutral-400">
-                            vs prev. {analyticsRange === 'Today' ? 'day' : analyticsRange === 'Week' ? 'week' : 'month'} <span className={`${trendRevenue >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{trendRevenue >= 0 ? '↑' : '↓'} {Math.abs(trendRevenue)}%</span>
-                          </span>
-                        </div>
-                        <MiniBarChart data={weekData} color="#3B82F6" height={100} onBarClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })} />
-                        <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(0)}</div>
+                        <KpiCard icon={DollarSign} label={`${analyticsRange === 'Today' ? "Today's" : analyticsRange === 'Week' ? "This Week's" : analyticsRange === 'Month' ? "This Month's" : "This Year's"} Revenue`} value={`₹${todayRevenue.toFixed(0)}`} color="bg-emerald-500" trend={trendRevenue} />
+                        <KpiCard icon={ShoppingBag} label="Orders Completed" value={rangedCompleted.length} color="bg-blue-500" trend={trendOrders} />
+                        <KpiCard icon={TrendingUp} label="Avg Order Value" value={`₹${avgOrderValue.toFixed(0)}`} color="bg-purple-500" trend={trendAvg} />
+                        <KpiCard icon={XCircle} label="Cancellation Rate" value={`${cancelRate}%`} color="bg-red-500" trend={trendCancel} />
                       </>
                     )}
                   </div>
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
-                    <h3 className="font-display font-black text-base mb-6">Order Types</h3>
-                    <div className="space-y-4">
-                      {[
-                        { label: 'Dine-In',   count: restOrders.filter(o => o.orderType === 'dine_in').length,  color: 'bg-blue-500' },
-                        { label: 'Delivery',  count: restOrders.filter(o => o.orderType === 'delivery').length, color: 'bg-emerald-500' },
-                        { label: 'Pre-Order', count: restOrders.filter(o => o.orderType === 'prepaid').length,  color: 'bg-purple-500' },
-                      ].map(type => {
-                        const pct = restOrders.length > 0 ? Math.round((type.count / restOrders.length) * 100) : 0;
-                        return (
-                          <div key={type.label}>
-                            <div className="flex justify-between text-xs font-bold mb-1.5">
-                              <span className="text-neutral-600 dark:text-neutral-400">{type.label}</span>
-                              <span className="text-neutral-900 dark:text-white">{pct}% ({type.count})</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-neutral-100 dark:bg-white/5 overflow-hidden">
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ delay: 0.3, duration: 0.8 }}
-                                className={`h-full rounded-full ${type.color}`} />
-                            </div>
+
+                  {/* Revenue Chart + Order Split */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2 bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
+                      {analyticsRange === 'Year' ? (
+                        <YearlyContributionGrid
+                          orders={restOrders}
+                          onDayClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })}
+                        />
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-display font-black text-base">Revenue — {analyticsRange === 'Today' ? 'Today' : analyticsRange === 'Week' ? '7 Days' : '30 Days'}</h3>
+                            <span className="text-xs font-semibold text-neutral-400">
+                              vs prev. {analyticsRange === 'Today' ? 'day' : analyticsRange === 'Week' ? 'week' : 'month'} <span className={`${trendRevenue >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{trendRevenue >= 0 ? '↑' : '↓'} {Math.abs(trendRevenue)}%</span>
+                            </span>
                           </div>
-                        );
-                      })}
-                      <div className="pt-4 border-t border-neutral-50 dark:border-white/5">
-                        <p className="text-xs text-neutral-500">Total orders: <span className="font-black text-neutral-900 dark:text-white">{restOrders.length}</span></p>
+                          <MiniBarChart data={weekData} color="#3B82F6" height={100} onBarClick={(d) => setSelectedDateOrders({ dateLabel: d.fullDate, orders: d.allDayOrders })} />
+                          <div className="mt-2 text-center text-[10px] text-neutral-400 font-medium">Total: ₹{todayRevenue.toFixed(0)}</div>
+                        </>
+                      )}
+                    </div>
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
+                      <h3 className="font-display font-black text-base mb-6">Order Types</h3>
+                      <div className="space-y-4">
+                        {[
+                          { label: 'Dine-In', count: restOrders.filter(o => o.orderType === 'dine_in').length, color: 'bg-blue-500' },
+                          { label: 'Delivery', count: restOrders.filter(o => o.orderType === 'delivery').length, color: 'bg-emerald-500' },
+                          { label: 'Pre-Order', count: restOrders.filter(o => o.orderType === 'prepaid').length, color: 'bg-purple-500' },
+                        ].map(type => {
+                          const pct = restOrders.length > 0 ? Math.round((type.count / restOrders.length) * 100) : 0;
+                          return (
+                            <div key={type.label}>
+                              <div className="flex justify-between text-xs font-bold mb-1.5">
+                                <span className="text-neutral-600 dark:text-neutral-400">{type.label}</span>
+                                <span className="text-neutral-900 dark:text-white">{pct}% ({type.count})</span>
+                              </div>
+                              <div className="h-2 rounded-full bg-neutral-100 dark:bg-white/5 overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ delay: 0.3, duration: 0.8 }}
+                                  className={`h-full rounded-full ${type.color}`} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="pt-4 border-t border-neutral-50 dark:border-white/5">
+                          <p className="text-xs text-neutral-500">Total orders: <span className="font-black text-neutral-900 dark:text-white">{restOrders.length}</span></p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Dish Popularity Ranking */}
-                <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="font-display font-black text-base">Dish Popularity Ranking</h3>
-                    <span className="text-xs text-neutral-400">by order count</span>
+                  {/* Dish Popularity Ranking */}
+                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
+                    <div className="flex justify-between items-center mb-5">
+                      <h3 className="font-display font-black text-base">Dish Popularity Ranking</h3>
+                      <span className="text-xs text-neutral-400">by order count</span>
+                    </div>
+                    {dishRanking.length > 0 ? (
+                      <div>
+                        {dishRanking.map((d, i) => (
+                          <PopularityRow key={d.name} rank={i + 1} name={d.name} count={d.count}
+                            revenue={d.revenue} total={totalOrderedItems}
+                            badge={i === 0 ? 'Top Seller' : undefined} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-neutral-400">
+                        <BarChart2 size={32} className="mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">Complete some orders to see dish analytics</p>
+                      </div>
+                    )}
                   </div>
-                  {dishRanking.length > 0 ? (
-                    <div>
-                      {dishRanking.map((d, i) => (
-                        <PopularityRow key={d.name} rank={i + 1} name={d.name} count={d.count}
-                          revenue={d.revenue} total={totalOrderedItems}
-                          badge={i === 0 ? 'Top Seller' : undefined} />
+
+                  {/* Peak Hours Heatmap */}
+                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
+                    <h3 className="font-display font-black text-base mb-5">Peak Hours Heatmap</h3>
+                    <div className="flex gap-2 items-end">
+                      {peakData.map((d, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <motion.div
+                            initial={{ height: 0 }} animate={{ height: `${(d.value / peakMax) * 80 + 8}px` }}
+                            transition={{ delay: i * 0.05, duration: 0.6, ease: 'easeOut' }}
+                            className="w-full rounded-t-lg"
+                            style={{ background: d.value / peakMax > 0.7 ? '#EF4444' : d.value / peakMax > 0.4 ? '#F97316' : '#3B82F6', opacity: 0.6 + (d.value / peakMax) * 0.4 }}
+                          />
+                          <span className="text-[9px] font-bold text-neutral-400">{d.hour}</span>
+                        </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-10 text-neutral-400">
-                      <BarChart2 size={32} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">Complete some orders to see dish analytics</p>
+                    <div className="flex items-center gap-3 mt-4 text-[10px] text-neutral-400">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-500 opacity-70" />Low</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-orange-500 opacity-80" />Medium</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-500" />Peak</span>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* Peak Hours Heatmap */}
-                <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl p-6 shadow-sm">
-                  <h3 className="font-display font-black text-base mb-5">Peak Hours Heatmap</h3>
-                  <div className="flex gap-2 items-end">
-                    {peakData.map((d, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <motion.div
-                          initial={{ height: 0 }} animate={{ height: `${(d.value / peakMax) * 80 + 8}px` }}
-                          transition={{ delay: i * 0.05, duration: 0.6, ease: 'easeOut' }}
-                          className="w-full rounded-t-lg"
-                          style={{ background: d.value / peakMax > 0.7 ? '#EF4444' : d.value / peakMax > 0.4 ? '#F97316' : '#3B82F6', opacity: 0.6 + (d.value / peakMax) * 0.4 }}
-                        />
-                        <span className="text-[9px] font-bold text-neutral-400">{d.hour}</span>
-                      </div>
-                    ))}
+                  {/* Quick metrics */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 text-center shadow-sm">
+                      <p className="font-display font-black text-3xl text-blue-500">{uniqueCustomers}</p>
+                      <p className="text-xs font-bold text-neutral-500 mt-1">Unique Customers</p>
+                    </div>
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 text-center shadow-sm">
+                      <p className="font-display font-black text-3xl text-purple-500">{repeatCustomers}</p>
+                      <p className="text-xs font-bold text-neutral-500 mt-1">Repeat Guests</p>
+                    </div>
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 text-center shadow-sm">
+                      <p className="font-display font-black text-3xl text-emerald-500">{vendDishes.length}</p>
+                      <p className="text-xs font-bold text-neutral-500 mt-1">Active Dishes</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-4 text-[10px] text-neutral-400">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-500 opacity-70" />Low</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-orange-500 opacity-80" />Medium</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-500" />Peak</span>
-                  </div>
-                </div>
 
-                {/* Quick metrics */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 text-center shadow-sm">
-                    <p className="font-display font-black text-3xl text-blue-500">{uniqueCustomers}</p>
-                    <p className="text-xs font-bold text-neutral-500 mt-1">Unique Customers</p>
-                  </div>
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 text-center shadow-sm">
-                    <p className="font-display font-black text-3xl text-purple-500">{repeatCustomers}</p>
-                    <p className="text-xs font-bold text-neutral-500 mt-1">Repeat Guests</p>
-                  </div>
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 text-center shadow-sm">
-                    <p className="font-display font-black text-3xl text-emerald-500">{vendDishes.length}</p>
-                    <p className="text-xs font-bold text-neutral-500 mt-1">Active Dishes</p>
-                  </div>
-                </div>
-                
-                {/* Reviews Analytics */}
-                <ReviewsAnalytics reviews={reviewOrders} />
+                  {/* Reviews Analytics */}
+                  <ReviewsAnalytics reviews={reviewOrders} />
 
-              </div>
+                </div>
               )}
             </motion.div>
           )}
@@ -3631,7 +3629,7 @@ export default function VendorDashboardPage() {
                         return;
                       }
                       const updated = [...customCategories, trimmed];
-                      
+
                       const payload = {
                         name: "_categories_metadata",
                         price: 0,
@@ -3722,11 +3720,11 @@ export default function VendorDashboardPage() {
                             {catDishes.length === 0 ? (
                               <p className="text-xs text-neutral-400 italic">No dishes assigned to this category. Edit a dish and select this tag to assign it.</p>
                             ) : (
-                              <CategoryReorderList 
-                                cat={cat} 
-                                initialDishes={catDishes} 
-                                metadataRecord={metadataRecord} 
-                                updateDish={updateDish} 
+                              <CategoryReorderList
+                                cat={cat}
+                                initialDishes={catDishes}
+                                metadataRecord={metadataRecord}
+                                updateDish={updateDish}
                               />
                             )}
                           </div>
@@ -3840,125 +3838,125 @@ export default function VendorDashboardPage() {
                           }
                           return true;
                         }).map(dish => {
-                    const isSoldOut = dish.tags?.includes('sold_out');
-                    const isHidden = dish.tags?.includes('hidden');
-                    return (
-                      <div key={dish.id} className={`bg-white dark:bg-[#12141D] border rounded-3xl overflow-hidden shadow-sm transition-opacity ${isHidden ? 'opacity-50' : ''} border-neutral-100 dark:border-white/6`}>
-                        <div className="relative h-36 bg-neutral-100 dark:bg-[#1a1a1f] overflow-hidden">
-                          {(dish.cover || dish.images?.[0])
-                            ? <img src={dish.cover || dish.images[0]} className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center"><ChefHat size={32} className="text-neutral-300" /></div>
-                          }
-                          {isSoldOut && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                              <span className="font-display font-black text-white text-lg tracking-wider">SOLD OUT</span>
-                            </div>
-                          )}
-                          <div className="absolute top-2 right-2 flex gap-1.5">
-                            {(dish.modelUrl || dish.model_url) && (
-                              <span className="px-2 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-black flex items-center gap-1 backdrop-blur-sm">
-                                <Box size={9} /> 3D
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1 min-w-0 pr-2">
-                              <h3 className="font-bold text-sm leading-tight flex items-start min-w-0">
-                                <span className="mt-0.5 shrink-0"><DietIcon type={dish.dietaryPreference} /></span>
-                                <span 
-                                  className="break-words" 
-                                  style={{
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 3,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden',
-                                    whiteSpace: 'normal',
-                                    wordBreak: 'break-word'
-                                  }}
-                                >
-                                  {dish.name}
-                                </span>
-                              </h3>
-                              {dish.chef && <p className="text-xs text-neutral-500 mt-0.5 truncate">{dish.chef}</p>}
-                            </div>
-                            {dish.variants && dish.variants.length > 0 ? (
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                {dish.variants.map((v, idx) => (
-                                  <div key={idx} className="flex items-center gap-1.5 shrink-0">
-                                    <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{v.name}</span>
-                                    <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(v.price || 0).toFixed(0)}</span>
+                          const isSoldOut = dish.tags?.includes('sold_out');
+                          const isHidden = dish.tags?.includes('hidden');
+                          return (
+                            <div key={dish.id} className={`bg-white dark:bg-[#12141D] border rounded-3xl overflow-hidden shadow-sm transition-opacity ${isHidden ? 'opacity-50' : ''} border-neutral-100 dark:border-white/6`}>
+                              <div className="relative h-36 bg-neutral-100 dark:bg-[#1a1a1f] overflow-hidden">
+                                {(dish.cover || dish.images?.[0])
+                                  ? <img src={dish.cover || dish.images[0]} className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full flex items-center justify-center"><ChefHat size={32} className="text-neutral-300" /></div>
+                                }
+                                {isSoldOut && (
+                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                    <span className="font-display font-black text-white text-lg tracking-wider">SOLD OUT</span>
                                   </div>
-                                ))}
+                                )}
+                                <div className="absolute top-2 right-2 flex gap-1.5">
+                                  {(dish.modelUrl || dish.model_url) && (
+                                    <span className="px-2 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-black flex items-center gap-1 backdrop-blur-sm">
+                                      <Box size={9} /> 3D
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            ) : (
-                              <span className="font-display font-black text-base text-[#D4AF37] shrink-0">₹{Number(dish.price).toFixed(0)}</span>
-                            )}
+                              <div className="p-4">
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex-1 min-w-0 pr-2">
+                                    <h3 className="font-bold text-sm leading-tight flex items-start min-w-0">
+                                      <span className="mt-0.5 shrink-0"><DietIcon type={dish.dietaryPreference} /></span>
+                                      <span
+                                        className="break-words"
+                                        style={{
+                                          display: '-webkit-box',
+                                          WebkitLineClamp: 3,
+                                          WebkitBoxOrient: 'vertical',
+                                          overflow: 'hidden',
+                                          whiteSpace: 'normal',
+                                          wordBreak: 'break-word'
+                                        }}
+                                      >
+                                        {dish.name}
+                                      </span>
+                                    </h3>
+                                    {dish.chef && <p className="text-xs text-neutral-500 mt-0.5 truncate">{dish.chef}</p>}
+                                  </div>
+                                  {dish.variants && dish.variants.length > 0 ? (
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                      {dish.variants.map((v, idx) => (
+                                        <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                                          <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{v.name}</span>
+                                          <span className="font-display font-black text-sm text-[#D4AF37]">₹{Number(v.price || 0).toFixed(0)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="font-display font-black text-base text-[#D4AF37] shrink-0">₹{Number(dish.price).toFixed(0)}</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-4">
+                                  {dish.tags?.filter(t => t !== 'sold_out' && t !== 'hidden').slice(0, 3).map(t => (
+                                    <span key={t} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">{t}</span>
+                                  ))}
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                  <button onClick={() => setEditingDish(dish)}
+                                    className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
+                                    <Edit2 size={11} /> Edit
+                                  </button>
+                                  <button onClick={async () => {
+                                    const newTags = isSoldOut
+                                      ? (dish.tags || []).filter(t => t !== 'sold_out')
+                                      : [...(dish.tags || []), 'sold_out'];
+                                    await updateDish(dish.id, { tags: newTags });
+                                  }}
+                                    className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isSoldOut ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
+                                    <Package size={11} /> {isSoldOut ? 'Restore' : 'Sold Out'}
+                                  </button>
+                                  <button onClick={async () => {
+                                    const newTags = isHidden
+                                      ? (dish.tags || []).filter(t => t !== 'hidden')
+                                      : [...(dish.tags || []), 'hidden'];
+                                    await updateDish(dish.id, { tags: newTags });
+                                  }}
+                                    className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isHidden ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
+                                    {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
+                                    {isHidden ? 'Hidden' : 'Visible'}
+                                  </button>
+                                  <button onClick={async () => {
+                                    if (window.confirm('Are you sure you want to delete this dish?')) {
+                                      await deleteDish(dish.id);
+                                      const stringDishId = String(dish.id);
+                                      const thisDishKeys = [stringDishId, ...(dish.variants || []).map(v => `${stringDishId}::${v.name}`)];
+                                      const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(c => {
+                                        const nextLinkedDishes = (c.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
+                                        return { ...c, linkedDishes: nextLinkedDishes };
+                                      });
+                                      await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
+                                    }
+                                  }}
+                                    className="py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 hover:opacity-80">
+                                    <Trash2 size={11} /> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {vendDishes.length === 0 && (
+                          <div className="col-span-3 text-center py-16 text-neutral-400">
+                            <ChefHat size={48} className="mx-auto mb-4 opacity-20" />
+                            <p className="font-display font-bold text-lg">No dishes yet</p>
+                            <p className="text-sm mt-1">Add your first dish to get started</p>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 mb-4">
-                            {dish.tags?.filter(t => t !== 'sold_out' && t !== 'hidden').slice(0,3).map(t => (
-                              <span key={t} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">{t}</span>
-                            ))}
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                            <button onClick={() => setEditingDish(dish)}
-                              className="py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
-                              <Edit2 size={11} /> Edit
-                            </button>
-                            <button onClick={async () => {
-                              const newTags = isSoldOut
-                                ? (dish.tags || []).filter(t => t !== 'sold_out')
-                                : [...(dish.tags || []), 'sold_out'];
-                              await updateDish(dish.id, { tags: newTags });
-                            }}
-                              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isSoldOut ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
-                              <Package size={11} /> {isSoldOut ? 'Restore' : 'Sold Out'}
-                            </button>
-                            <button onClick={async () => {
-                              const newTags = isHidden
-                                ? (dish.tags || []).filter(t => t !== 'hidden')
-                                : [...(dish.tags || []), 'hidden'];
-                              await updateDish(dish.id, { tags: newTags });
-                            }}
-                              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${isHidden ? 'bg-neutral-200 dark:bg-white/10 text-neutral-700' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'}`}>
-                              {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
-                              {isHidden ? 'Hidden' : 'Visible'}
-                            </button>
-                            <button onClick={async () => {
-                              if(window.confirm('Are you sure you want to delete this dish?')) {
-                                await deleteDish(dish.id);
-                                const stringDishId = String(dish.id);
-                                const thisDishKeys = [stringDishId, ...(dish.variants || []).map(v => `${stringDishId}::${v.name}`)];
-                                const updatedCustomizations = (currentRestaurant?.macros?.customizations || []).map(c => {
-                                  const nextLinkedDishes = (c.linkedDishes || []).map(String).filter(k => !thisDishKeys.includes(k));
-                                  return { ...c, linkedDishes: nextLinkedDishes };
-                                });
-                                await updateRestaurant(activeRestId, { customizations: updatedCustomizations });
-                              }
-                            }}
-                              className="py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 hover:opacity-80">
-                              <Trash2 size={11} /> Delete
-                            </button>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    );
-                  })}
-                  {vendDishes.length === 0 && (
-                    <div className="col-span-3 text-center py-16 text-neutral-400">
-                      <ChefHat size={48} className="mx-auto mb-4 opacity-20" />
-                      <p className="font-display font-bold text-lg">No dishes yet</p>
-                      <p className="text-sm mt-1">Add your first dish to get started</p>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )
-    )}
+              </motion.div>
+            )
+          )}
 
           {/* ── EDIT MENU TAB ── */}
           {vendorTab === 'editmenu' && (
@@ -3988,18 +3986,16 @@ export default function VendorDashboardPage() {
                   {/* All category – fixed, not reorderable */}
                   <button
                     onClick={() => setSelectedEditCategory('All')}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
-                      selectedEditCategory === 'All'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${selectedEditCategory === 'All'
                         ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
                         : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
-                    }`}
+                      }`}
                   >
                     <span className="truncate">All</span>
-                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
-                      selectedEditCategory === 'All'
+                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${selectedEditCategory === 'All'
                         ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
                         : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
-                    }`}>{vendDishes.length}</span>
+                      }`}>{vendDishes.length}</span>
                   </button>
 
                   {/* Drag-and-drop reorderable custom categories */}
@@ -4019,20 +4015,18 @@ export default function VendorDashboardPage() {
                         <Reorder.Item
                           key={cat}
                           value={cat}
-                          className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-sm font-semibold transition-colors cursor-grab active:cursor-grabbing ${
-                            isActive
+                          className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-sm font-semibold transition-colors cursor-grab active:cursor-grabbing ${isActive
                               ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
                               : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
-                          }`}
+                            }`}
                         >
                           {/* Drag handle */}
                           <GripVertical
                             size={14}
-                            className={`shrink-0 ${
-                              isActive
+                            className={`shrink-0 ${isActive
                                 ? 'text-white/50 dark:text-black/40'
                                 : 'text-neutral-400 dark:text-neutral-600'
-                            }`}
+                              }`}
                           />
 
                           {/* Label – click to select/filter */}
@@ -4044,11 +4038,10 @@ export default function VendorDashboardPage() {
                           </div>
 
                           {/* Count badge */}
-                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
-                            isActive
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${isActive
                               ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
                               : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
-                          }`}>{count}</span>
+                            }`}>{count}</span>
                         </Reorder.Item>
                       );
                     })}
@@ -4060,18 +4053,16 @@ export default function VendorDashboardPage() {
                     return uncatCount > 0 ? (
                       <button
                         onClick={() => setSelectedEditCategory('__uncategorised__')}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${
-                          selectedEditCategory === '__uncategorised__'
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all ${selectedEditCategory === '__uncategorised__'
                             ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
                             : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
-                        }`}
+                          }`}
                       >
                         <span className="truncate italic">Uncategorised</span>
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
-                          selectedEditCategory === '__uncategorised__'
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${selectedEditCategory === '__uncategorised__'
                             ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
                             : 'bg-neutral-100 dark:bg-white/8 text-neutral-400'
-                        }`}>{uncatCount}</span>
+                          }`}>{uncatCount}</span>
                       </button>
                     ) : null;
                   })()}
@@ -4086,11 +4077,11 @@ export default function VendorDashboardPage() {
                     <h3 className="font-display font-black text-base">
                       {selectedEditCategory === 'All' ? 'All Dishes'
                         : selectedEditCategory === '__uncategorised__' ? 'Uncategorised'
-                        : selectedEditCategory}
+                          : selectedEditCategory}
                     </h3>
-                     <p className="text-[11px] text-neutral-500">
-                       {localDisplayDishes.length} items
-                     </p>
+                    <p className="text-[11px] text-neutral-500">
+                      {localDisplayDishes.length} items
+                    </p>
                   </div>
                 </div>
 
@@ -4107,15 +4098,14 @@ export default function VendorDashboardPage() {
                       {localDisplayDishes.map(dish => {
                         const originalDish = vendDishes.find(d => d.id === (dish.originalId || dish.id)) || dish;
                         const isSoldOut = originalDish.tags?.includes('sold_out');
-                        const isHidden  = originalDish.tags?.includes('hidden');
+                        const isHidden = originalDish.tags?.includes('hidden');
                         return (
                           <motion.div
                             key={dish.id}
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`flex items-center gap-4 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors group ${
-                              isHidden ? 'opacity-50' : ''
-                            }`}
+                            className={`flex items-center gap-4 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors group ${isHidden ? 'opacity-50' : ''
+                              }`}
                           >
                             {/* Thumbnail */}
                             <div className="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-white/5 shrink-0 border border-neutral-200 dark:border-white/5">
@@ -4130,7 +4120,7 @@ export default function VendorDashboardPage() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-sm text-neutral-900 dark:text-white truncate">{dish.name}</span>
                                 {isSoldOut && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600">SOLD OUT</span>}
-                                {isHidden  && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-500">HIDDEN</span>}
+                                {isHidden && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-500">HIDDEN</span>}
                                 {(dish.modelUrl || dish.model_url) && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-500">3D</span>}
                               </div>
                               <div className="flex items-center gap-3 mt-0.5">
@@ -4139,7 +4129,7 @@ export default function VendorDashboardPage() {
                               </div>
                               {/* Category tags on this dish */}
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {dish.tags?.filter(t => !['sold_out','hidden','event','_categories_metadata'].includes(t)).slice(0, 4).map(t => (
+                                {dish.tags?.filter(t => !['sold_out', 'hidden', 'event', '_categories_metadata'].includes(t)).slice(0, 4).map(t => (
                                   <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/6 text-neutral-500">{t}</span>
                                 ))}
                               </div>
@@ -4161,8 +4151,7 @@ export default function VendorDashboardPage() {
                                     : [...(originalDish.tags || []), 'sold_out'];
                                   await updateDish(originalDish.id, { tags: newTags });
                                 }}
-                                className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                                  isSoldOut
+                                className={`p-2 rounded-lg transition-colors cursor-pointer ${isSoldOut
                                     ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
                                     : 'bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-500'
                                   }`}
@@ -4177,8 +4166,7 @@ export default function VendorDashboardPage() {
                                     : [...(originalDish.tags || []), 'hidden'];
                                   await updateDish(originalDish.id, { tags: newTags });
                                 }}
-                                className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                                  isHidden
+                                className={`p-2 rounded-lg transition-colors cursor-pointer ${isHidden
                                     ? 'bg-neutral-200 dark:bg-white/15 text-neutral-700 dark:text-neutral-200'
                                     : 'bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/15 text-neutral-500'
                                   }`}
@@ -4214,13 +4202,13 @@ export default function VendorDashboardPage() {
                   <h2 className="font-display font-black text-sm">Edit Suggestions</h2>
                   <p className="text-[10px] text-neutral-500 mt-0.5">Dish pairing recommendations</p>
                 </div>
-                  <button
-                    onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
-                    className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
-                    style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
-                  >
-                    <Gift size={13} /> Edit Suggestions
-                  </button>
+                <button
+                  onClick={() => { setComboParent(null); setComboRecs([]); setShowComboDialog(true); }}
+                  className="mx-3 mt-3 mb-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000' }}
+                >
+                  <Gift size={13} /> Edit Suggestions
+                </button>
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
                   {getSuggestionParents(vendDishes).length === 0 && (
                     <div className="text-center py-8 text-neutral-400">
@@ -4381,121 +4369,120 @@ export default function VendorDashboardPage() {
                           </div>
                         </div>
 
-                         {/* Save Combo Button */}
-                         <button
-                           disabled={!comboParent || comboRecs.length === 0}
-                            onClick={async () => {
-                              if (!comboParent || comboRecs.length === 0) return;
-                              const parentId = comboParent.originalId || comboParent.id;
-                              const originalParent = vendDishes.find(d => d.id === parentId);
-                              if (!originalParent) return;
-                              const recsList = comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id);
-                              if (comboParent.isVariant) {
-                                const updatedVariants = (originalParent.macros?.variants || []).map(v => 
-                                  v.name === comboParent.variantName 
-                                    ? { ...v, comboRecommendations: recsList }
-                                    : v
-                                );
-                                await updateDish(parentId, {
-                                  macros: {
-                                    ...(originalParent.macros || {}),
-                                    variants: updatedVariants
+                        {/* Save Combo Button */}
+                        <button
+                          disabled={!comboParent || comboRecs.length === 0}
+                          onClick={async () => {
+                            if (!comboParent || comboRecs.length === 0) return;
+                            const parentId = comboParent.originalId || comboParent.id;
+                            const originalParent = vendDishes.find(d => d.id === parentId);
+                            if (!originalParent) return;
+                            const recsList = comboRecs.map(r => r.isVariant ? `${r.originalId}::${r.variantName}` : r.id);
+                            if (comboParent.isVariant) {
+                              const updatedVariants = (originalParent.macros?.variants || []).map(v =>
+                                v.name === comboParent.variantName
+                                  ? { ...v, comboRecommendations: recsList }
+                                  : v
+                              );
+                              await updateDish(parentId, {
+                                macros: {
+                                  ...(originalParent.macros || {}),
+                                  variants: updatedVariants
+                                }
+                              });
+                            } else {
+                              await updateDish(parentId, {
+                                macros: {
+                                  ...(originalParent.macros || {}),
+                                  comboRecommendations: recsList,
+                                  comboParentVariant: undefined
+                                }
+                              });
+                            }
+                            showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
+                            setShowComboDialog(false);
+                            setComboParent(null);
+                            setComboRecs([]);
+                          }}
+                          className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
+                        >
+                          <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Suggestions</span>
+                        </button>
+                      </div>
+
+                      {/* Right: Available Dishes Grid */}
+                      <div>
+                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
+                        <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                          {expandDishesWithVariants(vendDishes).map(d => {
+                            const isParent = comboParent && comboParent.id === d.id;
+                            const isRec = comboRecs.some(r => r.id === d.id);
+                            const parentId = d.originalId || d.id;
+                            const originalD = vendDishes.find(x => x.id === parentId);
+                            const isAlreadyParent = !!(
+                              originalD?.macros?.comboRecommendations?.length > 0 ||
+                              (d.isVariant && originalD?.macros?.variants?.find(v => v.name === d.variantName)?.comboRecommendations?.length > 0)
+                            );
+                            const isAlreadyParentElsewhere = isAlreadyParent && (comboParent?.id !== d.id);
+                            const isUsed = isParent || isRec;
+                            return (
+                              <button
+                                key={d.id}
+                                disabled={isAlreadyParentElsewhere && !comboParent}
+                                onClick={() => {
+                                  if (isParent) { setComboParent(null); return; }
+                                  if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
+                                  if (!comboParent) {
+                                    if (isAlreadyParent) {
+                                      showNotification(`${d.name} is already a parent of another suggestion.`);
+                                      return;
+                                    }
+                                    setComboParent(d);
+                                  } else {
+                                    // Avoid adding duplicate parent recommendations if the dish has variants
+                                    const recParentId = d.originalId || d.id;
+                                    if (comboRecs.some(r => (r.originalId || r.id) === recParentId)) {
+                                      showNotification(`This dish is already in recommendations.`);
+                                      return;
+                                    }
+                                    setComboRecs(prev => [...prev, d]);
                                   }
-                                });
-                              } else {
-                                await updateDish(parentId, {
-                                  macros: {
-                                    ...(originalParent.macros || {}),
-                                    comboRecommendations: recsList,
-                                    comboParentVariant: undefined
-                                  }
-                                });
-                              }
-                              showNotification(`Combo saved for "${originalParent.name}" with ${comboRecs.length} recommendations!`);
-                              setShowComboDialog(false);
-                              setComboParent(null);
-                              setComboRecs([]);
-                            }}
-                           className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                           style={comboParent && comboRecs.length > 0 ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', color: '#000', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' } : { background: 'rgba(212,175,55,0.1)', color: '#AA8C2C' }}
-                         >
-                           <span className="flex items-center justify-center gap-2"><Save size={15} /> Save Suggestions</span>
-                         </button>
-                       </div>
- 
-                       {/* Right: Available Dishes Grid */}
-                       <div>
-                         <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Available Dishes — Click to assign</p>
-                         <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                           {expandDishesWithVariants(vendDishes).map(d => {
-                             const isParent = comboParent && comboParent.id === d.id;
-                             const isRec = comboRecs.some(r => r.id === d.id);
-                             const parentId = d.originalId || d.id;
-                             const originalD = vendDishes.find(x => x.id === parentId);
-                             const isAlreadyParent = !!(
-                               originalD?.macros?.comboRecommendations?.length > 0 ||
-                               (d.isVariant && originalD?.macros?.variants?.find(v => v.name === d.variantName)?.comboRecommendations?.length > 0)
-                             );
-                             const isAlreadyParentElsewhere = isAlreadyParent && (comboParent?.id !== d.id);
-                             const isUsed = isParent || isRec;
-                             return (
-                               <button
-                                 key={d.id}
-                                 disabled={isAlreadyParentElsewhere && !comboParent}
-                                 onClick={() => {
-                                   if (isParent) { setComboParent(null); return; }
-                                   if (isRec) { setComboRecs(prev => prev.filter(r => r.id !== d.id)); return; }
-                                   if (!comboParent) {
-                                     if (isAlreadyParent) {
-                                       showNotification(`${d.name} is already a parent of another suggestion.`);
-                                       return;
-                                     }
-                                     setComboParent(d);
-                                   } else {
-                                     // Avoid adding duplicate parent recommendations if the dish has variants
-                                     const recParentId = d.originalId || d.id;
-                                     if (comboRecs.some(r => (r.originalId || r.id) === recParentId)) {
-                                       showNotification(`This dish is already in recommendations.`);
-                                       return;
-                                     }
-                                     setComboRecs(prev => [...prev, d]);
-                                   }
-                                 }}
-                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                                   isParent
-                                     ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700'
-                                     : isRec
-                                       ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700'
-                                       : isAlreadyParentElsewhere && !comboParent
-                                         ? 'opacity-40 cursor-not-allowed bg-neutral-100 dark:bg-white/[0.01] border-neutral-200 dark:border-white/5'
-                                         : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
-                                 } border`}
-                               >
-                                 <div className="w-9 h-9 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
-                                   {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={14} className="text-neutral-400" /></div>}
-                                 </div>
-                                 <div className="flex-1 min-w-0">
-                                   <p className="font-bold text-xs truncate">{d.name}</p>
-                                   <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(0)}</p>
-                                 </div>
-                                 {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
-                                 {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
-                                 {isAlreadyParentElsewhere && !comboParent && (
-                                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 shrink-0">
-                                     Already a parent
-                                   </span>
-                                 )}
-                                 {!isUsed && !isAlreadyParentElsewhere && (
-                                   <span className="text-[10px] text-neutral-400">
-                                     {!comboParent
-                                       ? 'Set as parent'
-                                       : '+ Add rec'}
-                                   </span>
-                                 )}
-                               </button>
-                             );
-                           })}
-                         </div>
+                                }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${isParent
+                                    ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700'
+                                    : isRec
+                                      ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700'
+                                      : isAlreadyParentElsewhere && !comboParent
+                                        ? 'opacity-40 cursor-not-allowed bg-neutral-100 dark:bg-white/[0.01] border-neutral-200 dark:border-white/5'
+                                        : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                  } border`}
+                              >
+                                <div className="w-9 h-9 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
+                                  {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={14} className="text-neutral-400" /></div>}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-xs truncate">{d.name}</p>
+                                  <p className="text-[10px] text-neutral-500">₹{Number(d.price).toFixed(0)}</p>
+                                </div>
+                                {isParent && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">PARENT</span>}
+                                {isRec && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">REC</span>}
+                                {isAlreadyParentElsewhere && !comboParent && (
+                                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 shrink-0">
+                                    Already a parent
+                                  </span>
+                                )}
+                                {!isUsed && !isAlreadyParentElsewhere && (
+                                  <span className="text-[10px] text-neutral-400">
+                                    {!comboParent
+                                      ? 'Set as parent'
+                                      : '+ Add rec'}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -4530,13 +4517,13 @@ export default function VendorDashboardPage() {
                       <CloseIcon size={16} />
                     </button>
                   </div>
-                  
+
                   <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-1">Combo Name</label>
-                      <input 
-                        type="text" 
-                        value={comboDraft.name} 
+                      <input
+                        type="text"
+                        value={comboDraft.name}
                         onChange={e => setComboDraft(prev => ({ ...prev, name: e.target.value }))}
                         className="w-full bg-neutral-100 dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#D4AF37] outline-none"
                         placeholder="e.g. Burger Meal"
@@ -4545,9 +4532,9 @@ export default function VendorDashboardPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-neutral-500 mb-1">Combo Price (₹)</label>
-                        <input 
-                          type="number" 
-                          value={comboDraft.price} 
+                        <input
+                          type="number"
+                          value={comboDraft.price}
                           onChange={e => setComboDraft(prev => ({ ...prev, price: e.target.value }))}
                           className="w-full bg-neutral-100 dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#D4AF37] outline-none"
                           placeholder="e.g. 299"
@@ -4556,14 +4543,14 @@ export default function VendorDashboardPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-1">Description</label>
-                      <textarea 
-                        value={comboDraft.description} 
+                      <textarea
+                        value={comboDraft.description}
                         onChange={e => setComboDraft(prev => ({ ...prev, description: e.target.value }))}
                         className="w-full bg-neutral-100 dark:bg-[#1A1C23] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#D4AF37] outline-none min-h-[80px]"
                         placeholder="Describe what's included..."
                       />
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between items-end mb-2">
                         <label className="block text-xs font-bold text-neutral-500">Select Dishes ({comboDraft.dishes.length} selected)</label>
@@ -4583,7 +4570,7 @@ export default function VendorDashboardPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="space-y-1.5 max-h-[30vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                         {vendDishes.filter(d => !d.tags?.includes('combo') && !d.macros?.isCombo && (!comboDishSearch || d.name.toLowerCase().includes(comboDishSearch.toLowerCase()))).flatMap(d => {
                           // If dish has variants, show each variant as a selectable option
@@ -4600,9 +4587,8 @@ export default function VendorDashboardPage() {
                                       dishes: isSelected ? prev.dishes.filter(id => id !== uniqueId) : [...prev.dishes, uniqueId]
                                     }));
                                   }}
-                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
-                                    isSelected ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
-                                  } border`}
+                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${isSelected ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                    } border`}
                                 >
                                   <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
                                     {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={12} className="text-neutral-400" /></div>}
@@ -4616,7 +4602,7 @@ export default function VendorDashboardPage() {
                               );
                             });
                           }
-                          
+
                           // Regular dish without variants
                           const isSelected = comboDraft.dishes.includes(d.id);
                           return (
@@ -4628,9 +4614,8 @@ export default function VendorDashboardPage() {
                                   dishes: isSelected ? prev.dishes.filter(id => id !== d.id) : [...prev.dishes, d.id]
                                 }));
                               }}
-                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
-                                isSelected ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
-                              } border`}
+                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${isSelected ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-300 dark:border-blue-700' : 'bg-neutral-50 dark:bg-white/[0.02] border-neutral-100 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                } border`}
                             >
                               <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 dark:bg-white/10 shrink-0">
                                 {(d.cover || d.images?.[0]) ? <img src={d.cover || d.images[0]} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ChefHat size={12} className="text-neutral-400" /></div>}
@@ -4646,14 +4631,14 @@ export default function VendorDashboardPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-6 border-t border-neutral-100 dark:border-white/5 bg-neutral-50 dark:bg-white/[0.02]">
                     <button
                       disabled={!comboDraft.name || !comboDraft.price || comboDraft.dishes.length === 0}
                       onClick={async () => {
                         const firstChildId = comboDraft.dishes[0];
                         const firstChild = vendDishes.find(d => d.id === firstChildId);
-                        
+
                         const payload = {
                           name: comboDraft.name,
                           price: parseFloat(comboDraft.price) || 0,
@@ -4742,7 +4727,7 @@ export default function VendorDashboardPage() {
                         const linkedNames = [];
                         const linkedKeys = cat.linkedDishes || [];
                         const vendDishes = dishes.filter(d => !d.macros?.isCombo && !d.macros?.isEvent && d.restId === activeRestId);
-                        
+
                         vendDishes.forEach(dish => {
                           const isDirectlyLinked = (dish.customizationCategories || []).includes(cat.id);
                           if (dish.variants && dish.variants.length > 0) {
@@ -4763,7 +4748,7 @@ export default function VendorDashboardPage() {
                             }
                           }
                         });
-                        
+
                         if (linkedNames.length > 0) {
                           return (
                             <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-3 pt-3 border-t border-neutral-100 dark:border-white/5 line-clamp-2">
@@ -4781,11 +4766,11 @@ export default function VendorDashboardPage() {
                     </div>
                   ))}
                   {(currentRestaurant?.macros?.customizations || []).length === 0 && (
-                     <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-3xl">
-                       <Layers size={48} className="text-neutral-300 dark:text-white/20 mb-4" />
-                       <h3 className="font-bold text-neutral-700 dark:text-white/80 mb-1">No Add-ons yet</h3>
-                       <p className="text-sm text-neutral-500">Create your first customization category above.</p>
-                     </div>
+                    <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-3xl">
+                      <Layers size={48} className="text-neutral-300 dark:text-white/20 mb-4" />
+                      <h3 className="font-bold text-neutral-700 dark:text-white/80 mb-1">No Add-ons yet</h3>
+                      <p className="text-sm text-neutral-500">Create your first customization category above.</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -4874,7 +4859,7 @@ export default function VendorDashboardPage() {
                         <div>
                           <label className="text-xs font-bold text-neutral-500 mb-2 block">Apply to Dishes</label>
                           <p className="text-[11px] text-neutral-400 mb-2">Select the exact dish (or variant) where this add-on will appear when a customer adds it to cart.</p>
-                          
+
                           {/* Search Bar for Dishes */}
                           <div className="relative mb-3">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
@@ -4962,8 +4947,8 @@ export default function VendorDashboardPage() {
                                       checked={isLinked}
                                       onChange={() => {
                                         const prev = editingCustomization.linkedDishes || [];
-                                        const next = isLinked 
-                                          ? prev.map(String).filter(k => k !== String(key)) 
+                                        const next = isLinked
+                                          ? prev.map(String).filter(k => k !== String(key))
                                           : [...prev.map(String), String(key)];
                                         setEditingCustomization(p => ({ ...p, linkedDishes: next }));
                                       }}
@@ -4993,7 +4978,7 @@ export default function VendorDashboardPage() {
                           const cleaned = {
                             ...editingCustomization,
                             type: editingCustomization.type || 'multiple',
-                            options: editingCustomization.options.filter(o => o.name.trim() !== '').map(o => ({...o, price: Number(o.price) || 0})),
+                            options: editingCustomization.options.filter(o => o.name.trim() !== '').map(o => ({ ...o, price: Number(o.price) || 0 })),
                             linkedDishes: editingCustomization.linkedDishes || [],
                           };
                           const newArr = isExisting
@@ -5157,7 +5142,7 @@ export default function VendorDashboardPage() {
                     }} className="space-y-4 font-sans">
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Event Name *</label>
-                        <input required type="text" value={editingEvent.name || ''} onChange={e => setEditingEvent({...editingEvent, name: e.target.value})}
+                        <input required type="text" value={editingEvent.name || ''} onChange={e => setEditingEvent({ ...editingEvent, name: e.target.value })}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
                       </div>
 
@@ -5183,7 +5168,7 @@ export default function VendorDashboardPage() {
                       <div className="grid grid-cols-2 gap-4 font-sans">
                         <div>
                           <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Entry Price (₹) (0 if free)</label>
-                          <input type="number" step="0.01" value={editingEvent.price || 0} onChange={e => setEditingEvent({...editingEvent, price: e.target.value})}
+                          <input type="number" step="0.01" value={editingEvent.price || 0} onChange={e => setEditingEvent({ ...editingEvent, price: e.target.value })}
                             className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white" />
                         </div>
                         <div>
@@ -5219,7 +5204,7 @@ export default function VendorDashboardPage() {
 
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5 font-sans">Description *</label>
-                        <textarea required value={editingEvent.description || ''} onChange={e => setEditingEvent({...editingEvent, description: e.target.value})}
+                        <textarea required value={editingEvent.description || ''} onChange={e => setEditingEvent({ ...editingEvent, description: e.target.value })}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 h-24 resize-none dark:text-white" />
                       </div>
 
@@ -5236,7 +5221,7 @@ export default function VendorDashboardPage() {
                         <h2 className="text-2xl font-display font-black">Events & Promos</h2>
                         <p className="text-neutral-500 font-sans">Manage your upcoming restaurant events.</p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setEditingEvent({ name: '', price: 0, description: '', cover: '', macros: { isEvent: true, date: '', time: '19:00', rsvps: [] } })}
                         className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 transition-colors">
                         <Plus size={16} /> Create Event
@@ -5248,7 +5233,7 @@ export default function VendorDashboardPage() {
                         <Calendar size={48} className="text-neutral-400 mb-3" />
                         <h3 className="font-bold text-lg">No events created yet</h3>
                         <p className="text-neutral-500 text-sm mb-6 font-sans">Promote special dining nights, live music, or holiday menus.</p>
-                        <button 
+                        <button
                           onClick={() => setEditingEvent({ name: '', price: 0, description: '', cover: '', macros: { isEvent: true, date: '', time: '19:00', rsvps: [] } })}
                           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold">
                           Get Started
@@ -5265,7 +5250,7 @@ export default function VendorDashboardPage() {
                               const d = new Date(dateStr + 'T12:00:00');
                               month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
                               day = d.getDate().toString();
-                            } catch {}
+                            } catch { }
                           }
                           const rsvpsCount = event.macros?.rsvps?.length || 0;
 
@@ -5273,8 +5258,8 @@ export default function VendorDashboardPage() {
                             <div key={event.id} className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-sm relative overflow-hidden">
                               <div className="flex items-start gap-4">
                                 <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex flex-col items-center justify-center border border-orange-200 dark:border-orange-800/50 shrink-0 font-sans">
-                                   <span className="text-xs font-bold text-orange-600 dark:text-orange-400">{month}</span>
-                                   <span className="text-xl font-black text-orange-700 dark:text-orange-300">{day}</span>
+                                  <span className="text-xs font-bold text-orange-600 dark:text-orange-400">{month}</span>
+                                  <span className="text-xl font-black text-orange-700 dark:text-orange-300">{day}</span>
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex justify-between items-start">
@@ -5293,12 +5278,12 @@ export default function VendorDashboardPage() {
                                 </div>
                               </div>
                               <div className="flex justify-end gap-2 border-t border-neutral-100 dark:border-white/5 pt-3">
-                                <button 
+                                <button
                                   onClick={() => setEditingEvent(event)}
                                   className="p-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 rounded-lg transition-colors flex items-center justify-center">
                                   <Edit2 size={14} />
                                 </button>
-                                <button 
+                                <button
                                   onClick={async () => {
                                     if (confirm("Are you sure you want to delete this event?")) {
                                       const { error } = await supabase.from('dishes').delete().eq('id', event.id);
@@ -5420,22 +5405,22 @@ export default function VendorDashboardPage() {
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dish Name *</label>
-                        <input required type="text" value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})}
+                        <input required type="text" value={editingDish.name} onChange={e => setEditingDish({ ...editingDish, name: e.target.value })}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Prep Time (min)</label>
-                        <input type="number" value={editingDish.prepTime || ''} onChange={e => setEditingDish({...editingDish, prepTime: e.target.value})}
+                        <input type="number" value={editingDish.prepTime || ''} onChange={e => setEditingDish({ ...editingDish, prepTime: e.target.value })}
                           placeholder="18"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
                     </div>
-                    
+
                     <div className="pt-2 border-t border-neutral-100 dark:border-white/5">
                       <div className="flex justify-between items-center mb-2">
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400">Variants & Quantities (Optional)</label>
-                        <button type="button" onClick={() => setEditingDish({...editingDish, variants: [...(editingDish.variants || []), {name: '', price: ''}]})} className="text-xs text-[#D4AF37] font-bold hover:underline flex items-center gap-1">
+                        <button type="button" onClick={() => setEditingDish({ ...editingDish, variants: [...(editingDish.variants || []), { name: '', price: '' }] })} className="text-xs text-[#D4AF37] font-bold hover:underline flex items-center gap-1">
                           <Plus size={12} /> Add Variant
                         </button>
                       </div>
@@ -5444,16 +5429,16 @@ export default function VendorDashboardPage() {
                           <input required type="text" placeholder="e.g. Half / Full / Cup" value={v.name} onChange={e => {
                             const newV = [...(editingDish.variants || [])];
                             newV[i] = { ...newV[i], name: e.target.value };
-                            setEditingDish({...editingDish, variants: newV});
+                            setEditingDish({ ...editingDish, variants: newV });
                           }} className="flex-1 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                           <input type="number" step="0.01" placeholder="Price (₹)" value={v.price} onChange={e => {
                             const newV = [...(editingDish.variants || [])];
                             newV[i] = { ...newV[i], price: e.target.value };
-                            setEditingDish({...editingDish, variants: newV});
+                            setEditingDish({ ...editingDish, variants: newV });
                           }} className="w-24 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-[#D4AF37] dark:text-white" />
                           <button type="button" onClick={() => {
                             const newV = (editingDish.variants || []).filter((_, idx) => idx !== i);
-                            setEditingDish({...editingDish, variants: newV});
+                            setEditingDish({ ...editingDish, variants: newV });
                           }} className="p-2.5 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
                             <Trash2 size={16} />
                           </button>
@@ -5463,52 +5448,52 @@ export default function VendorDashboardPage() {
                         <p className="text-[10px] text-neutral-500 mt-1">When variants are added, customers must choose one. The base price will be ignored.</p>
                       )}
                     </div>
-                     <div>
-                       <div className="flex justify-between items-center mb-1.5">
-                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400">Description *</label>
-                         <button
-                           type="button"
-                           disabled={isGeneratingDesc}
-                           onClick={async () => {
-                             if (!editingDish.name || !editingDish.name.trim()) {
-                               showNotification('Please enter the dish name first!');
-                               return;
-                             }
-                             setIsGeneratingDesc(true);
-                             try {
-                               const desc = await generateAIDescription(editingDish.name);
-                               setEditingDish(prev => ({ ...prev, description: desc }));
-                               showNotification('AI Description generated!');
-                             } catch (err) {
-                               console.error(err);
-                               if (err.message === 'GEMINI_API_KEY_MISSING') {
-                                 showNotification('⚠️ Gemini API key not configured. Add VITE_GEMINI_API_KEY to your .env file.');
-                               } else {
-                                 showNotification(err.message || 'Failed to generate description. Please try again.');
-                               }
-                             } finally {
-                               setIsGeneratingDesc(false);
-                             }
-                           }}
-                           className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30 disabled:opacity-50"
-                         >
-                           <Sparkles size={12} className={isGeneratingDesc ? 'animate-spin' : ''} />
-                           {isGeneratingDesc ? 'Generating...' : 'AI Description'}
-                         </button>
-                       </div>
-                       <textarea required value={editingDish.description || ''} onChange={e => setEditingDish({...editingDish, description: e.target.value})}
-                         className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none dark:text-white" />
-                     </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400">Description *</label>
+                        <button
+                          type="button"
+                          disabled={isGeneratingDesc}
+                          onClick={async () => {
+                            if (!editingDish.name || !editingDish.name.trim()) {
+                              showNotification('Please enter the dish name first!');
+                              return;
+                            }
+                            setIsGeneratingDesc(true);
+                            try {
+                              const desc = await generateAIDescription(editingDish.name);
+                              setEditingDish(prev => ({ ...prev, description: desc }));
+                              showNotification('AI Description generated!');
+                            } catch (err) {
+                              console.error(err);
+                              if (err.message === 'GEMINI_API_KEY_MISSING') {
+                                showNotification('⚠️ Gemini API key not configured. Add VITE_GEMINI_API_KEY to your .env file.');
+                              } else {
+                                showNotification(err.message || 'Failed to generate description. Please try again.');
+                              }
+                            } finally {
+                              setIsGeneratingDesc(false);
+                            }
+                          }}
+                          className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30 disabled:opacity-50"
+                        >
+                          <Sparkles size={12} className={isGeneratingDesc ? 'animate-spin' : ''} />
+                          {isGeneratingDesc ? 'Generating...' : 'AI Description'}
+                        </button>
+                      </div>
+                      <textarea required value={editingDish.description || ''} onChange={e => setEditingDish({ ...editingDish, description: e.target.value })}
+                        className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none dark:text-white" />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Origin / Provenance</label>
-                        <input type="text" value={editingDish.origin || ''} onChange={e => setEditingDish({...editingDish, origin: e.target.value})}
+                        <input type="text" value={editingDish.origin || ''} onChange={e => setEditingDish({ ...editingDish, origin: e.target.value })}
                           placeholder="e.g. Adriatic Sea, Croatia"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Serves (People)</label>
-                        <input type="number" value={editingDish.serves || ''} onChange={e => setEditingDish({...editingDish, serves: e.target.value})}
+                        <input type="number" value={editingDish.serves || ''} onChange={e => setEditingDish({ ...editingDish, serves: e.target.value })}
                           placeholder="2"
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                       </div>
@@ -5559,7 +5544,7 @@ export default function VendorDashboardPage() {
                       <div className="relative flex items-center gap-2">
                         <input type="file" accept="image/*" className="hidden" id="cover-upload" multiple onChange={async e => {
                           const files = Array.from(e.target.files);
-                          if(files.length > 0) {
+                          if (files.length > 0) {
                             showNotification('Uploading images...');
                             const newUrls = [];
                             for (const file of files) {
@@ -5571,7 +5556,7 @@ export default function VendorDashboardPage() {
                               }
                             }
                             const updatedImgs = [...(editingDish.images || (editingDish.cover ? [editingDish.cover] : [])), ...newUrls];
-                            setEditingDish(prev => ({...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover}));
+                            setEditingDish(prev => ({ ...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover }));
                             showNotification('Images uploaded!');
                           }
                         }} />
@@ -5607,7 +5592,7 @@ export default function VendorDashboardPage() {
                             activeRestId={activeRestId}
                             onImageConfirmed={(url) => {
                               const updatedImgs = [...(editingDish.images || (editingDish.cover ? [editingDish.cover] : [])), url];
-                              setEditingDish(prev => ({...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover}));
+                              setEditingDish(prev => ({ ...prev, images: updatedImgs, cover: updatedImgs[0] || prev.cover }));
                               showNotification('AI image added to dish! ✨');
                             }}
                             onClose={() => setShowAIImageGen(false)}
@@ -5618,7 +5603,7 @@ export default function VendorDashboardPage() {
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Spice Level</label>
-                        <select value={editingDish.spiceLevel || ''} onChange={e => setEditingDish({...editingDish, spiceLevel: e.target.value})}
+                        <select value={editingDish.spiceLevel || ''} onChange={e => setEditingDish({ ...editingDish, spiceLevel: e.target.value })}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 dark:text-white transition-all cursor-pointer">
                           <option value="">None</option>
                           <option value="Mild">Mild</option>
@@ -5629,7 +5614,7 @@ export default function VendorDashboardPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Dietary Preference</label>
-                        <select value={editingDish.dietaryPreference || ''} onChange={e => setEditingDish({...editingDish, dietaryPreference: e.target.value})}
+                        <select value={editingDish.dietaryPreference || ''} onChange={e => setEditingDish({ ...editingDish, dietaryPreference: e.target.value })}
                           className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 dark:text-white transition-all cursor-pointer">
                           <option value="">None</option>
                           <option value="Vegetarian">Vegetarian</option>
@@ -5653,7 +5638,7 @@ export default function VendorDashboardPage() {
                               <input type="checkbox" checked={isChecked} onChange={() => {
                                 const prev = editingDish.customizationCategories || [];
                                 const next = isChecked ? prev.filter(id => id !== cat.id) : [...prev, cat.id];
-                                setEditingDish({...editingDish, customizationCategories: next});
+                                setEditingDish({ ...editingDish, customizationCategories: next });
                               }} className="accent-emerald-500 w-4 h-4" />
                               <div className="flex-1">
                                 <span className="text-sm font-bold text-neutral-900 dark:text-white">{cat.name}</span>
@@ -5677,7 +5662,7 @@ export default function VendorDashboardPage() {
                       </button>
                     </div>
                     <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={e => { if (e.target.files[0]) uploadGlbFile(e.target.files[0]); }} />
-                    
+
                     {/* Uploading state — inline progress bar */}
                     {glbUpload.uploading ? (
                       <div className="rounded-2xl p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40">
@@ -5724,15 +5709,15 @@ export default function VendorDashboardPage() {
                             className="px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors font-bold text-xs flex items-center gap-2">
                             <Eye size={15} /> Preview
                           </button>
-                          <button type="button" onClick={() => { setEditingDish({...editingDish, modelUrl: '', model_url: ''}); setGlbUpload({ uploading: false, progress: 0, error: null }); }}
+                          <button type="button" onClick={() => { setEditingDish({ ...editingDish, modelUrl: '', model_url: '' }); setGlbUpload({ uploading: false, progress: 0, error: null }); }}
                             className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-500 hover:bg-red-100 transition-colors">
                             <Trash2 size={15} />
                           </button>
                         </div>
-                        
+
                         {/* Live Model Preview — shows immediately after upload */}
                         <div className="w-full h-64 bg-neutral-100 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden relative">
-                          <ModelViewer 
+                          <ModelViewer
                             src={editingDish.modelUrl || editingDish.model_url}
                             autoRotate
                             cameraControls
@@ -5754,7 +5739,7 @@ export default function VendorDashboardPage() {
                         <div key={macro}>
                           <label className="block text-[10px] font-bold text-neutral-500 mb-1 capitalize">{macro} {macro === 'calories' ? '(kcal)' : '(g)'}</label>
                           <input type="number" value={parseInt(editingDish.macros?.[macro] || 0)}
-                            onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, [macro]: macro === 'calories' ? e.target.value : e.target.value + 'g'}})}
+                            onChange={e => setEditingDish({ ...editingDish, macros: { ...editingDish.macros, [macro]: macro === 'calories' ? e.target.value : e.target.value + 'g' } })}
                             className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-2.5 text-sm focus:outline-none focus:border-blue-500 dark:text-white" />
                         </div>
                       ))}
@@ -5786,7 +5771,7 @@ export default function VendorDashboardPage() {
                         const active = editingDish.allergens?.includes(a);
                         return (
                           <button key={a} type="button"
-                            onClick={() => setEditingDish(p => ({ ...p, allergens: active ? (p.allergens||[]).filter(x => x !== a) : [...(p.allergens||[]), a] }))}
+                            onClick={() => setEditingDish(p => ({ ...p, allergens: active ? (p.allergens || []).filter(x => x !== a) : [...(p.allergens || []), a] }))}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${active ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800/50' : 'bg-neutral-50 dark:bg-white/5 text-neutral-500 border-neutral-200 dark:border-white/10'}`}>
                             {a}
                           </button>
@@ -5795,7 +5780,7 @@ export default function VendorDashboardPage() {
                     </div>
                   </div>
 
-                   <button type="submit" disabled={isPublishingDish}
+                  <button type="submit" disabled={isPublishingDish}
                     className="w-full py-4 rounded-2xl font-display font-black text-base bg-neutral-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     {isPublishingDish ? (
                       <>
@@ -5816,324 +5801,323 @@ export default function VendorDashboardPage() {
             <motion.div key="growth" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
               {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Growth Tools" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
-              <div className="max-w-3xl mx-auto space-y-6">
-                <div>
-                  <h2 className="font-display font-black text-2xl">Growth Tools</h2>
-                  <p className="text-sm text-neutral-500 mt-0.5">Boost revenue with smart promotions and marketing</p>
-                </div>
+                <div className="max-w-3xl mx-auto space-y-6">
+                  <div>
+                    <h2 className="font-display font-black text-2xl">Growth Tools</h2>
+                    <p className="text-sm text-neutral-500 mt-0.5">Boost revenue with smart promotions and marketing</p>
+                  </div>
 
-                {/* Tool Cards */}
-                <div className="space-y-3">
-                  <PromoCard icon={Percent} title="Flash Discount" badge="Popular" badgeColor="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                    desc="Set a time-limited % discount on selected dishes or the entire menu to drive impulse purchases."
-                    onClick={() => {
-                      if (activePromo === 'discount') {
-                        setActivePromo(null);
-                      } else {
-                        const existing = promos[activeRestId]?.flash;
-                        if (existing) {
-                          setPromoForm({
-                            label: existing.label || '',
-                            discount: existing.discount || 15,
-                            type: 'percent',
-                            applicableDishes: existing.applicableDishes || []
-                          });
+                  {/* Tool Cards */}
+                  <div className="space-y-3">
+                    <PromoCard icon={Percent} title="Flash Discount" badge="Popular" badgeColor="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                      desc="Set a time-limited % discount on selected dishes or the entire menu to drive impulse purchases."
+                      onClick={() => {
+                        if (activePromo === 'discount') {
+                          setActivePromo(null);
                         } else {
-                          setPromoForm({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
+                          const existing = promos[activeRestId]?.flash;
+                          if (existing) {
+                            setPromoForm({
+                              label: existing.label || '',
+                              discount: existing.discount || 15,
+                              type: 'percent',
+                              applicableDishes: existing.applicableDishes || []
+                            });
+                          } else {
+                            setPromoForm({ label: '', discount: 15, type: 'percent', applicableDishes: [] });
+                          }
+                          setActivePromo('discount');
                         }
-                        setActivePromo('discount');
-                      }
-                    }} />
-                  <AnimatePresence>
-                    {activePromo === 'discount' && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden">
-                        <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">Promo Label</label>
-                              <input type="text" placeholder="e.g. Happy Monday!" value={promoForm.label}
-                                onChange={e => setPromoForm(p => ({...p, label: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
-                              <input type="number" value={promoForm.discount} min="1" max="100"
-                                onChange={e => setPromoForm(p => ({...p, discount: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            
-                            <div className="col-span-2">
-                              {/* Header row */}
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs font-bold text-neutral-500 block">Applicable Dishes</label>
+                      }} />
+                    <AnimatePresence>
+                      {activePromo === 'discount' && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden">
+                          <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 block mb-1.5">Promo Label</label>
+                                <input type="text" placeholder="e.g. Happy Monday!" value={promoForm.label}
+                                  onChange={e => setPromoForm(p => ({ ...p, label: e.target.value }))}
+                                  className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
+                                <input type="number" value={promoForm.discount} min="1" max="100"
+                                  onChange={e => setPromoForm(p => ({ ...p, discount: e.target.value }))}
+                                  className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+
+                              <div className="col-span-2">
+                                {/* Header row */}
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="text-xs font-bold text-neutral-500 block">Applicable Dishes</label>
+                                  {(() => {
+                                    const expanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                    const selectedCount = promoForm.applicableDishes.length;
+                                    const allSelected = selectedCount === expanded.length && expanded.length > 0;
+                                    return (
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-[10px] text-neutral-400">{selectedCount} selected</span>
+                                        <button
+                                          onClick={() => {
+                                            if (allSelected) {
+                                              setPromoForm(p => ({ ...p, applicableDishes: [] }));
+                                            } else {
+                                              setPromoForm(p => ({ ...p, applicableDishes: expanded.map(d => d.id) }));
+                                            }
+                                          }}
+                                          className="text-[10px] font-bold text-[#D4AF37] hover:underline"
+                                        >
+                                          {allSelected ? 'Deselect All' : 'Select All'}
+                                        </button>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+
+                                {/* Search bar */}
+                                <div className="relative mb-2">
+                                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                  <input
+                                    type="text"
+                                    placeholder="Search dishes..."
+                                    value={flashDishSearch}
+                                    onChange={e => setFlashDishSearch(e.target.value)}
+                                    className="w-full pl-8 pr-8 py-2 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl text-xs dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 transition-all"
+                                  />
+                                  {flashDishSearch && (
+                                    <button onClick={() => setFlashDishSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs">✕</button>
+                                  )}
+                                </div>
+
+                                {/* Category filter tabs */}
                                 {(() => {
-                                  const expanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
-                                  const selectedCount = promoForm.applicableDishes.length;
-                                  const allSelected = selectedCount === expanded.length && expanded.length > 0;
+                                  const restDishes = dishes.filter(d => d.restId === activeRestId);
+                                  const rawCats = [...new Set(restDishes.map(d => d.category).filter(Boolean))];
+                                  const cats = ['All', ...rawCats];
+                                  if (cats.length <= 2) return null; // Only show if more than one real category
                                   return (
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-[10px] text-neutral-400">{selectedCount} selected</span>
-                                      <button
-                                        onClick={() => {
-                                          if (allSelected) {
-                                            setPromoForm(p => ({...p, applicableDishes: []}));
-                                          } else {
-                                            setPromoForm(p => ({...p, applicableDishes: expanded.map(d => d.id)}));
-                                          }
-                                        }}
-                                        className="text-[10px] font-bold text-[#D4AF37] hover:underline"
-                                      >
-                                        {allSelected ? 'Deselect All' : 'Select All'}
-                                      </button>
+                                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-2">
+                                      {cats.map(cat => (
+                                        <button
+                                          key={cat}
+                                          onClick={() => setFlashCategoryFilter(cat)}
+                                          className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${flashCategoryFilter === cat
+                                              ? 'bg-[#D4AF37] text-black border-[#D4AF37]'
+                                              : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/50'
+                                            }`}
+                                        >
+                                          {cat}
+                                        </button>
+                                      ))}
                                     </div>
                                   );
                                 })()}
+
+                                {/* Dish list with search + category filtering */}
+                                <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-48 overflow-y-auto space-y-2">
+                                  {(() => {
+                                    const allExpanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                    const filtered = allExpanded.filter(dish => {
+                                      const matchSearch = !flashDishSearch || dish.name.toLowerCase().includes(flashDishSearch.toLowerCase());
+                                      const matchCat = flashCategoryFilter === 'All' || dish.category === flashCategoryFilter;
+                                      return matchSearch && matchCat;
+                                    });
+
+                                    if (allExpanded.length === 0) {
+                                      return <div className="text-xs text-neutral-500 text-center py-4">No dishes available. Add dishes first.</div>;
+                                    }
+                                    if (filtered.length === 0) {
+                                      return <div className="text-xs text-neutral-400 text-center py-4">No dishes match your search.</div>;
+                                    }
+                                    return filtered.map(dish => (
+                                      <label key={dish.id} className="flex items-center gap-2 cursor-pointer group hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors">
+                                        <input
+                                          type="checkbox"
+                                          checked={promoForm.applicableDishes.includes(dish.id)}
+                                          onChange={(e) => {
+                                            setPromoForm(p => {
+                                              const checked = e.target.checked;
+                                              const newDishes = checked
+                                                ? [...p.applicableDishes, dish.id]
+                                                : p.applicableDishes.filter(id => id !== dish.id);
+                                              return { ...p, applicableDishes: newDishes };
+                                            });
+                                          }}
+                                          className="rounded border-neutral-300 text-[#D4AF37] accent-[#D4AF37] focus:ring-[#D4AF37]"
+                                        />
+                                        <span className="text-sm dark:text-neutral-200 flex-1 truncate group-hover:text-white transition-colors">{dish.name}</span>
+                                        {dish.category && (
+                                          <span className="text-[9px] font-bold text-neutral-400 bg-neutral-200 dark:bg-white/5 px-1.5 py-0.5 rounded shrink-0">{dish.category}</span>
+                                        )}
+                                        <span className="text-xs font-bold text-[#D4AF37] ml-auto shrink-0">₹{Number(dish.price).toFixed(0)}</span>
+                                      </label>
+                                    ));
+                                  })()}
+                                </div>
                               </div>
 
-                              {/* Search bar */}
-                              <div className="relative mb-2">
-                                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                <input
-                                  type="text"
-                                  placeholder="Search dishes..."
-                                  value={flashDishSearch}
-                                  onChange={e => setFlashDishSearch(e.target.value)}
-                                  className="w-full pl-8 pr-8 py-2 bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl text-xs dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-[#D4AF37]/50 transition-all"
-                                />
-                                {flashDishSearch && (
-                                  <button onClick={() => setFlashDishSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs">✕</button>
+                              <div className="col-span-2 mt-2">
+                                {promos[activeRestId]?.flash ? (
+                                  <div className="flex gap-2">
+                                    <button onClick={handleActivatePromo}
+                                      className="flex-1 py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
+                                      Save Edits
+                                    </button>
+                                    <button onClick={() => { updateMarketingCampaign(activeRestId, 'flash', null); setActivePromo(null); showNotification('Promo stopped'); }}
+                                      className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-colors">
+                                      Stop Promo
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button onClick={handleActivatePromo}
+                                    className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
+                                    Activate Promo
+                                  </button>
                                 )}
                               </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                              {/* Category filter tabs */}
-                              {(() => {
-                                const restDishes = dishes.filter(d => d.restId === activeRestId);
-                                const rawCats = [...new Set(restDishes.map(d => d.category).filter(Boolean))];
-                                const cats = ['All', ...rawCats];
-                                if (cats.length <= 2) return null; // Only show if more than one real category
-                                return (
-                                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-2">
-                                    {cats.map(cat => (
-                                      <button
-                                        key={cat}
-                                        onClick={() => setFlashCategoryFilter(cat)}
-                                        className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
-                                          flashCategoryFilter === cat
-                                            ? 'bg-[#D4AF37] text-black border-[#D4AF37]'
-                                            : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/50'
-                                        }`}
-                                      >
-                                        {cat}
-                                      </button>
-                                    ))}
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Dish list with search + category filtering */}
-                              <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-48 overflow-y-auto space-y-2">
-                                {(() => {
-                                  const allExpanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
-                                  const filtered = allExpanded.filter(dish => {
-                                    const matchSearch = !flashDishSearch || dish.name.toLowerCase().includes(flashDishSearch.toLowerCase());
-                                    const matchCat = flashCategoryFilter === 'All' || dish.category === flashCategoryFilter;
-                                    return matchSearch && matchCat;
-                                  });
-
-                                  if (allExpanded.length === 0) {
-                                    return <div className="text-xs text-neutral-500 text-center py-4">No dishes available. Add dishes first.</div>;
-                                  }
-                                  if (filtered.length === 0) {
-                                    return <div className="text-xs text-neutral-400 text-center py-4">No dishes match your search.</div>;
-                                  }
-                                  return filtered.map(dish => (
-                                    <label key={dish.id} className="flex items-center gap-2 cursor-pointer group hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors">
-                                      <input
-                                        type="checkbox"
-                                        checked={promoForm.applicableDishes.includes(dish.id)}
-                                        onChange={(e) => {
-                                          setPromoForm(p => {
-                                            const checked = e.target.checked;
-                                            const newDishes = checked
-                                              ? [...p.applicableDishes, dish.id]
-                                              : p.applicableDishes.filter(id => id !== dish.id);
-                                            return { ...p, applicableDishes: newDishes };
-                                          });
-                                        }}
-                                        className="rounded border-neutral-300 text-[#D4AF37] accent-[#D4AF37] focus:ring-[#D4AF37]"
-                                      />
-                                      <span className="text-sm dark:text-neutral-200 flex-1 truncate group-hover:text-white transition-colors">{dish.name}</span>
-                                      {dish.category && (
-                                        <span className="text-[9px] font-bold text-neutral-400 bg-neutral-200 dark:bg-white/5 px-1.5 py-0.5 rounded shrink-0">{dish.category}</span>
-                                      )}
-                                      <span className="text-xs font-bold text-[#D4AF37] ml-auto shrink-0">₹{Number(dish.price).toFixed(0)}</span>
-                                    </label>
-                                  ));
-                                })()}
+                    <PromoCard icon={Clock} title="Happy Hour" badge="High Impact" badgeColor="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                      desc="Configure time windows where the entire menu gets an automatic discount everyday."
+                      onClick={() => {
+                        if (activePromo === 'happy') {
+                          setActivePromo(null);
+                        } else {
+                          const existing = promos[activeRestId]?.happyHour;
+                          if (existing) {
+                            setHappyHourForm({
+                              startTime: existing.startTime || '17:00',
+                              endTime: existing.endTime || '19:00',
+                              discount: existing.discount || 20
+                            });
+                          } else {
+                            setHappyHourForm({ startTime: '17:00', endTime: '19:00', discount: 20 });
+                          }
+                          setActivePromo('happy');
+                        }
+                      }} />
+                    <AnimatePresence>
+                      {activePromo === 'happy' && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5">
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 block mb-1.5">From</label>
+                                <input type="time" value={happyHourForm.startTime} onChange={e => setHappyHourForm(h => ({ ...h, startTime: e.target.value }))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 block mb-1.5">To</label>
+                                <input type="time" value={happyHourForm.endTime} onChange={e => setHappyHourForm(h => ({ ...h, endTime: e.target.value }))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
+                                <input type="number" min="1" max="100" value={happyHourForm.discount} onChange={e => setHappyHourForm(h => ({ ...h, discount: e.target.value }))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
                               </div>
                             </div>
-
-                            <div className="col-span-2 mt-2">
-                              {promos[activeRestId]?.flash ? (
+                            <div className="mt-4">
+                              {promos[activeRestId]?.happyHour ? (
                                 <div className="flex gap-2">
-                                  <button onClick={handleActivatePromo}
-                                    className="flex-1 py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
+                                  <button onClick={handleActivateHappyHour}
+                                    className="flex-1 py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
                                     Save Edits
                                   </button>
-                                  <button onClick={() => { updateMarketingCampaign(activeRestId, 'flash', null); setActivePromo(null); showNotification('Promo stopped'); }}
+                                  <button onClick={() => { updateMarketingCampaign(activeRestId, 'happyHour', null); setActivePromo(null); showNotification('Happy Hour stopped'); }}
                                     className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-colors">
                                     Stop Promo
                                   </button>
                                 </div>
                               ) : (
-                                <button onClick={handleActivatePromo}
-                                  className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity">
-                                  Activate Promo
+                                <button onClick={handleActivateHappyHour}
+                                  className="w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
+                                  Enable Happy Hour
                                 </button>
                               )}
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                  <PromoCard icon={Clock} title="Happy Hour" badge="High Impact" badgeColor="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                    desc="Configure time windows where the entire menu gets an automatic discount everyday."
-                    onClick={() => {
-                      if (activePromo === 'happy') {
-                        setActivePromo(null);
-                      } else {
-                        const existing = promos[activeRestId]?.happyHour;
-                        if (existing) {
-                          setHappyHourForm({
-                            startTime: existing.startTime || '17:00',
-                            endTime: existing.endTime || '19:00',
-                            discount: existing.discount || 20
-                          });
+                    <PromoCard icon={Share2} title="Social Media Handles" badge="Organic Reach" badgeColor="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                      desc="Link your restaurant's social media accounts to show them directly on your digital menu."
+                      onClick={() => {
+                        if (activePromo === 'socials') {
+                          setActivePromo(null);
                         } else {
-                          setHappyHourForm({ startTime: '17:00', endTime: '19:00', discount: 20 });
+                          const existing = currentRestaurant?.macros?.socials || {};
+                          setSocialsForm({
+                            instagram: existing.instagram || '',
+                            facebook: existing.facebook || '',
+                            youtube: existing.youtube || '',
+                            reddit: existing.reddit || ''
+                          });
+                          setActivePromo('socials');
                         }
-                        setActivePromo('happy');
-                      }
-                    }} />
-                  <AnimatePresence>
-                    {activePromo === 'happy' && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5">
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">From</label>
-                              <input type="time" value={happyHourForm.startTime} onChange={e => setHappyHourForm(h => ({...h, startTime: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">To</label>
-                              <input type="time" value={happyHourForm.endTime} onChange={e => setHappyHourForm(h => ({...h, endTime: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 block mb-1.5">Discount %</label>
-                              <input type="number" min="1" max="100" value={happyHourForm.discount} onChange={e => setHappyHourForm(h => ({...h, discount: e.target.value}))} className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                          </div>
-                          <div className="mt-4">
-                            {promos[activeRestId]?.happyHour ? (
-                              <div className="flex gap-2">
-                                <button onClick={handleActivateHappyHour}
-                                  className="flex-1 py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
-                                  Save Edits
-                                </button>
-                                <button onClick={() => { updateMarketingCampaign(activeRestId, 'happyHour', null); setActivePromo(null); showNotification('Happy Hour stopped'); }}
-                                  className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-colors">
-                                  Stop Promo
-                                </button>
+                      }} />
+                    <AnimatePresence>
+                      {activePromo === 'socials' && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
+                                  <InstagramIcon size={14} className="text-pink-500" /> Instagram URL
+                                </label>
+                                <input type="text" placeholder="https://instagram.com/your_restaurant" value={socialsForm.instagram}
+                                  onChange={e => setSocialsForm(s => ({ ...s, instagram: e.target.value }))}
+                                  className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
                               </div>
-                            ) : (
-                              <button onClick={handleActivateHappyHour}
-                                className="w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-black hover:bg-amber-600 transition-colors">
-                                Enable Happy Hour
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
+                                  <FacebookIcon size={14} className="text-blue-600" /> Facebook URL
+                                </label>
+                                <input type="text" placeholder="https://facebook.com/your_restaurant" value={socialsForm.facebook}
+                                  onChange={e => setSocialsForm(s => ({ ...s, facebook: e.target.value }))}
+                                  className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
+                                  <YoutubeIcon size={14} className="text-red-600" /> YouTube URL
+                                </label>
+                                <input type="text" placeholder="https://youtube.com/@your_restaurant" value={socialsForm.youtube}
+                                  onChange={e => setSocialsForm(s => ({ ...s, youtube: e.target.value }))}
+                                  className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
+                                  <RedditIcon size={14} className="text-orange-500" /> Reddit URL
+                                </label>
+                                <input type="text" placeholder="https://reddit.com/r/your_restaurant" value={socialsForm.reddit}
+                                  onChange={e => setSocialsForm(s => ({ ...s, reddit: e.target.value }))}
+                                  className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
+                              </div>
+                            </div>
+                            <div className="mt-4">
+                              <button
+                                onClick={async () => {
+                                  await updateRestaurant(activeRestId, { socials: socialsForm });
+                                  setActivePromo(null);
+                                }}
+                                className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity"
+                              >
+                                Save Social Handles
                               </button>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                  <PromoCard icon={Share2} title="Social Media Handles" badge="Organic Reach" badgeColor="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                    desc="Link your restaurant's social media accounts to show them directly on your digital menu."
-                    onClick={() => {
-                      if (activePromo === 'socials') {
-                        setActivePromo(null);
-                      } else {
-                        const existing = currentRestaurant?.macros?.socials || {};
-                        setSocialsForm({
-                          instagram: existing.instagram || '',
-                          facebook: existing.facebook || '',
-                          youtube: existing.youtube || '',
-                          reddit: existing.reddit || ''
-                        });
-                        setActivePromo('socials');
-                      }
-                    }} />
-                  <AnimatePresence>
-                    {activePromo === 'socials' && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 space-y-4">
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
-                                <InstagramIcon size={14} className="text-pink-500" /> Instagram URL
-                              </label>
-                              <input type="text" placeholder="https://instagram.com/your_restaurant" value={socialsForm.instagram}
-                                onChange={e => setSocialsForm(s => ({...s, instagram: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
-                                <FacebookIcon size={14} className="text-blue-600" /> Facebook URL
-                              </label>
-                              <input type="text" placeholder="https://facebook.com/your_restaurant" value={socialsForm.facebook}
-                                onChange={e => setSocialsForm(s => ({...s, facebook: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
-                                <YoutubeIcon size={14} className="text-red-600" /> YouTube URL
-                              </label>
-                              <input type="text" placeholder="https://youtube.com/@your_restaurant" value={socialsForm.youtube}
-                                onChange={e => setSocialsForm(s => ({...s, youtube: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-bold text-neutral-500 flex items-center gap-1.5 mb-1.5">
-                                <RedditIcon size={14} className="text-orange-500" /> Reddit URL
-                              </label>
-                              <input type="text" placeholder="https://reddit.com/r/your_restaurant" value={socialsForm.reddit}
-                                onChange={e => setSocialsForm(s => ({...s, reddit: e.target.value}))}
-                                className="w-full bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-sm dark:text-white" />
-                            </div>
-                          </div>
-                          <div className="mt-4">
-                            <button
-                              onClick={async () => {
-                                await updateRestaurant(activeRestId, { socials: socialsForm });
-                                setActivePromo(null);
-                              }}
-                              className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-black hover:opacity-90 transition-opacity"
-                            >
-                              Save Social Handles
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  </div>
+
 
                 </div>
-
-
-              </div>
               )}
             </motion.div>
           )}
@@ -6143,102 +6127,102 @@ export default function VendorDashboardPage() {
             <motion.div key="customers" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="absolute inset-0 overflow-y-auto p-6">
               {!hasPro ? <UpgradeLock requiredPlan="Pro" feature="Customer Insights" activeRestId={activeRestId} upgradePlan={upgradePlan} showNotification={showNotification} /> : (
-              <div className="max-w-4xl mx-auto space-y-6">
-                <div>
-                  <h2 className="font-display font-black text-2xl">Customer Insights</h2>
-                  <p className="text-sm text-neutral-500 mt-0.5">Understand your audience to serve them better</p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {!isDataLoaded ? (
-                    Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
-                  ) : (
-                    <>
-                      <KpiCard icon={Users}      label="Total Customers"     value={uniqueCustomers}              color="bg-blue-500" onClick={() => setCustomerFilter(f => f === 'all' ? 'top' : 'all')} />
-                      <KpiCard icon={Repeat}     label="Repeat Guests"       value={repeatCustomers}              color="bg-purple-500" onClick={() => setCustomerFilter(f => f === 'repeat' ? 'top' : 'repeat')} />
-                      <KpiCard icon={DollarSign} label="Avg Lifetime Value"  value={`₹${avgLifetimeValue.toFixed(0)}`} sub="Avg. spend per customer" color="bg-emerald-500" />
-                      <KpiCard icon={Star}       label="Satisfaction Score"  value={`${satisfactionScore} ★`}    sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
-                    </>
-                  )}
-                </div>
-
-                {/* Customer list from orders */}
-                <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl overflow-hidden shadow-sm">
-                  <div className="p-5 border-b border-neutral-50 dark:border-white/5 flex justify-between items-center">
-                    <h3 className="font-display font-black text-base">{customerFilter === 'repeat' ? 'Repeat Customers' : customerFilter === 'all' ? 'All Customers' : 'Top Customers (by Spend)'}</h3>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-neutral-400 font-bold hidden sm:inline">
-                        {customerFilter === 'repeat' ? repeatCustomers : customerFilter === 'all' ? uniqueCustomers : Math.min(15, uniqueCustomers)} shown
-                      </span>
-                      <button onClick={() => setShowAllCustomersModal(true)} className="px-3 py-1.5 text-xs font-bold bg-[#D4AF37] text-black rounded-lg hover:bg-amber-400 transition-colors shadow-sm">
-                        View All
-                      </button>
-                    </div>
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <div>
+                    <h2 className="font-display font-black text-2xl">Customer Insights</h2>
+                    <p className="text-sm text-neutral-500 mt-0.5">Understand your audience to serve them better</p>
                   </div>
-                  <div className="divide-y divide-neutral-50 dark:divide-white/4">
-                    {/* Skeleton rows while loading */}
-                    {!isDataLoaded && (
-                      Array.from({ length: 5 }).map((_, i) => <CustomerRowSkeleton key={i} />)
-                    )}
-                    {isDataLoaded && (customerFilter === 'repeat' ? customerList.filter(c => c.orderCount > 1) : customerFilter === 'all' ? customerList : customerList.slice(0, 15)).map(c => (
-                      <div key={c.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm truncate">{c.name}</p>
-                          <p className="text-xs text-neutral-400">
-                            {c.phone} · {c.orderCount} order{c.orderCount > 1 ? 's' : ''} · Last: {new Date(c.lastOrder).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-black text-sm text-emerald-600">₹{Number(c.totalSpend).toFixed(0)}</p>
-                          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{c.orderType === 'dine_in' ? 'Dine-In' : 'Pre-Order'}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {isDataLoaded && customerList.length === 0 && (
-                      <div className="text-center py-12 text-neutral-400">
-                        <Users size={36} className="mx-auto mb-3 opacity-20" />
-                        <p className="text-sm">Customer data appears after orders are placed</p>
-                      </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {!isDataLoaded ? (
+                      Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)
+                    ) : (
+                      <>
+                        <KpiCard icon={Users} label="Total Customers" value={uniqueCustomers} color="bg-blue-500" onClick={() => setCustomerFilter(f => f === 'all' ? 'top' : 'all')} />
+                        <KpiCard icon={Repeat} label="Repeat Guests" value={repeatCustomers} color="bg-purple-500" onClick={() => setCustomerFilter(f => f === 'repeat' ? 'top' : 'repeat')} />
+                        <KpiCard icon={DollarSign} label="Avg Lifetime Value" value={`₹${avgLifetimeValue.toFixed(0)}`} sub="Avg. spend per customer" color="bg-emerald-500" />
+                        <KpiCard icon={Star} label="Satisfaction Score" value={`${satisfactionScore} ★`} sub={`${reviewOrders.length} reviews`} color="bg-amber-500" />
+                      </>
                     )}
                   </div>
-                </div>
 
-                {/* Segment insights */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 shadow-sm">
-                    <h3 className="font-display font-black text-sm mb-4">Top Dishes by Segment</h3>
-                    {dishRanking.slice(0, 3).map((d, i) => (
-                      <div key={d.name} className="flex items-center gap-3 mb-3 last:mb-0">
-                        <span className="font-display font-black text-xl w-6 text-center">{['🥇','🥈','🥉'][i]}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate">{d.name}</p>
-                          <p className="text-xs text-neutral-400">{d.count} orders</p>
-                        </div>
-                        <span className="text-xs font-black text-emerald-600">₹{d.revenue.toFixed(0)}</span>
-                      </div>
-                    ))}
-                    {dishRanking.length === 0 && <p className="text-xs text-neutral-400 text-center py-4">No completed orders yet</p>}
-                  </div>
-                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 shadow-sm">
-                    <h3 className="font-display font-black text-sm mb-4">Retention Overview</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-xs font-bold mb-1.5"><span className="text-neutral-500">New Customers</span><span>{Math.max(uniqueCustomers - repeatCustomers, 0)}</span></div>
-                        <div className="h-2 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${uniqueCustomers > 0 ? ((uniqueCustomers - repeatCustomers) / uniqueCustomers) * 100 : 0}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs font-bold mb-1.5"><span className="text-neutral-500">Returning Guests</span><span>{repeatCustomers}</span></div>
-                        <div className="h-2 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-purple-500 rounded-full" style={{ width: `${uniqueCustomers > 0 ? (repeatCustomers / uniqueCustomers) * 100 : 0}%` }} />
-                        </div>
+                  {/* Customer list from orders */}
+                  <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-3xl overflow-hidden shadow-sm">
+                    <div className="p-5 border-b border-neutral-50 dark:border-white/5 flex justify-between items-center">
+                      <h3 className="font-display font-black text-base">{customerFilter === 'repeat' ? 'Repeat Customers' : customerFilter === 'all' ? 'All Customers' : 'Top Customers (by Spend)'}</h3>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-neutral-400 font-bold hidden sm:inline">
+                          {customerFilter === 'repeat' ? repeatCustomers : customerFilter === 'all' ? uniqueCustomers : Math.min(15, uniqueCustomers)} shown
+                        </span>
+                        <button onClick={() => setShowAllCustomersModal(true)} className="px-3 py-1.5 text-xs font-bold bg-[#D4AF37] text-black rounded-lg hover:bg-amber-400 transition-colors shadow-sm">
+                          View All
+                        </button>
                       </div>
                     </div>
-                    <p className="text-xs text-neutral-400 mt-5">Returning guest rate: <span className="font-black text-purple-500">{uniqueCustomers > 0 ? Math.round((repeatCustomers / uniqueCustomers) * 100) : 0}%</span></p>
+                    <div className="divide-y divide-neutral-50 dark:divide-white/4">
+                      {/* Skeleton rows while loading */}
+                      {!isDataLoaded && (
+                        Array.from({ length: 5 }).map((_, i) => <CustomerRowSkeleton key={i} />)
+                      )}
+                      {isDataLoaded && (customerFilter === 'repeat' ? customerList.filter(c => c.orderCount > 1) : customerFilter === 'all' ? customerList : customerList.slice(0, 15)).map(c => (
+                        <div key={c.id} className="px-5 py-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-white/3 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm truncate">{c.name}</p>
+                            <p className="text-xs text-neutral-400">
+                              {c.phone} · {c.orderCount} order{c.orderCount > 1 ? 's' : ''} · Last: {new Date(c.lastOrder).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-black text-sm text-emerald-600">₹{Number(c.totalSpend).toFixed(0)}</p>
+                            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{c.orderType === 'dine_in' ? 'Dine-In' : 'Pre-Order'}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {isDataLoaded && customerList.length === 0 && (
+                        <div className="text-center py-12 text-neutral-400">
+                          <Users size={36} className="mx-auto mb-3 opacity-20" />
+                          <p className="text-sm">Customer data appears after orders are placed</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Segment insights */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 shadow-sm">
+                      <h3 className="font-display font-black text-sm mb-4">Top Dishes by Segment</h3>
+                      {dishRanking.slice(0, 3).map((d, i) => (
+                        <div key={d.name} className="flex items-center gap-3 mb-3 last:mb-0">
+                          <span className="font-display font-black text-xl w-6 text-center">{['🥇', '🥈', '🥉'][i]}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold truncate">{d.name}</p>
+                            <p className="text-xs text-neutral-400">{d.count} orders</p>
+                          </div>
+                          <span className="text-xs font-black text-emerald-600">₹{d.revenue.toFixed(0)}</span>
+                        </div>
+                      ))}
+                      {dishRanking.length === 0 && <p className="text-xs text-neutral-400 text-center py-4">No completed orders yet</p>}
+                    </div>
+                    <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-5 shadow-sm">
+                      <h3 className="font-display font-black text-sm mb-4">Retention Overview</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-xs font-bold mb-1.5"><span className="text-neutral-500">New Customers</span><span>{Math.max(uniqueCustomers - repeatCustomers, 0)}</span></div>
+                          <div className="h-2 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${uniqueCustomers > 0 ? ((uniqueCustomers - repeatCustomers) / uniqueCustomers) * 100 : 0}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs font-bold mb-1.5"><span className="text-neutral-500">Returning Guests</span><span>{repeatCustomers}</span></div>
+                          <div className="h-2 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-purple-500 rounded-full" style={{ width: `${uniqueCustomers > 0 ? (repeatCustomers / uniqueCustomers) * 100 : 0}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-5">Returning guest rate: <span className="font-black text-purple-500">{uniqueCustomers > 0 ? Math.round((repeatCustomers / uniqueCustomers) * 100) : 0}%</span></p>
+                    </div>
                   </div>
                 </div>
-              </div>
               )}
             </motion.div>
           )}
@@ -6301,7 +6285,7 @@ export default function VendorDashboardPage() {
                           excavate: true,
                         } : undefined}
                       />
-                      <p className="text-[10px] text-neutral-400 mt-3 text-center">{currentRestaurant?.name} · T{i+1}</p>
+                      <p className="text-[10px] text-neutral-400 mt-3 text-center">{currentRestaurant?.name} · T{i + 1}</p>
                       <button
                         onClick={() => handlePrintQRCodes([{ label: `Table ${i + 1}`, svgId: `qr-svg-table-${i + 1}` }])}
                         className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/15 transition-all text-neutral-700 dark:text-neutral-300"
@@ -6315,7 +6299,7 @@ export default function VendorDashboardPage() {
                 <div className="bg-white dark:bg-[#12141D] border border-neutral-100 dark:border-white/6 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-[100px] pointer-events-none" />
                   <div className="flex-1 text-center sm:text-left relative z-10">
-                     <h3 className="font-display font-black text-xl mb-1 text-neutral-900 dark:text-white">Delivery & Takeaway</h3>
+                    <h3 className="font-display font-black text-xl mb-1 text-neutral-900 dark:text-white">Delivery & Takeaway</h3>
                     <p className="text-sm text-neutral-500 mb-4">Print this QR for customers ordering from outside or for pick-up. No table assigned.</p>
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                       <MapPin size={14} /> Requests Live Location from Diner
@@ -6460,7 +6444,7 @@ export default function VendorDashboardPage() {
                               className="overflow-hidden"
                             >
                               <div className="px-5 pb-5 space-y-4 border-t border-neutral-100 dark:border-white/5 pt-4">
-                                
+
                                 {/* Toggle Active */}
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
@@ -6510,36 +6494,36 @@ export default function VendorDashboardPage() {
                                   </select>
                                 </div>
 
-                                 {/* Offer Banner Image */}
-                                 <div>
-                                   <label className="text-xs font-bold text-neutral-400 block mb-1.5 uppercase tracking-widest">
-                                     Offer Banner Image <span className="font-normal normal-case tracking-normal">(optional — shown on menu page)</span>
-                                   </label>
-                                   {offer.offerImage ? (
-                                     <div className="relative group h-28 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-[#1A1A1A]">
-                                       <img src={offer.offerImage} className="w-full h-full object-cover" alt="Offer banner" />
-                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                         <label className="cursor-pointer bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
-                                           <Upload size={13} /> Change
-                                           <input type="file" accept="image/*" className="hidden" onChange={e => {
-                                             const file = e.target.files[0];
-                                             if (file) { const r = new FileReader(); r.onload = ev => handleUpdateOffer(offer.id, 'offerImage', ev.target.result); r.readAsDataURL(file); }
-                                           }} />
-                                         </label>
-                                         <button type="button" onClick={() => handleUpdateOffer(offer.id, 'offerImage', '')} className="bg-red-500/80 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs">Remove</button>
-                                       </div>
-                                     </div>
-                                   ) : (
-                                     <label className="cursor-pointer h-24 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-xl flex flex-col items-center justify-center text-neutral-400 hover:border-neutral-400 transition-colors">
-                                       <Upload size={20} className="mb-1.5 opacity-50" />
-                                       <span className="text-xs font-bold">Upload Offer Banner</span>
-                                       <input type="file" accept="image/*" className="hidden" onChange={e => {
-                                         const file = e.target.files[0];
-                                         if (file) { const r = new FileReader(); r.onload = ev => handleUpdateOffer(offer.id, 'offerImage', ev.target.result); r.readAsDataURL(file); }
-                                       }} />
-                                     </label>
-                                   )}
-                                 </div>
+                                {/* Offer Banner Image */}
+                                <div>
+                                  <label className="text-xs font-bold text-neutral-400 block mb-1.5 uppercase tracking-widest">
+                                    Offer Banner Image <span className="font-normal normal-case tracking-normal">(optional — shown on menu page)</span>
+                                  </label>
+                                  {offer.offerImage ? (
+                                    <div className="relative group h-28 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-[#1A1A1A]">
+                                      <img src={offer.offerImage} className="w-full h-full object-cover" alt="Offer banner" />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <label className="cursor-pointer bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
+                                          <Upload size={13} /> Change
+                                          <input type="file" accept="image/*" className="hidden" onChange={e => {
+                                            const file = e.target.files[0];
+                                            if (file) { const r = new FileReader(); r.onload = ev => handleUpdateOffer(offer.id, 'offerImage', ev.target.result); r.readAsDataURL(file); }
+                                          }} />
+                                        </label>
+                                        <button type="button" onClick={() => handleUpdateOffer(offer.id, 'offerImage', '')} className="bg-red-500/80 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs">Remove</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <label className="cursor-pointer h-24 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-xl flex flex-col items-center justify-center text-neutral-400 hover:border-neutral-400 transition-colors">
+                                      <Upload size={20} className="mb-1.5 opacity-50" />
+                                      <span className="text-xs font-bold">Upload Offer Banner</span>
+                                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                                        const file = e.target.files[0];
+                                        if (file) { const r = new FileReader(); r.onload = ev => handleUpdateOffer(offer.id, 'offerImage', ev.target.result); r.readAsDataURL(file); }
+                                      }} />
+                                    </label>
+                                  )}
+                                </div>
 
                                 {/* Actions */}
                                 <div className="flex gap-2 pt-1">
@@ -6593,11 +6577,11 @@ export default function VendorDashboardPage() {
                 <form onSubmit={handleSettingsSave} className="space-y-4">
                   <div className="rounded-2xl p-5 space-y-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Store size={13}/> Restaurant Profile
+                      <Store size={13} /> Restaurant Profile
                     </h3>
                     <div>
                       <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Restaurant Name *</label>
-                      <input required type="text" value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})}
+                      <input required type="text" value={settingsForm.name} onChange={e => setSettingsForm({ ...settingsForm, name: e.target.value })}
                         className="w-full rounded-xl p-3 text-sm" placeholder="My Restaurant" />
                     </div>
 
@@ -6664,7 +6648,7 @@ export default function VendorDashboardPage() {
                                 const file = e.target.files[0];
                                 if (file) {
                                   const reader = new FileReader();
-                                  reader.onload = (evt) => setSettingsForm({...settingsForm, cover: evt.target.result});
+                                  reader.onload = (evt) => setSettingsForm({ ...settingsForm, cover: evt.target.result });
                                   reader.readAsDataURL(file);
                                 }
                               }} />
@@ -6676,13 +6660,13 @@ export default function VendorDashboardPage() {
                           <Upload size={24} className="mb-2 opacity-50" />
                           <span className="text-sm font-bold">Upload Cover Image</span>
                           <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (evt) => setSettingsForm({...settingsForm, cover: evt.target.result});
-                                  reader.readAsDataURL(file);
-                                }
-                              }} />
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (evt) => setSettingsForm({ ...settingsForm, cover: evt.target.result });
+                              reader.readAsDataURL(file);
+                            }
+                          }} />
                         </label>
                       )}
                     </div>
@@ -6784,7 +6768,7 @@ export default function VendorDashboardPage() {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Operating Hours</label>
-                      <input type="text" value={settingsForm.hours} onChange={e => setSettingsForm({...settingsForm, hours: e.target.value})}
+                      <input type="text" value={settingsForm.hours} onChange={e => setSettingsForm({ ...settingsForm, hours: e.target.value })}
                         placeholder="10:00 - 22:00" className="w-full rounded-xl p-3 text-sm" />
                     </div>
                   </div>
@@ -6792,63 +6776,63 @@ export default function VendorDashboardPage() {
                   {/* Billing & Payments */}
                   <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <DollarSign size={13}/> Billing & Payments
+                      <DollarSign size={13} /> Billing & Payments
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Tax Rate (%)</label>
-                        <input type="number" step="0.1" value={settingsForm.taxRate} onChange={e => setSettingsForm({...settingsForm, taxRate: parseFloat(e.target.value)})}
+                        <input type="number" step="0.1" value={settingsForm.taxRate} onChange={e => setSettingsForm({ ...settingsForm, taxRate: parseFloat(e.target.value) })}
                           className="w-full rounded-xl p-3 text-sm" />
                       </div>
                       <div>
                         <label className="text-xs font-bold text-neutral-400 block mb-2 uppercase tracking-widest">Accept Cash</label>
-                        <select value={String(settingsForm.acceptCash)} onChange={e => setSettingsForm({...settingsForm, acceptCash: e.target.value === 'true'})}
+                        <select value={String(settingsForm.acceptCash)} onChange={e => setSettingsForm({ ...settingsForm, acceptCash: e.target.value === 'true' })}
                           className="w-full rounded-xl p-3 text-sm">
                           <option value="true">✓ Yes — Cash Accepted</option>
                           <option value="false">✗ No — Digital Only</option>
                         </select>
                       </div>
-                    <div className="col-span-2 mt-4 pt-4 border-t border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-bold text-neutral-900 dark:text-white">Customer Verification Code</p>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                              <Store size={9} /> Dine-In Only
-                            </span>
+                      <div className="col-span-2 mt-4 pt-4 border-t border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-bold text-neutral-900 dark:text-white">Customer Verification Code</p>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                                <Store size={9} /> Dine-In Only
+                              </span>
+                            </div>
+                            <p className="text-xs text-neutral-500 mt-1 max-w-[280px]">
+                              When enabled, dine-in customers must show a 4-digit code to confirm pickup. Disable to accept/reject dine-in orders directly without a code.
+                            </p>
                           </div>
-                          <p className="text-xs text-neutral-500 mt-1 max-w-[280px]">
-                            When enabled, dine-in customers must show a 4-digit code to confirm pickup. Disable to accept/reject dine-in orders directly without a code.
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const isCurrentlyRequired = String(settingsForm.requireVerificationCode) !== 'false';
+                              const newValue = !isCurrentlyRequired;
+                              setSettingsForm({ ...settingsForm, requireVerificationCode: newValue });
+                              await updateRestaurant(activeRestId, { requireVerificationCode: newValue });
+                            }}
+                            className={`w-12 h-6 rounded-full transition-all relative shrink-0 mt-0.5 ${String(settingsForm.requireVerificationCode) !== 'false' ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
+                            style={String(settingsForm.requireVerificationCode) !== 'false' ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
+                          >
+                            <span
+                              className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
+                              style={{
+                                left: String(settingsForm.requireVerificationCode) !== 'false' ? '26px' : '4px',
+                                background: String(settingsForm.requireVerificationCode) !== 'false' ? '#000' : '#fff'
+                              }}
+                            />
+                          </button>
+                        </div>
+                        {/* Always-on delivery note */}
+                        <div className="mt-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-500/20 rounded-xl px-3 py-2.5">
+                          <Phone size={13} className="text-blue-500 mt-0.5 shrink-0" />
+                          <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed">
+                            <span className="font-black">Delivery orders always require SMS verification</span> — regardless of this toggle. Customers must verify their phone via OTP before a delivery order is placed.
                           </p>
                         </div>
-                        <button 
-                          type="button" 
-                          onClick={async () => {
-                            const isCurrentlyRequired = String(settingsForm.requireVerificationCode) !== 'false';
-                            const newValue = !isCurrentlyRequired;
-                            setSettingsForm({...settingsForm, requireVerificationCode: newValue});
-                            await updateRestaurant(activeRestId, { requireVerificationCode: newValue });
-                          }}
-                          className={`w-12 h-6 rounded-full transition-all relative shrink-0 mt-0.5 ${String(settingsForm.requireVerificationCode) !== 'false' ? '' : 'bg-neutral-300 dark:bg-neutral-800'}`}
-                          style={String(settingsForm.requireVerificationCode) !== 'false' ? { background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)', boxShadow: '0 2px 8px rgba(212,175,55,0.3)' } : {}}
-                        >
-                          <span 
-                            className="absolute top-1 w-4 h-4 rounded-full transition-all duration-300 shadow-sm"
-                            style={{ 
-                              left: String(settingsForm.requireVerificationCode) !== 'false' ? '26px' : '4px',
-                              background: String(settingsForm.requireVerificationCode) !== 'false' ? '#000' : '#fff'
-                            }}
-                          />
-                        </button>
                       </div>
-                      {/* Always-on delivery note */}
-                      <div className="mt-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-500/20 rounded-xl px-3 py-2.5">
-                        <Phone size={13} className="text-blue-500 mt-0.5 shrink-0" />
-                        <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed">
-                          <span className="font-black">Delivery orders always require SMS verification</span> — regardless of this toggle. Customers must verify their phone via OTP before a delivery order is placed.
-                        </p>
-                      </div>
-                    </div>
                     </div>
                   </div>
 
@@ -6856,7 +6840,7 @@ export default function VendorDashboardPage() {
                   <div className="rounded-2xl p-5 space-y-5 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                        <Package size={13}/> Delivery &amp; Fees
+                        <Package size={13} /> Delivery &amp; Fees
                       </h3>
                       {!isEditingDelivery && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border border-neutral-200 dark:border-neutral-800">
@@ -6874,11 +6858,10 @@ export default function VendorDashboardPage() {
                           disabled={!isEditingDelivery}
                           value={settingsForm.deliveryConfig?.convenienceFee ?? 0}
                           onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, convenienceFee: parseFloat(e.target.value) || 0 } }))}
-                          className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${
-                            !isEditingDelivery
+                          className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${!isEditingDelivery
                               ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                               : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
-                          }`}
+                            }`}
                           placeholder="e.g. 15"
                         />
                       </div>
@@ -6889,11 +6872,10 @@ export default function VendorDashboardPage() {
                           disabled={!isEditingDelivery}
                           value={settingsForm.deliveryConfig?.deliveryFee ?? 0}
                           onChange={e => setSettingsForm(f => ({ ...f, deliveryConfig: { ...f.deliveryConfig, deliveryFee: parseFloat(e.target.value) || 0 } }))}
-                          className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${
-                            !isEditingDelivery
+                          className={`w-full rounded-xl p-3 text-sm transition-all duration-200 ${!isEditingDelivery
                               ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                               : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
-                          }`}
+                            }`}
                           placeholder="e.g. 40"
                         />
                       </div>
@@ -6910,7 +6892,7 @@ export default function VendorDashboardPage() {
                             className="text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1"
                             style={{ background: 'rgba(212,175,55,0.12)', color: GOLD, border: '1px solid rgba(212,175,55,0.3)' }}
                           >
-                            <Plus size={11}/> Add Fee
+                            <Plus size={11} /> Add Fee
                           </button>
                         )}
                       </div>
@@ -6925,11 +6907,10 @@ export default function VendorDashboardPage() {
                                 disabled={!isEditingDelivery}
                                 value={fee.label}
                                 onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], label: e.target.value }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
-                                className={`flex-1 rounded-xl p-2.5 text-xs transition-all duration-200 ${
-                                  !isEditingDelivery
+                                className={`flex-1 rounded-xl p-2.5 text-xs transition-all duration-200 ${!isEditingDelivery
                                     ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                                     : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
-                                }`}
+                                  }`}
                                 placeholder="Fee label (e.g. Packaging)"
                               />
                               <input
@@ -6937,11 +6918,10 @@ export default function VendorDashboardPage() {
                                 disabled={!isEditingDelivery}
                                 value={fee.amount}
                                 onChange={e => setSettingsForm(f => { const ff = [...f.deliveryConfig.otherFees]; ff[i] = { ...ff[i], amount: parseFloat(e.target.value) || 0 }; return { ...f, deliveryConfig: { ...f.deliveryConfig, otherFees: ff } }; })}
-                                className={`w-24 rounded-xl p-2.5 text-xs text-center transition-all duration-200 ${
-                                  !isEditingDelivery
+                                className={`w-24 rounded-xl p-2.5 text-xs text-center transition-all duration-200 ${!isEditingDelivery
                                     ? 'bg-neutral-100 dark:bg-neutral-900/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-200 dark:border-neutral-800'
                                     : 'bg-white dark:bg-[#111] border border-neutral-200 dark:border-white/10'
-                                }`}
+                                  }`}
                                 placeholder="₹ Amount"
                               />
                               {isEditingDelivery && (
@@ -6994,7 +6974,7 @@ export default function VendorDashboardPage() {
                   {/* ── AI Waiter Settings ── */}
                   <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <BrainCircuit size={13}/> AI Waiter Settings
+                      <BrainCircuit size={13} /> AI Waiter Settings
                     </h3>
                     <div className="flex items-center justify-between">
                       <div>
@@ -7016,7 +6996,7 @@ export default function VendorDashboardPage() {
                   {/* ── Happy Hour / Offers Management ── */}
                   <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Flame size={13}/> Dynamic Offers (Happy Hour)
+                      <Flame size={13} /> Dynamic Offers (Happy Hour)
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -7041,42 +7021,41 @@ export default function VendorDashboardPage() {
                   {/* ── Subscription Plans ── */}
                   <div className="rounded-2xl p-5 space-y-4 mt-4 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-[rgba(212,175,55,0.15)]">
                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: GOLD }}>
-                      <Crown size={13}/> Subscription Plan
+                      <Crown size={13} /> Subscription Plan
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {[
-                        { plan: 'Starter',    desc: 'Basic QR Menu & Orders',      price: 'Free' },
-                        { plan: 'Pro',         desc: 'AR + Analytics + CRM',         price: '₹49/mo' },
-                        { plan: 'Enterprise',  desc: 'AI Waiter + 3D + White Label', price: '₹99/mo' },
+                        { plan: 'Starter', desc: 'Basic QR Menu & Orders', price: 'Free' },
+                        { plan: 'Pro', desc: 'AR + Analytics + CRM', price: '₹49/mo' },
+                        { plan: 'Enterprise', desc: 'AI Waiter + 3D + White Label', price: '₹99/mo' },
                       ].map(({ plan, desc, price }) => {
                         const isActive = currentPlan === plan;
                         return (
-                        <div key={plan}
-                          className={`rounded-xl p-4 relative ${
-                            isActive
-                              ? ''
-                              : 'bg-neutral-100 dark:bg-[#181818] border border-neutral-200 dark:border-white/10'
-                          }`}
-                          style={isActive ? {
-                            background: 'linear-gradient(145deg, #1a1500, #0a0a00)',
-                            border: `1px solid ${GOLD}`,
-                            boxShadow: `0 0 20px rgba(212,175,55,0.2)`,
-                          } : {}}
-                        >
-                          {isActive && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 rounded-full text-black" style={{ background: goldGradient }}>ACTIVE</span>}
-                          <h4 className="font-black text-base text-neutral-900 dark:text-white mb-0.5">{plan}</h4>
-                          <p className="text-xs text-neutral-500 mb-2">{desc}</p>
-                          <p className={`font-black text-sm mb-3 ${isActive ? '' : 'text-neutral-400 dark:text-white/50'}`} style={{ color: isActive ? GOLD : undefined }}>{price}</p>
-                          <button type="button"
-                            onClick={() => { if (!isActive && activeRestId) { upgradePlan(activeRestId, plan); showNotification(`🌟 Switched to ${plan} plan!`); }}}
-                            className="w-full py-2 rounded-lg text-xs font-bold transition-all"
-                            style={isActive
-                              ? { background: goldGradient, color: '#000' }
-                              : { background: 'rgba(212,175,55,0.08)', color: GOLD, border: `1px solid rgba(212,175,55,0.3)` }
-                            }>
-                            {isActive ? 'Current Plan ✓' : `Upgrade to ${plan} →`}
-                          </button>
-                        </div>
+                          <div key={plan}
+                            className={`rounded-xl p-4 relative ${isActive
+                                ? ''
+                                : 'bg-neutral-100 dark:bg-[#181818] border border-neutral-200 dark:border-white/10'
+                              }`}
+                            style={isActive ? {
+                              background: 'linear-gradient(145deg, #1a1500, #0a0a00)',
+                              border: `1px solid ${GOLD}`,
+                              boxShadow: `0 0 20px rgba(212,175,55,0.2)`,
+                            } : {}}
+                          >
+                            {isActive && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 rounded-full text-black" style={{ background: goldGradient }}>ACTIVE</span>}
+                            <h4 className="font-black text-base text-neutral-900 dark:text-white mb-0.5">{plan}</h4>
+                            <p className="text-xs text-neutral-500 mb-2">{desc}</p>
+                            <p className={`font-black text-sm mb-3 ${isActive ? '' : 'text-neutral-400 dark:text-white/50'}`} style={{ color: isActive ? GOLD : undefined }}>{price}</p>
+                            <button type="button"
+                              onClick={() => { if (!isActive && activeRestId) { upgradePlan(activeRestId, plan); showNotification(`🌟 Switched to ${plan} plan!`); } }}
+                              className="w-full py-2 rounded-lg text-xs font-bold transition-all"
+                              style={isActive
+                                ? { background: goldGradient, color: '#000' }
+                                : { background: 'rgba(212,175,55,0.08)', color: GOLD, border: `1px solid rgba(212,175,55,0.3)` }
+                              }>
+                              {isActive ? 'Current Plan ✓' : `Upgrade to ${plan} →`}
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -7087,7 +7066,7 @@ export default function VendorDashboardPage() {
                   <button type="submit"
                     className="w-full py-4 mt-6 rounded-2xl font-display font-black flex items-center justify-center gap-2 text-black text-base shadow-gold"
                     style={{ background: goldGradient, boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }}>
-                    <Save size={18}/> Save All Settings
+                    <Save size={18} /> Save All Settings
                   </button>
                 </form>
               </div>
@@ -7112,9 +7091,8 @@ export default function VendorDashboardPage() {
                 className="bg-white dark:bg-[#12141D] border border-neutral-200 dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 relative overflow-hidden text-neutral-900 dark:text-white"
               >
                 {/* Visual Accent */}
-                <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl rounded-full pointer-events-none ${
-                  categoryToDelete.error ? 'bg-red-500/10' : 'bg-amber-500/10'
-                }`} />
+                <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl rounded-full pointer-events-none ${categoryToDelete.error ? 'bg-red-500/10' : 'bg-amber-500/10'
+                  }`} />
 
                 {categoryToDelete.error ? (
                   /* ERROR STATE: Dishes fall in this category */
@@ -7222,7 +7200,7 @@ export default function VendorDashboardPage() {
                     <CloseIcon size={16} />
                   </button>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto no-scrollbar pr-2 space-y-3">
                   {!viewingRsvpsEvent.macros?.rsvps || viewingRsvpsEvent.macros.rsvps.length === 0 ? (
                     <div className="text-center py-10">
@@ -7234,7 +7212,7 @@ export default function VendorDashboardPage() {
                       const name = isObj ? (rsvp.name || 'Anonymous Guest') : 'Anonymous Guest';
                       const phone = isObj ? (rsvp.phone || 'No phone provided') : 'No phone provided';
                       const timestamp = isObj && rsvp.timestamp ? new Date(rsvp.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Unknown date';
-                      
+
                       return (
                         <div key={idx} className="flex flex-col gap-1 p-3 rounded-xl bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/5">
                           <p className="text-sm font-bold">{name}</p>
@@ -7306,7 +7284,7 @@ export default function VendorDashboardPage() {
                         onClick={() => cameraInputRef.current?.click()}
                         className="group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/60 hover:bg-[#D4AF37]/5 transition-all duration-200 cursor-pointer">
                         <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
                         </div>
                         <div className="text-center">
                           <p className="font-black text-sm text-neutral-900 dark:text-white">Live Camera</p>
@@ -7318,7 +7296,7 @@ export default function VendorDashboardPage() {
                         onClick={() => galleryInputRef.current?.click()}
                         className="group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/10 hover:border-[#D4AF37]/60 hover:bg-[#D4AF37]/5 transition-all duration-200 cursor-pointer">
                         <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                         </div>
                         <div className="text-center">
                           <p className="font-black text-sm text-neutral-900 dark:text-white">Upload Photo</p>
@@ -7430,11 +7408,10 @@ export default function VendorDashboardPage() {
                         return (
                           <motion.div key={dish.id}
                             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                            className={`rounded-2xl border-2 overflow-hidden transition-all duration-200 ${
-                              selected
+                            className={`rounded-2xl border-2 overflow-hidden transition-all duration-200 ${selected
                                 ? 'border-[#D4AF37]/60 bg-[#D4AF37]/4 dark:bg-[#D4AF37]/5'
                                 : 'border-neutral-200 dark:border-white/6 bg-white dark:bg-[#12141D] opacity-50'
-                            }`}>
+                              }`}>
 
                             {/* Card Header — toggle + name */}
                             <div className="flex items-center gap-3 px-4 pt-4 pb-3">
@@ -7444,9 +7421,8 @@ export default function VendorDashboardPage() {
                                   next.has(dish.id) ? next.delete(dish.id) : next.add(dish.id);
                                   return next;
                                 })}
-                                className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
-                                  selected ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-300 dark:border-white/20'
-                                }`}>
+                                className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${selected ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-300 dark:border-white/20'
+                                  }`}>
                                 {selected && <CheckCircle size={12} className="text-black" />}
                               </button>
                               <input
@@ -7455,15 +7431,14 @@ export default function VendorDashboardPage() {
                                 className="flex-1 bg-transparent text-base font-black text-neutral-900 dark:text-white border-none focus:ring-0 p-0 placeholder:text-neutral-400"
                                 placeholder="Dish name"
                               />
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                dish.dietaryPreference === 'Vegetarian' || dish.dietaryPreference === 'Vegan'
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${dish.dietaryPreference === 'Vegetarian' || dish.dietaryPreference === 'Vegan'
                                   ? 'bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400'
                                   : dish.dietaryPreference === 'Eggitarian'
                                     ? 'bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'
                                     : dish.dietaryPreference === 'Non-Vegetarian'
                                       ? 'bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400'
                                       : 'bg-neutral-100 dark:bg-neutral-900/20 text-neutral-500'
-                              }`}>{dish.dietaryPreference || 'N/A'}</span>
+                                }`}>{dish.dietaryPreference || 'N/A'}</span>
                             </div>
 
                             {/* Price + Category row */}
@@ -7577,7 +7552,7 @@ export default function VendorDashboardPage() {
           {selectedDateOrders && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
               <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white dark:bg-[#12141D] w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-neutral-200 dark:border-white/10 relative">
-                
+
                 {/* Modal Header */}
                 <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex justify-between items-center bg-neutral-50 dark:bg-black shrink-0 relative z-10">
                   <div>
@@ -7600,36 +7575,36 @@ export default function VendorDashboardPage() {
                       const cName = o.contactName || o.contact_name || 'Guest Diner';
                       const cPhone = o.contactPhone || o.contact_phone;
                       const orderTime = o.timestamp ? new Date(o.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Unknown Time';
-                      
+
                       // Filter out metadata and location items
-                      const foodItems = (o.items || []).filter(item => 
-                        item.type !== 'metadata' && 
-                        item.type !== 'location_meta' && 
-                        item.id !== '__contact_info' && 
-                        item.id !== '__location' && 
+                      const foodItems = (o.items || []).filter(item =>
+                        item.type !== 'metadata' &&
+                        item.type !== 'location_meta' &&
+                        item.id !== '__contact_info' &&
+                        item.id !== '__location' &&
                         item.id !== '__special_instructions'
                       );
 
                       // Badges for Status and Order Type
-                      const statusColor = 
+                      const statusColor =
                         o.status === 'Completed' || o.status === 'Delivered' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
-                        o.status === 'Cancelled' || o.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                        o.status === 'Preparing' || o.status === 'Ready' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                        'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
+                          o.status === 'Cancelled' || o.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                            o.status === 'Preparing' || o.status === 'Ready' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                              'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
 
-                      const typeColor = 
+                      const typeColor =
                         o.orderType === 'dine_in' || o.order_type === 'dine_in' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30' :
-                        o.orderType === 'delivery' || o.order_type === 'delivery' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/30' :
-                        'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200/50 dark:border-purple-900/30';
+                          o.orderType === 'delivery' || o.order_type === 'delivery' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/30' :
+                            'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200/50 dark:border-purple-900/30';
 
-                      const orderTypeLabel = 
+                      const orderTypeLabel =
                         o.orderType === 'dine_in' || o.order_type === 'dine_in' ? `Dine-In ${o.table_number || o.tableNumber ? `(Table ${o.table_number || o.tableNumber})` : ''}` :
-                        o.orderType === 'delivery' || o.order_type === 'delivery' ? 'Delivery' :
-                        'Pre-Order';
+                          o.orderType === 'delivery' || o.order_type === 'delivery' ? 'Delivery' :
+                            'Pre-Order';
 
                       return (
                         <div key={o.id} className="p-4 bg-neutral-50 dark:bg-[#181a24] border border-neutral-100 dark:border-white/5 rounded-2xl flex flex-col md:flex-row md:items-start gap-4">
-                          
+
                           {/* Left Column: Customer details, Time, Type, Status */}
                           <div className="flex-1 space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
@@ -7659,7 +7634,7 @@ export default function VendorDashboardPage() {
                               </p>
                               {getOrderNote(o) && (
                                 <div className="mt-2 p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
-                                  <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1"><AlertTriangle size={9}/> Order Note</p>
+                                  <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1"><AlertTriangle size={9} /> Order Note</p>
                                   <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">{getOrderNote(o)}</p>
                                 </div>
                               )}
@@ -7670,7 +7645,7 @@ export default function VendorDashboardPage() {
                           <div className="md:w-72 shrink-0 bg-white dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 p-3 rounded-xl">
                             <p className="text-[10px] font-black text-neutral-400 uppercase tracking-wider mb-2">Dishes ({foodItems.length})</p>
                             <ul className="space-y-1.5">
-                                                            {foodItems.map((item, idx) => (
+                              {foodItems.map((item, idx) => (
                                 <li key={idx} className="flex justify-between text-xs">
                                   <span className="font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1 flex-wrap">
                                     <span><span className="text-neutral-400 font-bold mr-1.5">{item.quantity || 1}x</span>{item.name} {item.selectedVariant ? `(${item.selectedVariant.name})` : ''}</span>
@@ -7721,7 +7696,7 @@ export default function VendorDashboardPage() {
             const detailMapUrl = _loc.lat && _loc.lng ? `https://www.google.com/maps/dir/?api=1&destination=${_loc.lat},${_loc.lng}` : null;
             const orderNote = getOrderNote(od);
             const foodItems = (od.items || []).filter(i => i.type !== 'location_meta' && i.type !== 'metadata' && i.id !== '__contact_info' && i.id !== '__location' && i.id !== '__special_instructions');
-            
+
             const isDeliveryOrder = od.order_type === 'delivery' || od.orderType === 'delivery';
             const deliveryConfig = currentRestaurant?.macros?.deliveryConfig || {};
             const deliveryFee = isDeliveryOrder
@@ -7929,13 +7904,13 @@ export default function VendorDashboardPage() {
                   <button onClick={() => setCustomerModalCategory('dine_in')} className={`pb-3 px-4 text-xs font-black border-b-2 transition-colors ${customerModalCategory === 'dine_in' ? 'border-[#D4AF37] text-neutral-900 dark:text-white' : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}>Dine-In</button>
                   <button onClick={() => setCustomerModalCategory('delivery')} className={`pb-3 px-4 text-xs font-black border-b-2 transition-colors ${customerModalCategory === 'delivery' ? 'border-[#D4AF37] text-neutral-900 dark:text-white' : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}>Delivery</button>
                 </div>
-                
+
                 <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-[#12141D] shrink-0 flex flex-wrap gap-4 justify-between items-center">
                   <div className="flex gap-2 bg-neutral-100 dark:bg-black p-1 rounded-xl">
                     <button onClick={() => setCustomerModalSort('most-came')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-came' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Visits</button>
                     <button onClick={() => setCustomerModalSort('most-spend')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${customerModalSort === 'most-spend' ? 'bg-white dark:bg-[#1a1a1f] text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}>Most Spent</button>
                   </div>
-                  
+
                   <button onClick={handleExportVCF} className="px-4 py-2 bg-[#D4AF37] text-black font-bold text-xs rounded-xl hover:bg-amber-400 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(212,175,55,0.2)]">
                     <ArrowDown size={14} /> Export Contact{selectedCustomerIds.length > 0 ? `s (${selectedCustomerIds.length})` : 's (All)'}
                   </button>
@@ -7944,12 +7919,12 @@ export default function VendorDashboardPage() {
                 <div className="flex-1 overflow-y-auto p-2">
                   <div className="space-y-1">
                     {[...filteredCustomerList].sort((a, b) => customerModalSort === 'most-came' ? b.orderCount - a.orderCount : b.totalSpend - a.totalSpend).map(c => (
-                      <div 
-                        key={c.id} 
-                        className="flex items-center gap-3 p-3 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer" 
+                      <div
+                        key={c.id}
+                        className="flex items-center gap-3 p-3 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                         onClick={() => setSelectedCustomerHistory(c)}
                       >
-                        <div 
+                        <div
                           className="w-8 h-8 rounded-full hover:bg-neutral-200/50 dark:hover:bg-white/10 flex items-center justify-center shrink-0 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -8111,13 +8086,13 @@ export default function VendorDashboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">Start Date</label>
-                      <input 
+                      <input
                         type="date"
                         lang="en-GB"
                         value={tempDineInStartDate}
                         max={tempDineInEndDate}
                         onKeyDown={(e) => e.preventDefault()}
-                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) { } }}
                         onChange={(e) => {
                           const val = e.target.value;
                           setTempDineInStartDate(val);
@@ -8130,13 +8105,13 @@ export default function VendorDashboardPage() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">End Date</label>
-                      <input 
+                      <input
                         type="date"
                         lang="en-GB"
                         value={tempDineInEndDate}
                         min={tempDineInStartDate}
                         onKeyDown={(e) => e.preventDefault()}
-                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) { } }}
                         onChange={(e) => {
                           const val = e.target.value;
                           setTempDineInEndDate(val);
@@ -8269,13 +8244,13 @@ export default function VendorDashboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">Start Date</label>
-                      <input 
+                      <input
                         type="date"
                         lang="en-GB"
                         value={tempDeliveryStartDate}
                         max={tempDeliveryEndDate}
                         onKeyDown={(e) => e.preventDefault()}
-                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) { } }}
                         onChange={(e) => {
                           const val = e.target.value;
                           setTempDeliveryStartDate(val);
@@ -8288,13 +8263,13 @@ export default function VendorDashboardPage() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 mb-1">End Date</label>
-                      <input 
+                      <input
                         type="date"
                         lang="en-GB"
                         value={tempDeliveryEndDate}
                         min={tempDeliveryStartDate}
                         onKeyDown={(e) => e.preventDefault()}
-                        onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                        onClick={(e) => { try { e.target.showPicker(); } catch (err) { } }}
                         onChange={(e) => {
                           const val = e.target.value;
                           setTempDeliveryEndDate(val);
