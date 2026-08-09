@@ -5,7 +5,6 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
 import BottomNav from '../components/BottomNav';
-import AIWaiter from '../components/AIWaiter';
 import { MenuPageSkeleton } from '../components/Skeleton';
 import { useScrollDirection } from '../hooks/useScrollDirection';
 import DishRatingBadge from '../components/DishRatingBadge';
@@ -1530,8 +1529,6 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
-      {/* AI Waiter Component — Enterprise Plan only */}
-      {hasEnterprise && <AIWaiter />}
 
       {/* ── FLOATING ZOMATO MENU BUTTON ── */}
       {categoriesWithDishes.length > 0 && (
