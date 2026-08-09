@@ -1438,6 +1438,18 @@ export default function VendorDashboardPage() {
     }
   }, [currentRestaurant]);
 
+  // Auto-sync owner's email to restaurant macros for persistent display
+  React.useEffect(() => {
+    if (!currentRestaurant || !supabaseUser) return;
+    const isOwner = supabaseUser.id === currentRestaurant.vendor_id || supabaseUser.id === currentRestaurant.vendorId;
+    if (isOwner && supabaseUser.email) {
+      const storedEmail = currentRestaurant.macros?.vendorEmail;
+      if (storedEmail !== supabaseUser.email) {
+        updateRestaurant(currentRestaurant.id, { vendorEmail: supabaseUser.email }, true);
+      }
+    }
+  }, [currentRestaurant, supabaseUser, updateRestaurant]);
+
   const [editingEvent, setEditingEvent] = React.useState(null);
   const [viewingRsvpsEvent, setviewingRsvpsEvent] = React.useState(null);
   const [editingCustomization, setEditingCustomization] = React.useState(null);
@@ -2912,7 +2924,7 @@ export default function VendorDashboardPage() {
             <h1 className="font-display font-black text-base leading-tight text-neutral-900 dark:text-white">{currentRestaurant?.name || 'Dashboard'}</h1>
             <p className="text-[11px] flex items-center gap-1.5 text-neutral-500">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-500" />
-              {user?.email || 'Synced to Cloud'}
+              {currentRestaurant?.macros?.vendorEmail || user?.email || 'Synced to Cloud'}
             </p>
           </div>
         </div>

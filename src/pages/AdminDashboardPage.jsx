@@ -334,7 +334,10 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="py-4">
                         <div className="flex flex-col">
-                          <span className="text-xs font-mono text-neutral-400">{r.vendor_id || r.vendorId || 'Unknown'}</span>
+                          {r.macros?.vendorEmail && (
+                            <span className="text-xs font-bold text-neutral-300">{r.macros.vendorEmail}</span>
+                          )}
+                          <span className="text-[10px] font-mono text-neutral-500">{r.vendor_id || r.vendorId || 'Unknown'}</span>
                           {r.phone && <span className="text-xs text-neutral-500">{r.phone}</span>}
                         </div>
                       </td>
