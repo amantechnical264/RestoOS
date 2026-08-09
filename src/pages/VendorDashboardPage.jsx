@@ -817,7 +817,7 @@ const UpgradeLock = ({ requiredPlan, feature, activeRestId, upgradePlan, showNot
               >
                 {isPending
                   ? `⏳ ${p} Request Pending...`
-                  : p === 'Pro' ? 'Request Pro — ₹49/mo' : 'Request Enterprise — ₹99/mo'
+                  : p === 'Pro' ? 'Request Pro — ₹2,190/mo' : 'Request Enterprise — ₹99/mo'
                 }
               </button>
             );
@@ -1736,7 +1736,7 @@ export default function VendorDashboardPage() {
         requireVerificationCode: currentRestaurant.requireVerificationCode !== undefined ? currentRestaurant.requireVerificationCode : true,
         phone: currentRestaurant.macros?.phone || currentRestaurant.phone || '',
         phoneVerified: currentRestaurant.macros?.phoneVerified || false,
-        hours: currentRestaurant.hours || '10:00 - 22:00',
+        hours: currentRestaurant.macros?.hours || currentRestaurant.hours || '10:00 - 22:00',
         deliveryConfig: currentRestaurant.macros?.deliveryConfig || { convenienceFee: 0, deliveryFee: 0, otherFees: [] },
       });
       setFormInitializedFor(currentRestaurant.id);
@@ -1748,6 +1748,8 @@ export default function VendorDashboardPage() {
     e.preventDefault();
     await updateRestaurant(activeRestId, settingsForm);
     setIsEditingDelivery(false);
+    // Reset form guard so that after a page reload the form re-reads from the freshly-saved DB data
+    setFormInitializedFor(null);
     showNotification('Settings saved successfully!');
   };
 
@@ -7126,7 +7128,7 @@ export default function VendorDashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {[
                         { plan: 'Starter', desc: 'Basic QR Menu & Orders', price: 'Free' },
-                        { plan: 'Pro', desc: 'AR + Analytics + CRM', price: '₹49/mo' },
+                        { plan: 'Pro', desc: 'AR + Analytics + CRM', price: '₹2,190/mo' },
                         // { plan: 'Enterprise', desc: 'AI Waiter + 3D + White Label', price: '₹99/mo' },
                       ].map(({ plan, desc, price }) => {
                         const isActive = currentPlan === plan;

@@ -915,10 +915,11 @@ export const AppProvider = ({ children }) => {
         tax_rate:    updateData.taxRate     !== undefined ? updateData.taxRate     : r.tax_rate,
         acceptCash:  updateData.acceptCash  !== undefined ? updateData.acceptCash  : r.acceptCash,
         accept_cash: updateData.acceptCash  !== undefined ? updateData.acceptCash  : r.accept_cash,
+        hours:       updateData.hours       !== undefined ? updateData.hours       : r.hours,
         requireVerificationCode: updateData.requireVerificationCode !== undefined
           ? updateData.requireVerificationCode
           : r.requireVerificationCode,
-        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined || updateData.logo !== undefined || updateData.vendorEmail !== undefined)
+        macros: (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined || updateData.logo !== undefined || updateData.vendorEmail !== undefined || updateData.hours !== undefined)
           ? {
               ...(r.macros || {}),
               ...(updateData.deliveryConfig          !== undefined ? { deliveryConfig: updateData.deliveryConfig } : {}),
@@ -930,6 +931,7 @@ export const AppProvider = ({ children }) => {
               ...(updateData.offers                  !== undefined ? { offers: updateData.offers } : {}),
               ...(updateData.logo                   !== undefined ? { logo: updateData.logo } : {}),
               ...(updateData.vendorEmail            !== undefined ? { vendorEmail: updateData.vendorEmail } : {}),
+              ...(updateData.hours                  !== undefined ? { hours: updateData.hours } : {}),
             }
           : r.macros,
       } : r);
@@ -956,7 +958,7 @@ export const AppProvider = ({ children }) => {
       // requireVerificationCode and deliveryConfig live here. If the column is missing,
       // the value is already saved in local state + localStorage above, so the toggle
       // still works correctly for the session and across page reloads.
-      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined || updateData.logo !== undefined || updateData.vendorEmail !== undefined) {
+      if (updateData.deliveryConfig !== undefined || updateData.requireVerificationCode !== undefined || updateData.phone !== undefined || updateData.phoneVerified !== undefined || updateData.socials !== undefined || updateData.customizations !== undefined || updateData.offers !== undefined || updateData.logo !== undefined || updateData.vendorEmail !== undefined || updateData.hours !== undefined) {
         const currentMacros = restaurants.find(r => r.id === restId)?.macros || {};
         const newMacros = { ...currentMacros };
         if (updateData.deliveryConfig          !== undefined) newMacros.deliveryConfig          = updateData.deliveryConfig;
@@ -968,6 +970,7 @@ export const AppProvider = ({ children }) => {
         if (updateData.offers                  !== undefined) newMacros.offers                  = updateData.offers;
         if (updateData.logo                   !== undefined) newMacros.logo                   = updateData.logo;
         if (updateData.vendorEmail            !== undefined) newMacros.vendorEmail            = updateData.vendorEmail;
+        if (updateData.hours                  !== undefined) newMacros.hours                  = updateData.hours;
 
         const { error: macrosError } = await supabase.from('restaurants')
           .update({ macros: newMacros })
