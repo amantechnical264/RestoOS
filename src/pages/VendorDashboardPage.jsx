@@ -2929,12 +2929,7 @@ export default function VendorDashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setIsStaffMode(!isStaffMode)}
-            className="flex items-center gap-1.5 text-[10px] font-black px-3 py-2 rounded-xl transition-all uppercase tracking-widest"
-            style={isStaffMode ? { background: '#D4AF37', color: '#000' } : { background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: GOLD }}
-          >
-            {isStaffMode ? 'Exit Staff Mode' : 'Staff Mode'}
-          </button>
+          {/* Staff Mode button temporarily hidden */}
           <button onClick={toggleTheme}
             className="p-2 rounded-xl transition-colors"
             style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: GOLD }}
@@ -6016,7 +6011,7 @@ export default function VendorDashboardPage() {
                                 <div className="flex items-center justify-between mb-2">
                                   <label className="text-xs font-bold text-neutral-500 block">Applicable Dishes</label>
                                   {(() => {
-                                    const expanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                    const expanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId && !d.tags?.includes('_categories_metadata')));
                                     const selectedCount = promoForm.applicableDishes.length;
                                     const allSelected = selectedCount === expanded.length && expanded.length > 0;
                                     return (
@@ -6081,7 +6076,7 @@ export default function VendorDashboardPage() {
                                 {/* Dish list with search + category filtering */}
                                 <div className="bg-neutral-50 dark:bg-[#0d0d10] border border-neutral-200 dark:border-white/10 rounded-xl p-3 max-h-48 overflow-y-auto space-y-2">
                                   {(() => {
-                                    const allExpanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId));
+                                    const allExpanded = expandDishesWithVariants(dishes.filter(d => d.restId === activeRestId && !d.tags?.includes('_categories_metadata')));
                                     const filtered = allExpanded.filter(dish => {
                                       const matchSearch = !flashDishSearch || dish.name.toLowerCase().includes(flashDishSearch.toLowerCase());
                                       const matchCat = flashCategoryFilter === 'All' || dish.category === flashCategoryFilter;
@@ -6095,7 +6090,7 @@ export default function VendorDashboardPage() {
                                       return <div className="text-xs text-neutral-400 text-center py-4">No dishes match your search.</div>;
                                     }
                                     return filtered.map(dish => (
-                                      <label key={dish.id} className="flex items-center gap-2 cursor-pointer group hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors">
+                                      <label key={dish.id} className="flex items-center gap-2 cursor-pointer group hover:bg-neutral-200 dark:hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors">
                                         <input
                                           type="checkbox"
                                           checked={promoForm.applicableDishes.includes(dish.id)}
@@ -6110,7 +6105,7 @@ export default function VendorDashboardPage() {
                                           }}
                                           className="rounded border-neutral-300 text-[#D4AF37] accent-[#D4AF37] focus:ring-[#D4AF37]"
                                         />
-                                        <span className="text-sm dark:text-neutral-200 flex-1 truncate group-hover:text-white transition-colors">{dish.name}</span>
+                                        <span className="text-sm text-neutral-800 dark:text-neutral-200 flex-1 truncate group-hover:text-black dark:group-hover:text-white transition-colors">{dish.name}</span>
                                         {dish.category && (
                                           <span className="text-[9px] font-bold text-neutral-400 bg-neutral-200 dark:bg-white/5 px-1.5 py-0.5 rounded shrink-0">{dish.category}</span>
                                         )}
@@ -7132,7 +7127,7 @@ export default function VendorDashboardPage() {
                       {[
                         { plan: 'Starter', desc: 'Basic QR Menu & Orders', price: 'Free' },
                         { plan: 'Pro', desc: 'AR + Analytics + CRM', price: '₹49/mo' },
-                        { plan: 'Enterprise', desc: 'AI Waiter + 3D + White Label', price: '₹99/mo' },
+                        // { plan: 'Enterprise', desc: 'AI Waiter + 3D + White Label', price: '₹99/mo' },
                       ].map(({ plan, desc, price }) => {
                         const isActive = currentPlan === plan;
                         return (
@@ -7148,8 +7143,8 @@ export default function VendorDashboardPage() {
                             } : {}}
                           >
                             {isActive && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 rounded-full text-black" style={{ background: goldGradient }}>ACTIVE</span>}
-                            <h4 className="font-black text-base text-neutral-900 dark:text-white mb-0.5">{plan}</h4>
-                            <p className="text-xs text-neutral-500 mb-2">{desc}</p>
+                            <h4 className={`font-black text-base mb-0.5 ${isActive ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{plan}</h4>
+                            <p className={`text-xs mb-2 ${isActive ? 'text-neutral-300' : 'text-neutral-500'}`}>{desc}</p>
                             <p className={`font-black text-sm mb-3 ${isActive ? '' : 'text-neutral-400 dark:text-white/50'}`} style={{ color: isActive ? GOLD : undefined }}>{price}</p>
                             <button type="button"
                               onClick={() => { if (!isActive && activeRestId) { upgradePlan(activeRestId, plan); showNotification(`🌟 Switched to ${plan} plan!`); } }}
