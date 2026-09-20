@@ -24,6 +24,7 @@ const AdminDashboardPage  = React.lazy(() => import('./pages/AdminDashboardPage'
 
 // Public Utility Pages
 const DeleteAccountPage   = React.lazy(() => import('./pages/DeleteAccountPage'));
+const ChildSafetyPage     = React.lazy(() => import('./pages/ChildSafetyPage'));
 
 // Global Error Boundary to catch PWA stale-cache chunk loading errors
 class GlobalErrorBoundary extends React.Component {
@@ -166,6 +167,7 @@ function AnimatedRoutes() {
 
         {/* Public Utility Routes */}
         <Route path="/delete-account" element={<DeleteAccountPage />} />
+        <Route path="/child-safety"   element={<ChildSafetyPage />} />
       </Routes>
     </AnimatePresence>
   );
